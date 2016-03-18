@@ -1,0 +1,6 @@
+[package]
+name = "hyperscan"
+version = "0.1.0"
+authors = ["Flier Lu <flier.lu@nexusguard.com>"]
+
+[dependencies]
