@@ -1,3 +1,4 @@
+extern crate log;
 extern crate libc;
 
 #[cfg(test)]
@@ -16,9 +17,4 @@ mod compile;
 mod runtime;
 
 pub use common::{Error, BlockDatabase, StreamingDatabase, VectoredDatabase, SerializedDatabase};
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {}
-}
+pub use compile::*;

@@ -479,7 +479,7 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize_at() {
-        let mut db = BlockDatabase::compile("test", 0).unwrap();
+        let db = BlockDatabase::compile("test", 0).unwrap();
 
         let data = db.serialize().unwrap();
 

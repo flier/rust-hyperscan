@@ -168,21 +168,29 @@ pub trait DatabaseBuilder {
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error>;
 }
 
-struct Pattern {
+type CompileFlags = u32;
+
+pub struct Pattern {
     expression: String,
-    flags: u32,
+    flags: CompileFlags,
     id: usize,
 }
 
-type Patterns = Vec<Pattern>;
+impl Pattern {
+    fn parse(s: &str) -> Result<Pattern, Error> {
+        Result::Err(Error::Invalid)
+    }
+}
+
+pub type Patterns = Vec<Pattern>;
 
 #[macro_export]
 macro_rules! pattern {
     ( $expr:expr ) => (
-        $crate::compile::Pattern{expression: $crate::std::convert::From::from($expr), flags: 0, id: 0}
+        pattern!($expr, flags => 0, id => 0)
     );
     ( $expr:expr, flags => $flags:expr ) => (
-        $crate::compile::Pattern{expression: $crate::std::convert::From::from($expr), flags: $flags, id: 0}
+        pattern!($expr, flags => $flags, id => 0)
     );
     ( $expr:expr, flags => $flags:expr, id => $id:expr ) => (
         $crate::compile::Pattern{expression: $crate::std::convert::From::from($expr), flags: $flags, id: $id}
@@ -192,15 +200,7 @@ macro_rules! pattern {
 #[macro_export]
 macro_rules! patterns {
     ( [ $( $expr:expr ), * ] ) => {
-        {
-            let mut v = Vec::new();
-            $(
-                let id = v.len() + 1;
-
-                v.push(pattern!($expr, flags => 0, id => id));
-            )*
-            v
-        }
+        patterns!([ $( $expr ), * ], flags => 0)
     };
     ( [ $( $expr:expr ), * ], flags => $flags:expr ) => {
         {
@@ -258,9 +258,7 @@ pub mod tests {
     use std::ptr;
 
     use super::super::common::BlockDatabase;
-
     use super::super::common::tests::{validate_database, validate_database_with_size};
-
     use super::*;
 
     const DATABASE_SIZE: usize = 2984;
@@ -291,15 +289,13 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build_with_flags() {
-        let p = pattern!{"test", flags => HS_FLAG_CASELESS};
+        let p = &pattern!{"test", flags => HS_FLAG_CASELESS};
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, HS_FLAG_CASELESS);
         assert_eq!(p.id, 0);
 
-        let b = &p;
-
-        let db: BlockDatabase = b.build().unwrap();
+        let db: BlockDatabase = p.build().unwrap();
 
         validate_database(&db);
     }
@@ -315,7 +311,7 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build_with_flags() {
-        let p = patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS);
+        let p = patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS|HS_FLAG_DOTALL);
 
         let db: BlockDatabase = p.build().unwrap();
 
