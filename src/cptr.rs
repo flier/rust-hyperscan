@@ -73,3 +73,45 @@ impl<T: Send> Deref for CPtr<T> {
         &self.p
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use std::ptr;
+    use std::mem;
+    use std::borrow::{Borrow, BorrowMut};
+    use libc;
+
+    use super::*;
+
+    struct Foo {
+        bar: u32,
+    }
+
+    fn validate_borrow<T: Borrow<Foo>>(b: T) {
+        assert_eq!(b.borrow().bar, 32);
+    }
+
+
+    #[test]
+    fn test_borrow() {
+        let mut p = CPtr::<Foo>::new(Foo { bar: 32 });
+
+        assert!(*p != ptr::null_mut());
+
+        validate_borrow(p);
+    }
+
+    #[test]
+    fn test_from_ptr() {
+        unsafe {
+            let foo = libc::malloc(mem::size_of::<Foo>() as libc::size_t) as *mut Foo;
+
+            (*foo).bar = 32;
+
+            let p = CPtr::<Foo>::from_ptr(foo);
+
+            assert!(*p != ptr::null_mut());
+            assert_eq!((**p).bar, 32);
+        }
+    }
+}
