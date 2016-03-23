@@ -2,5 +2,15 @@
 name = "hyperscan"
 version = "0.1.0"
 authors = ["Flier Lu <flier.lu@nexusguard.com>"]
+build = "build.rs"
 
 [dependencies]
+libc = "0.2"
+log = "0.3"
+
+[dev-dependencies]
+regex = "0.1"
+lazy_static = "0.1"
+
+[lib]
+name = "hyperscan"
