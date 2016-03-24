@@ -11,6 +11,7 @@ use std::marker::PhantomData;
 use libc;
 
 use raw::*;
+use constants::*;
 use cptr::CPtr;
 use self::Error::*;
 
@@ -73,85 +74,10 @@ impl std::error::Error for Error {
 
 #[macro_export]
 macro_rules! check_hs_error {
-    ($expr:expr) => (if $expr != $crate::common::HS_SUCCESS {
+    ($expr:expr) => (if $expr != $crate::constants::HS_SUCCESS {
         return $crate::std::result::Result::Err($crate::std::convert::From::from($expr));
     })
 }
-
-/**
- * The engine completed normally.
- */
-pub const HS_SUCCESS: i32 = 0;
-
-/**
- * A parameter passed to this function was invalid.
- */
-pub const HS_INVALID: i32 = -1;
-
-/**
- * A memory allocation failed.
- */
-pub const HS_NOMEM: i32 = -2;
-
-/**
- * The engine was terminated by callback.
- *
- * This return value indicates that the target buffer was partially scanned,
- * but that the callback function requested that scanning cease after a match
- * was located.
- */
-pub const HS_SCAN_TERMINATED: i32 = -3;
-
-/**
- * The pattern compiler failed, and the @ref hs_compile_error_t should be
- * inspected for more detail.
- */
-pub const HS_COMPILER_ERROR: i32 = -4;
-
-/**
- * The given database was built for a different version of Hyperscan.
- */
-pub const HS_DB_VERSION_ERROR: i32 = -5;
-
-/**
- * The given database was built for a different platform (i.e., CPU type).
- */
-pub const HS_DB_PLATFORM_ERROR: i32 = -6;
-
-/**
- * The given database was built for a different mode of operation. This error
- * is returned when streaming calls are used with a block or vectored database
- * and vice versa.
- */
-pub const HS_DB_MODE_ERROR: i32 = -7;
-
-/**
- * A parameter passed to this function was not correctly aligned.
- */
-pub const HS_BAD_ALIGN: i32 = -8;
-
-/**
- * The memory allocator (either malloc() or the allocator set with @ref
- * hs_set_allocator()) did not correctly return memory suitably aligned for the
- * largest representable data type on this platform.
- */
-pub const HS_BAD_ALLOC: i32 = -9;
-
-/**
- * Compiler mode flag: Block scan (non-streaming) database.
- */
-pub const HS_MODE_BLOCK: u32 = 1;
-
-/**
- * Compiler mode flag: Streaming database.
- */
-pub const HS_MODE_STREAM: u32 = 2;
-
-/**
- * Compiler mode flag: Vectored scanning database.
- */
-pub const HS_MODE_VECTORED: u32 = 4;
-
 
 pub trait Type {
     fn mode() -> u32;
@@ -418,14 +344,14 @@ pub mod tests {
 
     pub fn validate_database_info(info: &String) {
         lazy_static! {
-            static ref RE_DB_INFO: Regex = Regex::new(r"^Version: (\d\.\d\.\d) Features: (\w+) Mode: (\w+)$").unwrap();
+            static ref RE_DB_INFO: Regex = Regex::new(r"^Version: (\d\.\d\.\d) Features:\s+(\w+) Mode: (\w+)$").unwrap();
         }
 
         assert!(RE_DB_INFO.is_match(&info));
     }
 
     pub fn validate_database_with_size<T: Database>(db: &T, size: usize) {
-        assert_eq!(db.database_size().unwrap(), size);
+        assert!(db.database_size().unwrap() >= size);
 
         let db_info = db.database_info().unwrap();
 
