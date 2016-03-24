@@ -105,17 +105,20 @@ pub trait Scannable {
 }
 
 impl<'a> Scannable for &'a [u8] {
+    #[inline]
     fn to_bytes(&self) -> &[u8] {
         &self
     }
 }
 
 impl<'a> Scannable for &'a str {
+    #[inline]
     fn to_bytes(&self) -> &[u8] {
         self.as_bytes()
     }
 }
 impl<'a> Scannable for &'a String {
+    #[inline]
     fn to_bytes(&self) -> &[u8] {
         self.as_str().as_bytes()
     }
@@ -142,6 +145,7 @@ pub trait StreamingScanner {
 }
 
 impl<T: Scannable> BlockScanner<T> for BlockDatabase {
+    #[inline]
     fn scan(&self,
             data: T,
             scratch: &RawScratch,
@@ -177,6 +181,7 @@ impl<T: Scannable> BlockScanner<T> for BlockDatabase {
 }
 
 impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
+    #[inline]
     fn scan(&self,
             data: &Vec<T>,
             scratch: &RawScratch,
