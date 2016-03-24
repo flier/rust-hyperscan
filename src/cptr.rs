@@ -78,7 +78,7 @@ impl<T: Send> Deref for CPtr<T> {
 pub mod tests {
     use std::ptr;
     use std::mem;
-    use std::borrow::{Borrow, BorrowMut};
+    use std::borrow::Borrow;
     use libc;
 
     use super::*;
@@ -94,7 +94,7 @@ pub mod tests {
 
     #[test]
     fn test_borrow() {
-        let mut p = CPtr::<Foo>::new(Foo { bar: 32 });
+        let p = CPtr::<Foo>::new(Foo { bar: 32 });
 
         assert!(*p != ptr::null_mut());
 
