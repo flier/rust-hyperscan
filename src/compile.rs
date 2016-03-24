@@ -161,10 +161,10 @@ impl DatabaseBuilder for Pattern {
 
 impl DatabaseBuilder for Patterns {
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error> {
-        let mut expressions = Vec::new();
-        let mut ptrs = Vec::new();
-        let mut flags = Vec::new();
-        let mut ids = Vec::new();
+        let mut expressions = Vec::with_capacity(self.len());
+        let mut ptrs = Vec::with_capacity(self.len());
+        let mut flags = Vec::with_capacity(self.len());
+        let mut ids = Vec::with_capacity(self.len());
 
         for pattern in self {
             let expr = try!(CString::new(pattern.expression.as_str()).map_err(|_| Error::Invalid));
