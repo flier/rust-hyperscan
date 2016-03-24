@@ -2,9 +2,9 @@ use std::ptr;
 use std::mem;
 
 use raw::*;
+use cptr::CPtr;
 use common::{Type, RawDatabase, Error};
 
-#[macro_export]
 macro_rules! check_compile_error {
     ($expr:expr, $err:ident) => {
         if $crate::common::HS_SUCCESS != $expr {
@@ -168,6 +168,12 @@ pub trait DatabaseBuilder {
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error>;
 }
 
+pub trait Expression {
+    type Info;
+
+    fn info(&self) -> Result<Self::Info, Error>;
+}
+
 type CompileFlags = u32;
 
 pub struct Pattern {
@@ -177,8 +183,75 @@ pub struct Pattern {
 }
 
 impl Pattern {
-    fn parse(s: &str) -> Result<Pattern, Error> {
+    pub fn parse(s: &str) -> Result<Pattern, Error> {
         Result::Err(Error::Invalid)
+    }
+}
+
+impl Expression for Pattern {
+    type Info = RawExpressionInfo;
+
+    fn info(&self) -> Result<RawExpressionInfo, Error> {
+        let mut info: *mut hs_expr_info_t = ptr::null_mut();
+        let mut err: *mut hs_compile_error_t = ptr::null_mut();
+
+        unsafe {
+            check_compile_error!(hs_expression_info(mem::transmute(self.expression.as_ptr()),
+                                                    self.flags,
+                                                    &mut info,
+                                                    &mut err),
+                                 err);
+        }
+
+        Result::Ok(RawExpressionInfo { info: CPtr::from_ptr(info) })
+    }
+}
+
+pub trait ExpressionInfo {
+    /// The minimum length in bytes of a match for the pattern.
+    fn min_width(&self) -> usize;
+
+    /// The maximum length in bytes of a match for the pattern.
+    fn max_width(&self) -> usize;
+
+    /// Whether this expression can produce matches that are not returned in order, such as those produced by assertions.
+    fn unordered_matches(&self) -> bool;
+
+    /// Whether this expression can produce matches at end of data (EOD).
+    fn matches_at_eod(&self) -> bool;
+
+    /// Whether this expression can *only* produce matches at end of data (EOD).
+    fn matches_only_at_eod(&self) -> bool;
+}
+
+pub struct RawExpressionInfo {
+    info: CPtr<hs_expr_info_t>,
+}
+
+impl ExpressionInfo for RawExpressionInfo {
+    #[inline]
+    fn min_width(&self) -> usize {
+        unsafe { (**self.info).min_width as usize }
+    }
+
+    #[inline]
+    fn max_width(&self) -> usize {
+        unsafe { (**self.info).max_width as usize }
+    }
+
+    #[inline]
+    fn unordered_matches(&self) -> bool {
+        unsafe { (**self.info).unordered_matches != 0 }
+    }
+
+    #[inline]
+    fn matches_at_eod(&self) -> bool {
+        unsafe { (**self.info).matches_at_eod != 0 }
+    }
+
+    #[inline]
+    fn matches_only_at_eod(&self) -> bool {
+        unsafe { (**self.info).matches_only_at_eod != 0 }
     }
 }
 
@@ -274,15 +347,21 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build() {
-        let p = pattern!{"test"};
+        let p = &pattern!{"test"};
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, 0);
         assert_eq!(p.id, 0);
 
-        let b = &p;
+        let info = p.info().unwrap();
 
-        let db: BlockDatabase = b.build().unwrap();
+        assert_eq!(info.min_width(), 4);
+        assert_eq!(info.max_width(), 4);
+        assert!(!info.unordered_matches());
+        assert!(!info.matches_at_eod());
+        assert!(!info.matches_only_at_eod());
+
+        let db: BlockDatabase = p.build().unwrap();
 
         validate_database(&db);
     }
