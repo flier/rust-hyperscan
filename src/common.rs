@@ -1,5 +1,4 @@
 use std::ptr;
-use std::mem;
 use std::slice;
 use std::ops::Deref;
 use std::ffi::CStr;
@@ -88,7 +87,7 @@ pub trait SerializedDatabase {
         let mut size: size_t = 0;
 
         unsafe {
-            check_hs_error!(hs_serialized_database_size(mem::transmute(self.as_slice().as_ptr()),
+            check_hs_error!(hs_serialized_database_size(self.as_slice().as_ptr() as *const i8,
                                                         self.len() as size_t,
                                                         &mut size));
         }
@@ -100,7 +99,7 @@ pub trait SerializedDatabase {
         let mut p: *mut c_char = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_serialized_database_info(mem::transmute(self.as_slice().as_ptr()),
+            check_hs_error!(hs_serialized_database_info(self.as_slice().as_ptr() as *const i8,
                                                         self.len() as size_t,
                                                         &mut p));
 
@@ -153,6 +152,7 @@ impl SerializedDatabase for [u8] {
 impl Deref for RawSerializedDatabase {
     type Target = *mut u8;
 
+    #[inline]
     fn deref(&self) -> &*mut u8 {
         &*self.p
     }
@@ -218,7 +218,7 @@ impl<T: Type> Database for RawDatabase<T> {
         unsafe {
             check_hs_error!(hs_serialize_database(self.db, &mut bytes, &mut size));
 
-            Result::Ok(RawSerializedDatabase::from_raw_parts(mem::transmute(bytes), size as usize))
+            Result::Ok(RawSerializedDatabase::from_raw_parts(bytes as *mut u8, size as usize))
         }
     }
 
@@ -226,7 +226,7 @@ impl<T: Type> Database for RawDatabase<T> {
         let mut db: *mut hs_database_t = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_deserialize_database(mem::transmute(bytes.as_ptr()),
+            check_hs_error!(hs_deserialize_database(bytes.as_ptr() as *const i8,
                                                     bytes.len() as size_t,
                                                     &mut db));
         }
@@ -236,7 +236,7 @@ impl<T: Type> Database for RawDatabase<T> {
 
     fn deserialize_at(&self, bytes: &[u8]) -> Result<&RawDatabase<T>, Error> {
         unsafe {
-            check_hs_error!(hs_deserialize_database_at(mem::transmute(bytes.as_ptr()),
+            check_hs_error!(hs_deserialize_database_at(bytes.as_ptr() as *const i8,
                                                        bytes.len() as size_t,
                                                        self.db));
             Result::Ok(self)
@@ -249,6 +249,7 @@ unsafe impl<T: Type> Sync for RawDatabase<T> {}
 
 impl<T: Type> Drop for RawDatabase<T> {
     /// Free a compiled pattern database.
+    #[inline]
     fn drop(&mut self) {
         self.free().unwrap()
     }

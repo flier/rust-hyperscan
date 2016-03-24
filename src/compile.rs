@@ -1,5 +1,5 @@
 use std::ptr;
-use std::mem;
+use std::ffi::CString;
 
 use raw::*;
 
@@ -12,9 +12,10 @@ impl<T: Type> RawDatabase<T> {
         let mut db: *mut hs_database_t = ptr::null_mut();
         let platform: *const hs_platform_info_t = ptr::null();
         let mut err: *mut hs_compile_error_t = ptr::null_mut();
+        let expr = try!(CString::new(expression).map_err(|_| Error::Invalid));
 
         unsafe {
-            check_compile_error!(hs_compile(expression.as_ptr() as *const i8,
+            check_compile_error!(hs_compile(expr.as_bytes_with_nul().as_ptr() as *const i8,
                                             flags,
                                             T::mode(),
                                             platform,
@@ -57,9 +58,10 @@ impl Expression for Pattern {
     fn info(&self) -> Result<RawExpressionInfo, Error> {
         let mut info: *mut hs_expr_info_t = ptr::null_mut();
         let mut err: *mut hs_compile_error_t = ptr::null_mut();
+        let expr = try!(CString::new(self.expression.as_str()).map_err(|_| Error::Invalid));
 
         unsafe {
-            check_compile_error!(hs_expression_info(mem::transmute(self.expression.as_ptr()),
+            check_compile_error!(hs_expression_info(expr.as_bytes_with_nul().as_ptr() as *const i8,
                                                     self.flags,
                                                     &mut info,
                                                     &mut err),
@@ -160,13 +162,20 @@ impl DatabaseBuilder for Pattern {
 impl DatabaseBuilder for Patterns {
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error> {
         let mut expressions = Vec::new();
+        let mut ptrs = Vec::new();
         let mut flags = Vec::new();
         let mut ids = Vec::new();
 
         for pattern in self {
-            expressions.push(pattern.expression.as_str().as_ptr());
+            let expr = try!(CString::new(pattern.expression.as_str()).map_err(|_| Error::Invalid));
+
+            expressions.push(expr);
             flags.push(pattern.flags);
             ids.push(pattern.id as u32);
+        }
+
+        for expr in expressions {
+            ptrs.push(expr.as_bytes_with_nul().as_ptr());
         }
 
         let platform: *const hs_platform_info_t = ptr::null();
@@ -174,7 +183,7 @@ impl DatabaseBuilder for Patterns {
         let mut err: *mut hs_compile_error_t = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(hs_compile_multi(mem::transmute(expressions.as_slice().as_ptr()),
+            check_compile_error!(hs_compile_multi(ptrs.as_slice().as_ptr() as *const *const i8,
                                                   flags.as_slice().as_ptr(),
                                                   ids.as_slice().as_ptr(),
                                                   self.len() as u32,

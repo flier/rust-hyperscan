@@ -27,14 +27,15 @@ impl<T: Send> CPtr<T> {
         }
     }
 
+    #[inline]
     pub fn from_ptr(p: *mut T) -> CPtr<T> {
         CPtr { p: p }
     }
 }
 
 impl<T: Send> Borrow<T> for CPtr<T> {
-    // the 'r lifetime results in the same semantics as `&*x` with
-    // Box<T>
+    // the 'r lifetime results in the same semantics as `&*x` with Box<T>
+    #[inline]
     fn borrow<'r>(&'r self) -> &'r T {
         // By construction, self.ptr is valid
         unsafe { &*self.p }
@@ -42,8 +43,8 @@ impl<T: Send> Borrow<T> for CPtr<T> {
 }
 
 impl<T: Send> BorrowMut<T> for CPtr<T> {
-    // the 'r lifetime results in the same semantics as `&*x` with
-    // Box<T>
+    // the 'r lifetime results in the same semantics as `&*x` with Box<T>
+    #[inline]
     fn borrow_mut<'r>(&'r mut self) -> &'r mut T {
         // By construction, self.ptr is valid
         unsafe { &mut *self.p }
@@ -51,6 +52,7 @@ impl<T: Send> BorrowMut<T> for CPtr<T> {
 }
 
 impl<T: Send> Drop for CPtr<T> {
+    #[inline]
     fn drop(&mut self) {
         unsafe {
             // Copy the object out from the pointer onto the stack,
@@ -69,6 +71,7 @@ impl<T: Send> Drop for CPtr<T> {
 impl<T: Send> Deref for CPtr<T> {
     type Target = *mut T;
 
+    #[inline]
     fn deref(&self) -> &*mut T {
         &self.p
     }

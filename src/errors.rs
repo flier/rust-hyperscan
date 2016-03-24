@@ -3,7 +3,7 @@ use std::error;
 
 use constants::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     Success,
     Failed(i32),
@@ -68,6 +68,13 @@ impl error::Error for Error {
 macro_rules! check_hs_error {
     ($expr:expr) => (if $expr != $crate::constants::HS_SUCCESS {
         return $crate::std::result::Result::Err($crate::std::convert::From::from($expr));
+    })
+}
+
+#[macro_export]
+macro_rules! assert_hs_error {
+    ($expr:expr) => (if $expr != $crate::constants::HS_SUCCESS {
+        panic!("panic, err={}", $expr);
     })
 }
 

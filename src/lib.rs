@@ -16,7 +16,8 @@ pub use common::{Type, Database, RawDatabase, BlockDatabase, StreamingDatabase, 
 pub use constants::*;
 pub use errors::Error;
 pub use compile::{DatabaseBuilder, Expression, ExpressionInfo, Pattern};
-pub use runtime::{Scratch, RawScratch};
+pub use runtime::{Scratch, RawScratch, BlockScanner, StreamingScanner, VectoredScanner,
+                  MatchEventCallback};
 
 #[cfg(test)]
 #[macro_use]
