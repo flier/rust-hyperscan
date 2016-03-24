@@ -4,24 +4,8 @@ use std::mem;
 use raw::*;
 
 use cptr::CPtr;
-use common::{Type, RawDatabase, Error};
-
-#[macro_export]
-macro_rules! check_compile_error {
-    ($expr:expr, $err:ident) => {
-        if $crate::constants::HS_SUCCESS != $expr {
-            return match $expr {
-                $crate::constants::HS_COMPILER_ERROR => {
-                    let msg = $crate::std::ffi::CString::from_raw((*$err).message).into_string().unwrap();
-
-                    $crate::std::result::Result::Err($crate::common::Error::CompilerError(msg))
-                },
-                _ =>
-                    $crate::std::result::Result::Err($crate::std::convert::From::from($expr)),
-            }
-        }
-    }
-}
+use common::{Type, RawDatabase};
+use errors::Error;
 
 impl<T: Type> RawDatabase<T> {
     pub fn compile(expression: &str, flags: u32) -> Result<RawDatabase<T>, Error> {

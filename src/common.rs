@@ -1,6 +1,4 @@
-use std;
 use std::ptr;
-use std::fmt;
 use std::mem;
 use std::slice;
 use std::ops::Deref;
@@ -12,72 +10,8 @@ use libc;
 
 use raw::*;
 use constants::*;
+use errors::Error;
 use cptr::CPtr;
-use self::Error::*;
-
-#[derive(Debug)]
-pub enum Error {
-    Success,
-    Failed(i32),
-    Invalid,
-    NoMem,
-    ScanTerminated,
-    CompilerError(String),
-    DbVersionError,
-    DbPlatformError,
-    DbModeError,
-    BadAlign,
-    BadAlloc,
-}
-
-impl From<i32> for Error {
-    fn from(err: i32) -> Error {
-        match err {
-            HS_SUCCESS => Error::Success,
-            HS_INVALID => Error::Invalid,
-            HS_NOMEM => Error::NoMem,
-            HS_SCAN_TERMINATED => Error::ScanTerminated,
-            // HS_COMPILER_ERROR => Error::CompilerError,
-            HS_DB_VERSION_ERROR => Error::DbVersionError,
-            HS_DB_PLATFORM_ERROR => Error::DbPlatformError,
-            HS_DB_MODE_ERROR => Error::DbModeError,
-            HS_BAD_ALIGN => Error::BadAlign,
-            HS_BAD_ALLOC => Error::BadAlloc,
-            _ => Error::Failed(err),
-        }
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", std::error::Error::description(self).to_string())
-    }
-}
-
-impl std::error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Success => "The engine completed normally.",
-            Failed(..) => "Failed.",
-            Invalid => "A parameter passed to this function was invalid.",
-            NoMem => "A memory allocation failed.",
-            ScanTerminated => "The engine was terminated by callback.",
-            CompilerError(..) => "The pattern compiler failed.",
-            DbVersionError => "The given database was built for a different version of Hyperscan.",
-            DbPlatformError => "The given database was built for a different platform.",
-            DbModeError => "The given database was built for a different mode of operation.",
-            BadAlign => "A parameter passed to this function was not correctly aligned.",
-            BadAlloc => "The memory allocator did not correctly return memory suitably aligned.",
-        }
-    }
-}
-
-#[macro_export]
-macro_rules! check_hs_error {
-    ($expr:expr) => (if $expr != $crate::constants::HS_SUCCESS {
-        return $crate::std::result::Result::Err($crate::std::convert::From::from($expr));
-    })
-}
 
 pub trait Type {
     fn mode() -> u32;
@@ -172,7 +106,7 @@ pub trait SerializedDatabase {
 
             let result = match CStr::from_ptr(p).to_str() {
                 Ok(info) => Result::Ok(info.to_string()),
-                Err(_) => Result::Err(Invalid),
+                Err(_) => Result::Err(Error::Invalid),
             };
 
             libc::free(p as *mut libc::c_void);
@@ -268,7 +202,7 @@ impl<T: Type> Database for RawDatabase<T> {
 
             let result = match CStr::from_ptr(p).to_str() {
                 Ok(info) => Result::Ok(info.to_string()),
-                Err(_) => Result::Err(Invalid),
+                Err(_) => Result::Err(Error::Invalid),
             };
 
             libc::free(p as *mut libc::c_void);
@@ -338,7 +272,7 @@ pub mod tests {
     use std::ptr;
     use regex::Regex;
 
-    use super::*;
+    use super::super::*;
 
     const DATABASE_SIZE: usize = 1000;
 

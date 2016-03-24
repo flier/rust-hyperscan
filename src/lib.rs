@@ -2,16 +2,19 @@ extern crate log;
 extern crate libc;
 
 mod raw;
+mod constants;
 mod cptr;
 #[macro_use]
+mod errors;
 mod common;
-mod constants;
 #[macro_use]
 mod compile;
 mod runtime;
 
-pub use common::{Error, BlockDatabase, StreamingDatabase, VectoredDatabase, SerializedDatabase};
+pub use common::{Type, Database, RawDatabase, BlockDatabase, StreamingDatabase, VectoredDatabase,
+                 SerializedDatabase};
 pub use constants::*;
+pub use errors::Error;
 pub use compile::{DatabaseBuilder, Expression, ExpressionInfo, Pattern};
 pub use runtime::{Scratch, RawScratch};
 

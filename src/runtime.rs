@@ -2,7 +2,7 @@ use std::ptr;
 use std::ops::Deref;
 
 use raw::*;
-use common::Error;
+use errors::Error;
 
 pub trait Scratch : Clone {
     fn size(&self) -> Result<usize, Error>;
