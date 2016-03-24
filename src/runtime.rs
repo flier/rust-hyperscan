@@ -1,8 +1,11 @@
 use std::ptr;
-use std::ops::Deref;
+use std::mem;
+use std::os::raw::c_void;
+use std::ops::{Deref, Fn};
 
 use raw::*;
 use errors::Error;
+use common::BlockDatabase;
 
 pub trait Scratch : Clone {
     fn size(&self) -> Result<usize, Error>;
@@ -27,9 +30,10 @@ impl RawScratch {
 }
 
 impl Drop for RawScratch {
+    #[inline]
     fn drop(&mut self) {
         unsafe {
-            hs_free_scratch(self.s);
+            assert_hs_error!(hs_free_scratch(self.s));
         }
     }
 }
@@ -39,7 +43,7 @@ impl Clone for RawScratch {
         let mut s: *mut hs_scratch_t = ptr::null_mut();
 
         unsafe {
-            hs_clone_scratch(self.s, &mut s);
+            assert_hs_error!(hs_clone_scratch(self.s, &mut s));
         }
 
         RawScratch { s: s }
@@ -49,6 +53,7 @@ impl Clone for RawScratch {
 impl Deref for RawScratch {
     type Target = *mut hs_scratch_t;
 
+    #[inline]
     fn deref(&self) -> &*mut hs_scratch_t {
         &self.s
     }
@@ -72,6 +77,77 @@ impl Scratch for RawScratch {
 
         Result::Ok(self)
     }
+}
+
+pub type MatchEventCallback = Fn(u32, u64, u64, u32) -> bool;
+
+const TRUE: int32_t = 1;
+const FALSE: int32_t = 0;
+
+unsafe extern "C" fn match_event_callback(id: uint32_t,
+                                          from: uint64_t,
+                                          to: uint64_t,
+                                          flags: uint32_t,
+                                          context: *mut c_void)
+                                          -> int32_t {
+
+    let callback: &*const MatchEventCallback = mem::transmute(context);
+
+    if (**callback)(id as u32, from as u64, to as u64, flags as u32) {
+        TRUE
+    } else {
+        FALSE
+    }
+}
+
+pub trait BlockScanner {
+    fn scan(&self,
+            data: &[u8],
+            scratch: &RawScratch,
+            handler: Option<&MatchEventCallback>)
+            -> Result<&Self, Error>;
+}
+
+impl BlockScanner for BlockDatabase {
+    fn scan(&self,
+            data: &[u8],
+            scratch: &RawScratch,
+            handler: Option<&MatchEventCallback>)
+            -> Result<&Self, Error> {
+
+        unsafe {
+            match handler {
+                None => {
+                    check_hs_error!(hs_scan(**self,
+                                            data.as_ptr() as *const i8,
+                                            data.len() as u32,
+                                            0 as u32,
+                                            **scratch,
+                                            Option::None,
+                                            ptr::null_mut()))
+                }
+                Some(callback) => {
+                    check_hs_error!(hs_scan(**self,
+                                            data.as_ptr() as *const i8,
+                                            data.len() as u32,
+                                            0 as u32,
+                                            **scratch,
+                                            Option::Some(match_event_callback),
+                                            mem::transmute(&callback)))
+                }
+            }
+        }
+
+        Result::Ok(&self)
+    }
+}
+
+pub trait VectoredScanner  {
+
+}
+
+pub trait StreamingScanner {
+
 }
 
 #[cfg(test)]
@@ -100,8 +176,27 @@ pub mod tests {
 
         let db2: VectoredDatabase = pattern!{"foobar"}.build().unwrap();
 
-        assert_eq!(s2.realloc(*db2).unwrap().size().unwrap(), 2406);
+        assert!(s2.realloc(*db2).unwrap().size().unwrap() > s.size().unwrap());
+    }
 
-        assert_eq!(s.size().unwrap(), 2385);
+    #[test]
+    fn test_block_scan() {
+        let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_SOM_LEFTMOST}.build().unwrap();
+        let s = RawScratch::alloc(*db).unwrap();
+
+        db.scan("foo test bar".as_bytes(), &s, Option::None).unwrap();
+
+        let callback = |id: u32, from: u64, to: u64, flags: u32| {
+            assert_eq!(id, 0);
+            assert_eq!(from, 4);
+            assert_eq!(to, 8);
+            assert_eq!(flags, 0);
+
+            true
+        };
+
+        assert_eq!(db.scan("foo test bar".as_bytes(), &s, Option::Some(&callback))
+                     .err(),
+                   Some(Error::ScanTerminated));
     }
 }
