@@ -68,7 +68,7 @@ impl Expression for Pattern {
                                  err);
         }
 
-        Result::Ok(RawExpressionInfo { info: CPtr::from_ptr(info) })
+        Result::Ok(RawExpressionInfo(CPtr::from_ptr(info)))
     }
 }
 
@@ -89,34 +89,32 @@ pub trait ExpressionInfo {
     fn matches_only_at_eod(&self) -> bool;
 }
 
-pub struct RawExpressionInfo {
-    info: CPtr<hs_expr_info_t>,
-}
+pub struct RawExpressionInfo(CPtr<hs_expr_info_t>);
 
 impl ExpressionInfo for RawExpressionInfo {
     #[inline]
     fn min_width(&self) -> usize {
-        unsafe { (**self.info).min_width as usize }
+        unsafe { (**self.0).min_width as usize }
     }
 
     #[inline]
     fn max_width(&self) -> usize {
-        unsafe { (**self.info).max_width as usize }
+        unsafe { (**self.0).max_width as usize }
     }
 
     #[inline]
     fn unordered_matches(&self) -> bool {
-        unsafe { (**self.info).unordered_matches != 0 }
+        unsafe { (**self.0).unordered_matches != 0 }
     }
 
     #[inline]
     fn matches_at_eod(&self) -> bool {
-        unsafe { (**self.info).matches_at_eod != 0 }
+        unsafe { (**self.0).matches_at_eod != 0 }
     }
 
     #[inline]
     fn matches_only_at_eod(&self) -> bool {
-        unsafe { (**self.info).matches_only_at_eod != 0 }
+        unsafe { (**self.0).matches_only_at_eod != 0 }
     }
 }
 

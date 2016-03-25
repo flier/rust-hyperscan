@@ -5,9 +5,7 @@ use std::borrow::{Borrow, BorrowMut};
 
 use libc;
 
-pub struct CPtr<T: Send> {
-    p: *mut T,
-}
+pub struct CPtr<T: Send>(*mut T);
 
 impl<T: Send> CPtr<T> {
     pub fn new(value: T) -> CPtr<T> {
@@ -23,13 +21,13 @@ impl<T: Send> CPtr<T> {
             // value.
             ptr::write(&mut *ptr, value);
 
-            CPtr { p: ptr }
+            CPtr(ptr)
         }
     }
 
     #[inline]
     pub fn from_ptr(p: *mut T) -> CPtr<T> {
-        CPtr { p: p }
+        CPtr(p)
     }
 }
 
@@ -38,7 +36,7 @@ impl<T: Send> Borrow<T> for CPtr<T> {
     #[inline]
     fn borrow<'r>(&'r self) -> &'r T {
         // By construction, self.ptr is valid
-        unsafe { &*self.p }
+        unsafe { &*self.0 }
     }
 }
 
@@ -47,7 +45,7 @@ impl<T: Send> BorrowMut<T> for CPtr<T> {
     #[inline]
     fn borrow_mut<'r>(&'r mut self) -> &'r mut T {
         // By construction, self.ptr is valid
-        unsafe { &mut *self.p }
+        unsafe { &mut *self.0 }
     }
 }
 
@@ -58,12 +56,12 @@ impl<T: Send> Drop for CPtr<T> {
             // Copy the object out from the pointer onto the stack,
             // where it is covered by normal Rust destructor semantics
             // and cleans itself up, if necessary
-            ptr::read(self.p as *const T);
+            ptr::read(self.0 as *const T);
 
             // clean-up our allocation
-            libc::free(self.p as *mut libc::c_void);
+            libc::free(self.0 as *mut libc::c_void);
 
-            self.p = ptr::null_mut();
+            self.0 = ptr::null_mut();
         }
     }
 }
@@ -73,7 +71,7 @@ impl<T: Send> Deref for CPtr<T> {
 
     #[inline]
     fn deref(&self) -> &*mut T {
-        &self.p
+        &self.0
     }
 }
 
