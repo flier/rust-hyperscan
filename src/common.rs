@@ -318,7 +318,7 @@ pub mod tests {
 
     #[test]
     fn test_database_serialize() {
-        let db = BlockDatabase::compile("test", 0).unwrap();
+        let db = StreamingDatabase::compile("test", 0).unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -330,11 +330,11 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize() {
-        let db = BlockDatabase::compile("test", 0).unwrap();
+        let db = VectoredDatabase::compile("test", 0).unwrap();
 
         let data = db.serialize().unwrap();
 
-        let db = BlockDatabase::deserialize(data.as_slice()).unwrap();
+        let db = VectoredDatabase::deserialize(data.as_slice()).unwrap();
 
         validate_database(&db);
     }

@@ -11,8 +11,8 @@ mod common;
 mod compile;
 mod runtime;
 
-pub use common::{Type, Database, RawDatabase, BlockDatabase, StreamingDatabase, VectoredDatabase,
-                 SerializedDatabase};
+pub use common::{Type, Block, Streaming, Vectored, Database, RawDatabase, BlockDatabase,
+                 StreamingDatabase, VectoredDatabase, SerializedDatabase};
 pub use constants::*;
 pub use errors::Error;
 pub use compile::{DatabaseBuilder, Expression, ExpressionInfo, Pattern};

@@ -7,7 +7,7 @@ use raw::*;
 use errors::Error;
 use common::{BlockDatabase, VectoredDatabase, StreamingDatabase};
 
-pub trait Scratch : Clone {
+pub trait Scratch {
     fn size(&self) -> Result<usize, Error>;
 
     fn realloc(&mut self, db: *const hs_database_t) -> Result<&Self, Error>;
@@ -140,7 +140,7 @@ pub trait VectoredScanner<T: Scannable> {
 
 pub type StreamFlags = u32;
 
-pub trait Stream : Clone{
+pub trait Stream {
     fn close(&self,
              scratch: &RawScratch,
              handler: Option<&MatchEventCallback>)
@@ -153,8 +153,8 @@ pub trait Stream : Clone{
              -> Result<&Self, Error>;
 }
 
-pub trait StreamingScanner<T: Stream> {
-    fn open(&self, flags: StreamFlags) -> Result<T, Error>;
+pub trait StreamingScanner<S: Stream> {
+    fn open_stream(&self, flags: StreamFlags) -> Result<S, Error>;
 }
 
 struct WrappedMatchEventHandler {
@@ -182,10 +182,11 @@ impl<T: Scannable> BlockScanner<T> for BlockDatabase {
             -> Result<&Self, Error> {
         unsafe {
             let w = wrap_match_event_handler!(handler);
+            let bytes = data.as_bytes();
 
             check_hs_error!(hs_scan(**self,
-                                    data.as_bytes().as_ptr() as *const i8,
-                                    data.as_bytes().len() as u32,
+                                    bytes.as_ptr() as *const i8,
+                                    bytes.len() as u32,
                                     0 as u32,
                                     scratch.0,
                                     w.handler,
@@ -208,8 +209,9 @@ impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
         let mut lens = Vec::with_capacity(data.len());
 
         for d in data.iter() {
-            ptrs.push(d.as_bytes().as_ptr() as *const i8);
-            lens.push(d.as_bytes().len() as uint32_t);
+            let bytes = d.as_bytes();
+            ptrs.push(bytes.as_ptr() as *const i8);
+            lens.push(bytes.len() as uint32_t);
         }
 
         unsafe {
@@ -226,6 +228,18 @@ impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
         }
 
         Result::Ok(&self)
+    }
+}
+
+impl StreamingScanner<RawStream> for StreamingDatabase {
+    fn open_stream(&self, flags: StreamFlags) -> Result<RawStream, Error> {
+        let mut id: *mut hs_stream_t = ptr::null_mut();
+
+        unsafe {
+            check_hs_error!(hs_open_stream(**self, flags, &mut id));
+        }
+
+        Result::Ok(RawStream(id))
     }
 }
 
@@ -297,10 +311,11 @@ impl<T: Scannable> BlockScanner<T> for RawStream {
             -> Result<&Self, Error> {
         unsafe {
             let w = wrap_match_event_handler!(handler);
+            let bytes = data.as_bytes();
 
             check_hs_error!(hs_scan_stream(self.0,
-                                           data.as_bytes().as_ptr() as *const i8,
-                                           data.as_bytes().len() as u32,
+                                           bytes.as_ptr() as *const i8,
+                                           bytes.len() as u32,
                                            0 as u32,
                                            scratch.0,
                                            w.handler,
@@ -308,18 +323,6 @@ impl<T: Scannable> BlockScanner<T> for RawStream {
         }
 
         Result::Ok(&self)
-    }
-}
-
-impl StreamingScanner<RawStream> for StreamingDatabase {
-    fn open(&self, flags: StreamFlags) -> Result<RawStream, Error> {
-        let mut id: *mut hs_stream_t = ptr::null_mut();
-
-        unsafe {
-            check_hs_error!(hs_open_stream(**self, flags, &mut id));
-        }
-
-        Result::Ok(RawStream(id))
     }
 }
 
@@ -354,7 +357,7 @@ pub mod tests {
 
     #[test]
     fn test_block_scan() {
-        let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS| HS_FLAG_SOM_LEFTMOST}
+        let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
                                     .build()
                                     .unwrap();
         let s = RawScratch::alloc(*db).unwrap();
@@ -377,10 +380,9 @@ pub mod tests {
 
     #[test]
     fn test_vectored_scan() {
-        let db: VectoredDatabase =
-            pattern!{"test", flags => HS_FLAG_CASELESS| HS_FLAG_SOM_LEFTMOST}
-                .build()
-                .unwrap();
+        let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
+                                       .build()
+                                       .unwrap();
         let s = RawScratch::alloc(*db).unwrap();
 
         let data = vec!["foo", "test", "bar"];
@@ -401,5 +403,32 @@ pub mod tests {
         assert_eq!(db.scan(&data, &s, Option::Some(&callback))
                      .err(),
                    Some(Error::ScanTerminated));
+    }
+
+    #[test]
+    fn test_streaming_scan() {
+        let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}.build().unwrap();
+
+        let s = RawScratch::alloc(*db).unwrap();
+        let st = db.open_stream(0).unwrap();
+
+        let data = vec!["foo", "test", "bar"];
+        let callback = |id: u32, from: u64, to: u64, flags: u32| {
+            assert_eq!(id, 0);
+            assert_eq!(from, 0);
+            assert_eq!(to, 7);
+            assert_eq!(flags, 0);
+
+            false
+        };
+
+        for d in data {
+            st.scan(d, &s, Option::Some(&callback))
+              .unwrap();
+        }
+
+        st.close(&s, Option::Some(&callback))
+          .unwrap();
+
     }
 }

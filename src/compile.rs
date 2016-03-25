@@ -1,4 +1,5 @@
 use std::ptr;
+use std::fmt;
 use std::ffi::CString;
 
 use raw::*;
@@ -32,6 +33,7 @@ pub trait DatabaseBuilder {
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error>;
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct ExpressionInfo {
     /// The minimum length in bytes of a match for the pattern.
     pub min_width: usize,
@@ -55,6 +57,7 @@ pub trait Expression {
 
 pub type CompileFlags = u32;
 
+#[derive(Debug, Clone)]
 pub struct Pattern {
     pub expression: String,
     pub flags: CompileFlags,
@@ -64,6 +67,12 @@ pub struct Pattern {
 impl Pattern {
     pub fn parse(s: &str) -> Result<Pattern, Error> {
         Result::Err(Error::Invalid)
+    }
+}
+
+impl fmt::Display for Pattern {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "/{}/{}", self.expression, self.flags)
     }
 }
 
@@ -95,33 +104,31 @@ pub type Patterns = Vec<Pattern>;
 
 #[macro_export]
 macro_rules! pattern {
-    ( $expr:expr ) => (
+    ( $expr:expr ) => {{
         pattern!($expr, flags => 0, id => 0)
-    );
-    ( $expr:expr, flags => $flags:expr ) => (
+    }};
+    ( $expr:expr, flags => $flags:expr ) => {{
         pattern!($expr, flags => $flags, id => 0)
-    );
-    ( $expr:expr, flags => $flags:expr, id => $id:expr ) => (
+    }};
+    ( $expr:expr, flags => $flags:expr, id => $id:expr ) => {{
         $crate::compile::Pattern{expression: $crate::std::convert::From::from($expr), flags: $flags, id: $id}
-    );
+    }}
 }
 
 #[macro_export]
 macro_rules! patterns {
-    ( [ $( $expr:expr ), * ] ) => {
+    ( [ $( $expr:expr ), * ] ) => {{
         patterns!([ $( $expr ), * ], flags => 0)
-    };
-    ( [ $( $expr:expr ), * ], flags => $flags:expr ) => {
-        {
-            let mut v = Vec::new();
-            $(
-                let id = v.len() + 1;
+    }};
+    ( [ $( $expr:expr ), * ], flags => $flags:expr ) => {{
+        let mut v = Vec::new();
+        $(
+            let id = v.len() + 1;
 
-                v.push(pattern!($expr, flags => $flags, id => id));
-            )*
-            v
-        }
-    };
+            v.push(pattern!{$expr, flags => $flags, id => id});
+        )*
+        v
+    }};
 }
 
 impl DatabaseBuilder for Pattern {
@@ -141,12 +148,12 @@ impl DatabaseBuilder for Patterns {
             let expr = try!(CString::new(pattern.expression.as_str()).map_err(|_| Error::Invalid));
 
             expressions.push(expr);
-            flags.push(pattern.flags);
-            ids.push(pattern.id as u32);
+            flags.push(pattern.flags as uint32_t);
+            ids.push(pattern.id as uint32_t);
         }
 
         for expr in expressions {
-            ptrs.push(expr.as_bytes_with_nul().as_ptr());
+            ptrs.push(expr.as_bytes().as_ptr() as *const i8);
         }
 
         let platform: *const hs_platform_info_t = ptr::null();
@@ -154,7 +161,7 @@ impl DatabaseBuilder for Patterns {
         let mut err: *mut hs_compile_error_t = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(hs_compile_multi(ptrs.as_slice().as_ptr() as *const *const i8,
+            check_compile_error!(hs_compile_multi(ptrs.as_slice().as_ptr(),
                                                   flags.as_slice().as_ptr(),
                                                   ids.as_slice().as_ptr(),
                                                   self.len() as u32,
@@ -223,18 +230,17 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build() {
-        let p = patterns!(["test", "foo", "bar"]);
-
-        let db: BlockDatabase = p.build().unwrap();
+        let db: BlockDatabase = patterns!(["test", "foo", "bar"]).build().unwrap();
 
         validate_database_with_size(&db, DATABASE_SIZE);
     }
 
     #[test]
     fn test_patterns_build_with_flags() {
-        let p = patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS|HS_FLAG_DOTALL);
-
-        let db: BlockDatabase = p.build().unwrap();
+        let db: BlockDatabase =
+            patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS|HS_FLAG_DOTALL)
+                .build()
+                .unwrap();
 
         validate_database_with_size(&db, DATABASE_SIZE);
     }
