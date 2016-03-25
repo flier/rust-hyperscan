@@ -2,8 +2,10 @@ use std::ptr;
 use std::fmt;
 use std::ffi::CString;
 
-use raw::*;
+use regex_syntax;
 
+use raw::*;
+use constants::*;
 use cptr::CPtr;
 use common::{Type, RawDatabase};
 use errors::Error;
@@ -55,7 +57,73 @@ pub trait Expression {
     fn info(&self) -> Result<ExpressionInfo, Error>;
 }
 
-pub type CompileFlags = u32;
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct CompileFlags(pub u32);
+
+impl From<u32> for CompileFlags {
+    fn from(flags: u32) -> Self {
+        CompileFlags(flags)
+    }
+}
+
+impl Into<u32> for CompileFlags {
+    fn into(self) -> u32 {
+        self.0
+    }
+}
+
+impl fmt::Display for CompileFlags {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "{}{}{}",
+               if self.is_set(HS_FLAG_CASELESS) {
+                   "i"
+               } else {
+                   ""
+               },
+               if self.is_set(HS_FLAG_MULTILINE) {
+                   "m"
+               } else {
+                   ""
+               },
+               if self.is_set(HS_FLAG_DOTALL) {
+                   "s"
+               } else {
+                   ""
+               })
+    }
+}
+
+impl CompileFlags {
+    #[inline]
+    fn is_set(&self, flag: u32) -> bool {
+        self.0 & flag == flag
+    }
+
+    #[inline]
+    fn set(&mut self, flag: u32) -> &mut Self {
+        self.0 |= flag;
+
+        self
+    }
+
+    fn parse(s: &str) -> Result<CompileFlags, Error> {
+        let mut flags: u32 = 0;
+
+        for c in s.chars() {
+            match c {
+                'i' => flags |= HS_FLAG_CASELESS,
+                'm' => flags |= HS_FLAG_MULTILINE,
+                's' => flags |= HS_FLAG_DOTALL,
+                _ => {
+                    return Result::Err(Error::CompilerError(format!("invalid compile flag: {}", c)))
+                }
+            }
+        }
+
+        Result::Ok(CompileFlags(flags))
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Pattern {
@@ -72,7 +140,10 @@ impl Pattern {
 
 impl fmt::Display for Pattern {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "/{}/{}", self.expression, self.flags)
+        write!(f,
+               "/{}/{}",
+               regex_syntax::quote(self.expression.as_str()),
+               self.flags)
     }
 }
 
@@ -84,7 +155,7 @@ impl Expression for Pattern {
 
         unsafe {
             check_compile_error!(hs_expression_info(expr.as_bytes_with_nul().as_ptr() as *const i8,
-                                                    self.flags,
+                                                    self.flags.0,
                                                     &mut *info,
                                                     &mut err),
                                  err);
@@ -111,7 +182,11 @@ macro_rules! pattern {
         pattern!($expr, flags => $flags, id => 0)
     }};
     ( $expr:expr, flags => $flags:expr, id => $id:expr ) => {{
-        $crate::compile::Pattern{expression: $crate::std::convert::From::from($expr), flags: $flags, id: $id}
+        $crate::compile::Pattern{
+            expression: $crate::std::convert::From::from($expr),
+            flags: $crate::std::convert::From::from($flags),
+            id: $id
+        }
     }}
 }
 
@@ -133,7 +208,7 @@ macro_rules! patterns {
 
 impl DatabaseBuilder for Pattern {
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error> {
-        RawDatabase::compile(&self.expression, self.flags)
+        RawDatabase::compile(&self.expression, self.flags.0)
     }
 }
 
@@ -148,7 +223,7 @@ impl DatabaseBuilder for Patterns {
             let expr = try!(CString::new(pattern.expression.as_str()).map_err(|_| Error::Invalid));
 
             expressions.push(expr);
-            flags.push(pattern.flags as uint32_t);
+            flags.push(pattern.flags.0 as uint32_t);
             ids.push(pattern.id as uint32_t);
         }
 
@@ -186,6 +261,23 @@ pub mod tests {
     const DATABASE_SIZE: usize = 2800;
 
     #[test]
+    fn test_compile_flags() {
+        let mut flags = CompileFlags(HS_FLAG_CASELESS | HS_FLAG_DOTALL);
+
+        assert_eq!(flags, CompileFlags(HS_FLAG_CASELESS | HS_FLAG_DOTALL));
+        assert!(flags.is_set(HS_FLAG_CASELESS));
+        assert!(!flags.is_set(HS_FLAG_MULTILINE));
+        assert!(flags.is_set(HS_FLAG_DOTALL));
+        assert_eq!(format!("{}", flags), "is");
+
+        assert_eq!(*flags.set(HS_FLAG_MULTILINE),
+                   CompileFlags(HS_FLAG_CASELESS | HS_FLAG_MULTILINE | HS_FLAG_DOTALL));
+
+        assert_eq!(CompileFlags::parse("ism").unwrap(), flags);
+        assert!(CompileFlags::parse("test").is_err());
+    }
+
+    #[test]
     fn test_database_compile() {
         let db = BlockDatabase::compile("test", 0).unwrap();
 
@@ -199,7 +291,7 @@ pub mod tests {
         let p = &pattern!{"test"};
 
         assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, 0);
+        assert_eq!(p.flags, CompileFlags(0));
         assert_eq!(p.id, 0);
 
         let info = p.info().unwrap();
@@ -220,7 +312,7 @@ pub mod tests {
         let p = &pattern!{"test", flags => HS_FLAG_CASELESS};
 
         assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, HS_FLAG_CASELESS);
+        assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
         assert_eq!(p.id, 0);
 
         let db: BlockDatabase = p.build().unwrap();

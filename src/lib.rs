@@ -1,5 +1,6 @@
 extern crate log;
 extern crate libc;
+extern crate regex_syntax;
 
 mod raw;
 mod constants;
@@ -15,7 +16,7 @@ pub use common::{Type, Block, Streaming, Vectored, Database, RawDatabase, BlockD
                  StreamingDatabase, VectoredDatabase, SerializedDatabase};
 pub use constants::*;
 pub use errors::Error;
-pub use compile::{DatabaseBuilder, Expression, ExpressionInfo, Pattern};
+pub use compile::{CompileFlags, Expression, ExpressionInfo, Pattern, DatabaseBuilder};
 pub use runtime::{Scratch, RawScratch, MatchEventCallback, BlockScanner, VectoredScanner,
                   StreamingScanner, StreamFlags, Stream, RawStream};
 

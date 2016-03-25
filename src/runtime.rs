@@ -407,7 +407,9 @@ pub mod tests {
 
     #[test]
     fn test_streaming_scan() {
-        let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}.build().unwrap();
+        let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}
+                                        .build()
+                                        .unwrap();
 
         let s = RawScratch::alloc(*db).unwrap();
         let st = db.open_stream(0).unwrap();
