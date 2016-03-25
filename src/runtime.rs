@@ -130,7 +130,7 @@ pub trait BlockScanner<T: Scannable> {
             -> Result<&Self, Error>;
 }
 
-pub trait VectoredScanner<T: Scannable>{
+pub trait VectoredScanner<T: Scannable> {
     fn scan(&self,
             data: &Vec<T>,
             scratch: &RawScratch,
@@ -183,11 +183,11 @@ impl<T: Scannable> BlockScanner<T> for BlockDatabase {
         unsafe {
             let w = wrap_match_event_handler!(handler);
 
-            check_hs_error!(hs_scan(**self,
+            check_hs_error!(hs_scan(self.db,
                                     data.as_bytes().as_ptr() as *const i8,
                                     data.as_bytes().len() as u32,
                                     0 as u32,
-                                    **scratch,
+                                    scratch.0,
                                     w.handler,
                                     w.context));
         }
@@ -217,12 +217,12 @@ impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
         unsafe {
             let w = wrap_match_event_handler!(handler);
 
-            check_hs_error!(hs_scan_vector(**self,
+            check_hs_error!(hs_scan_vector(self.db,
                                            ptrs.as_slice().as_ptr() as *const *const i8,
                                            lens.as_slice().as_ptr() as *const uint32_t,
                                            data.len() as u32,
                                            0 as u32,
-                                           **scratch,
+                                           scratch.0,
                                            w.handler,
                                            w.context));
         }
@@ -232,6 +232,15 @@ impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
 }
 
 pub struct RawStream(*mut hs_stream_t);
+
+impl Deref for RawStream {
+    type Target = *mut hs_stream_t;
+
+    #[inline]
+    fn deref(&self) -> &*mut hs_stream_t {
+        &self.0
+    }
+}
 
 impl Clone for RawStream {
     fn clone(&self) -> Self {
@@ -253,7 +262,7 @@ impl Stream for RawStream {
         unsafe {
             let w = wrap_match_event_handler!(handler);
 
-            check_hs_error!(hs_close_stream(self.0, **scratch, w.handler, w.context));
+            check_hs_error!(hs_close_stream(self.0, scratch.0, w.handler, w.context));
         }
 
         Result::Ok(&self)
@@ -267,7 +276,30 @@ impl Stream for RawStream {
         unsafe {
             let w = wrap_match_event_handler!(handler);
 
-            check_hs_error!(hs_reset_stream(self.0, flags, **scratch, w.handler, w.context));
+            check_hs_error!(hs_reset_stream(self.0, flags, scratch.0, w.handler, w.context));
+        }
+
+        Result::Ok(&self)
+    }
+}
+
+impl<T: Scannable> BlockScanner<T> for RawStream {
+    #[inline]
+    fn scan(&self,
+            data: T,
+            scratch: &RawScratch,
+            handler: Option<&MatchEventCallback>)
+            -> Result<&Self, Error> {
+        unsafe {
+            let w = wrap_match_event_handler!(handler);
+
+            check_hs_error!(hs_scan_stream(self.0,
+                                           data.as_bytes().as_ptr() as *const i8,
+                                           data.as_bytes().len() as u32,
+                                           0 as u32,
+                                           scratch.0,
+                                           w.handler,
+                                           w.context));
         }
 
         Result::Ok(&self)
@@ -279,7 +311,7 @@ impl StreamingScanner<RawStream> for StreamingDatabase {
         let mut id: *mut hs_stream_t = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_open_stream((**self), flags, &mut id));
+            check_hs_error!(hs_open_stream(self.db, flags, &mut id));
         }
 
         Result::Ok(RawStream(id))

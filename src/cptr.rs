@@ -75,6 +75,13 @@ impl<T: Send> Deref for CPtr<T> {
     }
 }
 
+impl<T: Send> AsRef<T> for CPtr<T> {
+    #[inline]
+    fn as_ref(&self) -> &T {
+        unsafe { &*self.0 }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use std::ptr;
@@ -112,7 +119,7 @@ pub mod tests {
             let p = CPtr::<Foo>::from_ptr(foo);
 
             assert!(*p != ptr::null_mut());
-            assert_eq!((**p).bar, 32);
+            assert_eq!((*p.0).bar, 32);
         }
     }
 }

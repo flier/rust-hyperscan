@@ -32,10 +32,25 @@ pub trait DatabaseBuilder {
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error>;
 }
 
-pub trait Expression {
-    type Info;
+pub struct ExpressionInfo {
+    /// The minimum length in bytes of a match for the pattern.
+    pub min_width: usize,
 
-    fn info(&self) -> Result<Self::Info, Error>;
+    /// The maximum length in bytes of a match for the pattern.
+    pub max_width: usize,
+
+    /// Whether this expression can produce matches that are not returned in order, such as those produced by assertions.
+    pub unordered_matches: bool,
+
+    /// Whether this expression can produce matches at end of data (EOD).
+    pub matches_at_eod: bool,
+
+    /// Whether this expression can *only* produce matches at end of data (EOD).
+    pub matches_only_at_eod: bool,
+}
+
+pub trait Expression {
+    fn info(&self) -> Result<ExpressionInfo, Error>;
 }
 
 pub type CompileFlags = u32;
@@ -53,68 +68,28 @@ impl Pattern {
 }
 
 impl Expression for Pattern {
-    type Info = RawExpressionInfo;
-
-    fn info(&self) -> Result<RawExpressionInfo, Error> {
-        let mut info: *mut hs_expr_info_t = ptr::null_mut();
+    fn info(&self) -> Result<ExpressionInfo, Error> {
+        let mut p: *mut hs_expr_info_t = ptr::null_mut();
         let mut err: *mut hs_compile_error_t = ptr::null_mut();
         let expr = try!(CString::new(self.expression.as_str()).map_err(|_| Error::Invalid));
 
         unsafe {
             check_compile_error!(hs_expression_info(expr.as_bytes_with_nul().as_ptr() as *const i8,
                                                     self.flags,
-                                                    &mut info,
+                                                    &mut p,
                                                     &mut err),
                                  err);
+
+            let info = CPtr::from_ptr(p);
+
+            Result::Ok(ExpressionInfo {
+                min_width: info.as_ref().min_width as usize,
+                max_width: info.as_ref().max_width as usize,
+                unordered_matches: info.as_ref().unordered_matches != 0,
+                matches_at_eod: info.as_ref().matches_at_eod != 0,
+                matches_only_at_eod: info.as_ref().matches_only_at_eod != 0,
+            })
         }
-
-        Result::Ok(RawExpressionInfo(CPtr::from_ptr(info)))
-    }
-}
-
-pub trait ExpressionInfo {
-    /// The minimum length in bytes of a match for the pattern.
-    fn min_width(&self) -> usize;
-
-    /// The maximum length in bytes of a match for the pattern.
-    fn max_width(&self) -> usize;
-
-    /// Whether this expression can produce matches that are not returned in order, such as those produced by assertions.
-    fn unordered_matches(&self) -> bool;
-
-    /// Whether this expression can produce matches at end of data (EOD).
-    fn matches_at_eod(&self) -> bool;
-
-    /// Whether this expression can *only* produce matches at end of data (EOD).
-    fn matches_only_at_eod(&self) -> bool;
-}
-
-pub struct RawExpressionInfo(CPtr<hs_expr_info_t>);
-
-impl ExpressionInfo for RawExpressionInfo {
-    #[inline]
-    fn min_width(&self) -> usize {
-        unsafe { (**self.0).min_width as usize }
-    }
-
-    #[inline]
-    fn max_width(&self) -> usize {
-        unsafe { (**self.0).max_width as usize }
-    }
-
-    #[inline]
-    fn unordered_matches(&self) -> bool {
-        unsafe { (**self.0).unordered_matches != 0 }
-    }
-
-    #[inline]
-    fn matches_at_eod(&self) -> bool {
-        unsafe { (**self.0).matches_at_eod != 0 }
-    }
-
-    #[inline]
-    fn matches_only_at_eod(&self) -> bool {
-        unsafe { (**self.0).matches_only_at_eod != 0 }
     }
 }
 
@@ -224,10 +199,11 @@ pub mod tests {
 
         let info = p.info().unwrap();
 
-        assert_eq!(info.min_width(), info.max_width());
-        assert!(!info.unordered_matches());
-        assert!(!info.matches_at_eod());
-        assert!(!info.matches_only_at_eod());
+        assert_eq!(info.min_width, 4);
+        assert_eq!(info.max_width, 4);
+        assert!(!info.unordered_matches);
+        assert!(!info.matches_at_eod);
+        assert!(!info.matches_only_at_eod);
 
         let db: BlockDatabase = p.build().unwrap();
 

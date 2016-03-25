@@ -58,7 +58,7 @@ pub trait Database {
 
 /// A Hyperscan pattern database.
 pub struct RawDatabase<T: Type> {
-    db: *mut hs_database_t,
+    pub db: *mut hs_database_t,
     _marker: PhantomData<T>,
 }
 
