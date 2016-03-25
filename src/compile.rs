@@ -69,18 +69,16 @@ impl Pattern {
 
 impl Expression for Pattern {
     fn info(&self) -> Result<ExpressionInfo, Error> {
-        let mut p: *mut hs_expr_info_t = ptr::null_mut();
+        let mut info: CPtr<hs_expr_info_t> = CPtr::null();
         let mut err: *mut hs_compile_error_t = ptr::null_mut();
         let expr = try!(CString::new(self.expression.as_str()).map_err(|_| Error::Invalid));
 
         unsafe {
             check_compile_error!(hs_expression_info(expr.as_bytes_with_nul().as_ptr() as *const i8,
                                                     self.flags,
-                                                    &mut p,
+                                                    &mut *info,
                                                     &mut err),
                                  err);
-
-            let info = CPtr::from_ptr(p);
 
             Result::Ok(ExpressionInfo {
                 min_width: info.as_ref().min_width as usize,

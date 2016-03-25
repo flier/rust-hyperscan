@@ -183,7 +183,7 @@ impl<T: Scannable> BlockScanner<T> for BlockDatabase {
         unsafe {
             let w = wrap_match_event_handler!(handler);
 
-            check_hs_error!(hs_scan(self.db,
+            check_hs_error!(hs_scan(**self,
                                     data.as_bytes().as_ptr() as *const i8,
                                     data.as_bytes().len() as u32,
                                     0 as u32,
@@ -217,7 +217,7 @@ impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
         unsafe {
             let w = wrap_match_event_handler!(handler);
 
-            check_hs_error!(hs_scan_vector(self.db,
+            check_hs_error!(hs_scan_vector(**self,
                                            ptrs.as_slice().as_ptr() as *const *const i8,
                                            lens.as_slice().as_ptr() as *const uint32_t,
                                            data.len() as u32,
@@ -311,7 +311,7 @@ impl StreamingScanner<RawStream> for StreamingDatabase {
         let mut id: *mut hs_stream_t = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_open_stream(self.db, flags, &mut id));
+            check_hs_error!(hs_open_stream(**self, flags, &mut id));
         }
 
         Result::Ok(RawStream(id))

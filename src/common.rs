@@ -58,105 +58,13 @@ pub trait Database {
 
 /// A Hyperscan pattern database.
 pub struct RawDatabase<T: Type> {
-    pub db: *mut hs_database_t,
+    db: *mut hs_database_t,
     _marker: PhantomData<T>,
-}
-
-impl<T: Type> Deref for RawDatabase<T> {
-    type Target = *mut hs_database_t;
-
-    fn deref(&self) -> &*mut hs_database_t {
-        &self.db
-    }
 }
 
 pub type BlockDatabase = RawDatabase<Block>;
 pub type StreamingDatabase = RawDatabase<Streaming>;
 pub type VectoredDatabase = RawDatabase<Vectored>;
-
-pub trait SerializedDatabase {
-    fn len(&self) -> usize;
-
-    fn as_slice(&self) -> &[u8];
-
-    fn deserialize<T: Type>(&self) -> Result<RawDatabase<T>, Error> {
-        RawDatabase::deserialize(self.as_slice())
-    }
-
-    fn database_size(&self) -> Result<usize, Error> {
-        let mut size: size_t = 0;
-
-        unsafe {
-            check_hs_error!(hs_serialized_database_size(self.as_slice().as_ptr() as *const i8,
-                                                        self.len() as size_t,
-                                                        &mut size));
-        }
-
-        Result::Ok(size as usize)
-    }
-
-    fn database_info(&self) -> Result<String, Error> {
-        let mut p: *mut c_char = ptr::null_mut();
-
-        unsafe {
-            check_hs_error!(hs_serialized_database_info(self.as_slice().as_ptr() as *const i8,
-                                                        self.len() as size_t,
-                                                        &mut p));
-
-            let result = match CStr::from_ptr(p).to_str() {
-                Ok(info) => Result::Ok(info.to_string()),
-                Err(_) => Result::Err(Error::Invalid),
-            };
-
-            libc::free(p as *mut libc::c_void);
-
-            result
-        }
-    }
-}
-
-pub struct RawSerializedDatabase {
-    p: CPtr<u8>,
-    len: usize,
-}
-
-impl RawSerializedDatabase {
-    unsafe fn from_raw_parts(bytes: *mut u8, len: usize) -> RawSerializedDatabase {
-        RawSerializedDatabase {
-            p: CPtr::from_ptr(bytes),
-            len: len,
-        }
-    }
-}
-
-impl SerializedDatabase for RawSerializedDatabase {
-    fn len(&self) -> usize {
-        self.len
-    }
-
-    fn as_slice(&self) -> &[u8] {
-        unsafe { slice::from_raw_parts(*self.p, self.len) }
-    }
-}
-
-impl SerializedDatabase for [u8] {
-    fn len(&self) -> usize {
-        self.len()
-    }
-
-    fn as_slice(&self) -> &[u8] {
-        self.as_ref()
-    }
-}
-
-impl Deref for RawSerializedDatabase {
-    type Target = *mut u8;
-
-    #[inline]
-    fn deref(&self) -> &*mut u8 {
-        &*self.p
-    }
-}
 
 impl<T: Type> RawDatabase<T> {
     pub fn new(db: *mut hs_database_t) -> RawDatabase<T> {
@@ -174,6 +82,15 @@ impl<T: Type> RawDatabase<T> {
 
             Result::Ok(())
         }
+    }
+}
+
+impl<T: Type> Deref for RawDatabase<T> {
+    type Target = *mut hs_database_t;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.db
     }
 }
 
@@ -265,6 +182,90 @@ impl RawDatabase<Streaming> {
         }
 
         Result::Ok(size as usize)
+    }
+}
+
+pub trait SerializedDatabase {
+    fn len(&self) -> usize;
+
+    fn as_slice(&self) -> &[u8];
+
+    fn deserialize<T: Type>(&self) -> Result<RawDatabase<T>, Error> {
+        RawDatabase::deserialize(self.as_slice())
+    }
+
+    fn database_size(&self) -> Result<usize, Error> {
+        let mut size: size_t = 0;
+
+        unsafe {
+            check_hs_error!(hs_serialized_database_size(self.as_slice().as_ptr() as *const i8,
+                                                        self.len() as size_t,
+                                                        &mut size));
+        }
+
+        Result::Ok(size as usize)
+    }
+
+    fn database_info(&self) -> Result<String, Error> {
+        let mut p: *mut c_char = ptr::null_mut();
+
+        unsafe {
+            check_hs_error!(hs_serialized_database_info(self.as_slice().as_ptr() as *const i8,
+                                                        self.len() as size_t,
+                                                        &mut p));
+
+            let result = match CStr::from_ptr(p).to_str() {
+                Ok(info) => Result::Ok(info.to_string()),
+                Err(_) => Result::Err(Error::Invalid),
+            };
+
+            libc::free(p as *mut libc::c_void);
+
+            result
+        }
+    }
+}
+
+pub struct RawSerializedDatabase {
+    p: CPtr<u8>,
+    len: usize,
+}
+
+impl RawSerializedDatabase {
+    unsafe fn from_raw_parts(bytes: *mut u8, len: usize) -> RawSerializedDatabase {
+        RawSerializedDatabase {
+            p: CPtr::from_ptr(bytes),
+            len: len,
+        }
+    }
+}
+
+impl SerializedDatabase for RawSerializedDatabase {
+    fn len(&self) -> usize {
+        self.len
+    }
+
+    fn as_slice(&self) -> &[u8] {
+        unsafe { slice::from_raw_parts(*self.p, self.len) }
+    }
+}
+
+impl SerializedDatabase for [u8] {
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn as_slice(&self) -> &[u8] {
+        self.as_ref()
+    }
+}
+
+impl Deref for RawSerializedDatabase {
+    type Target = *mut u8;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &*self.p
     }
 }
 

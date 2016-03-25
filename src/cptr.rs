@@ -1,6 +1,6 @@
 use std::mem;
 use std::ptr;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::borrow::{Borrow, BorrowMut};
 
 use libc;
@@ -23,6 +23,11 @@ impl<T: Send> CPtr<T> {
 
             CPtr(ptr)
         }
+    }
+
+    #[inline]
+    pub fn null() -> CPtr<T> {
+        CPtr(ptr::null_mut())
     }
 
     #[inline]
@@ -70,8 +75,15 @@ impl<T: Send> Deref for CPtr<T> {
     type Target = *mut T;
 
     #[inline]
-    fn deref(&self) -> &*mut T {
+    fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<T: Send> DerefMut for CPtr<T> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
