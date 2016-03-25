@@ -101,25 +101,25 @@ unsafe extern "C" fn match_event_callback(id: uint32_t,
 }
 
 pub trait Scannable {
-    fn to_bytes(&self) -> &[u8];
+    fn as_bytes(&self) -> &[u8];
 }
 
 impl<'a> Scannable for &'a [u8] {
     #[inline]
-    fn to_bytes(&self) -> &[u8] {
+    fn as_bytes(&self) -> &[u8] {
         &self
     }
 }
 
 impl<'a> Scannable for &'a str {
     #[inline]
-    fn to_bytes(&self) -> &[u8] {
-        self.as_bytes()
+    fn as_bytes(&self) -> &[u8] {
+        str::as_bytes(self)
     }
 }
 impl<'a> Scannable for &'a String {
     #[inline]
-    fn to_bytes(&self) -> &[u8] {
+    fn as_bytes(&self) -> &[u8] {
         self.as_str().as_bytes()
     }
 }
@@ -152,7 +152,7 @@ impl<T: Scannable> BlockScanner<T> for BlockDatabase {
             handler: Option<&MatchEventCallback>)
             -> Result<&Self, Error> {
         unsafe {
-            let bytes = data.to_bytes();
+            let bytes = data.as_bytes();
 
             match handler {
                 None => {
@@ -192,7 +192,7 @@ impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
         let mut lens = Vec::with_capacity(data.len());
 
         for d in data.iter() {
-            let bytes = d.to_bytes();
+            let bytes = d.as_bytes();
 
             ptrs.push(bytes.as_ptr() as *const i8);
             lens.push(bytes.len() as uint32_t);
