@@ -1,7 +1,7 @@
 use std::ptr;
 use std::mem;
 use std::os::raw::c_void;
-use std::ops::{Deref, Fn};
+use std::ops::{Deref, DerefMut, Fn};
 
 use raw::*;
 use errors::Error;
@@ -208,10 +208,8 @@ impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
         let mut lens = Vec::with_capacity(data.len());
 
         for d in data.iter() {
-            let bytes = d.as_bytes();
-
-            ptrs.push(bytes.as_ptr() as *const i8);
-            lens.push(bytes.len() as uint32_t);
+            ptrs.push(d.as_bytes().as_ptr() as *const i8);
+            lens.push(d.as_bytes().len() as uint32_t);
         }
 
         unsafe {
@@ -237,8 +235,15 @@ impl Deref for RawStream {
     type Target = *mut hs_stream_t;
 
     #[inline]
-    fn deref(&self) -> &*mut hs_stream_t {
+    fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl DerefMut for RawStream {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
