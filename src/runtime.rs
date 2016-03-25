@@ -13,9 +13,7 @@ pub trait Scratch : Clone {
     fn realloc(&mut self, db: *const hs_database_t) -> Result<&Self, Error>;
 }
 
-pub struct RawScratch {
-    s: *mut hs_scratch_t,
-}
+pub struct RawScratch(*mut hs_scratch_t);
 
 impl RawScratch {
     pub fn alloc(db: *const hs_database_t) -> Result<RawScratch, Error> {
@@ -25,7 +23,7 @@ impl RawScratch {
             check_hs_error!(hs_alloc_scratch(db, &mut s));
         }
 
-        Result::Ok(RawScratch { s: s })
+        Result::Ok(RawScratch(s))
     }
 }
 
@@ -33,7 +31,7 @@ impl Drop for RawScratch {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            assert_hs_error!(hs_free_scratch(self.s));
+            assert_hs_error!(hs_free_scratch(self.0));
         }
     }
 }
@@ -43,10 +41,10 @@ impl Clone for RawScratch {
         let mut s: *mut hs_scratch_t = ptr::null_mut();
 
         unsafe {
-            assert_hs_error!(hs_clone_scratch(self.s, &mut s));
+            assert_hs_error!(hs_clone_scratch(self.0, &mut s));
         }
 
-        RawScratch { s: s }
+        RawScratch(s)
     }
 }
 
@@ -55,7 +53,7 @@ impl Deref for RawScratch {
 
     #[inline]
     fn deref(&self) -> &*mut hs_scratch_t {
-        &self.s
+        &self.0
     }
 }
 
@@ -64,7 +62,7 @@ impl Scratch for RawScratch {
         let mut size: size_t = 0;
 
         unsafe {
-            check_hs_error!(hs_scratch_size(self.s, &mut size));
+            check_hs_error!(hs_scratch_size(self.0, &mut size));
         }
 
         Result::Ok(size as usize)
@@ -72,7 +70,7 @@ impl Scratch for RawScratch {
 
     fn realloc(&mut self, db: *const hs_database_t) -> Result<&Self, Error> {
         unsafe {
-            check_hs_error!(hs_alloc_scratch(db, &mut self.s));
+            check_hs_error!(hs_alloc_scratch(db, &mut self.0));
         }
 
         Result::Ok(self)
@@ -140,8 +138,39 @@ pub trait VectoredScanner<T: Scannable>{
             -> Result<&Self, Error>;
 }
 
-pub trait StreamingScanner {
+pub type StreamFlags = u32;
 
+pub trait Stream : Clone{
+    fn close(&self,
+             scratch: &RawScratch,
+             handler: Option<&MatchEventCallback>)
+             -> Result<&Self, Error>;
+
+    fn reset(&self,
+             flags: StreamFlags,
+             scratch: &RawScratch,
+             handler: Option<&MatchEventCallback>)
+             -> Result<&Self, Error>;
+}
+
+pub trait StreamingScanner<T: Stream> {
+    fn open(&self, flags: StreamFlags) -> Result<T, Error>;
+}
+
+struct WrappedMatchEventHandler {
+    handler: match_event_handler,
+    context: *mut c_void,
+}
+
+macro_rules! wrap_match_event_handler {
+    ($handler:ident) => (match $handler {
+        None => {
+            WrappedMatchEventHandler{ handler: Option::None, context: ptr::null_mut()}
+        }
+        Some(callback) => {
+            WrappedMatchEventHandler{ handler: Option::Some(match_event_callback), context: mem::transmute(&callback)}
+        }
+    })
 }
 
 impl<T: Scannable> BlockScanner<T> for BlockDatabase {
@@ -152,28 +181,15 @@ impl<T: Scannable> BlockScanner<T> for BlockDatabase {
             handler: Option<&MatchEventCallback>)
             -> Result<&Self, Error> {
         unsafe {
-            let bytes = data.as_bytes();
+            let w = wrap_match_event_handler!(handler);
 
-            match handler {
-                None => {
-                    check_hs_error!(hs_scan(**self,
-                                            bytes.as_ptr() as *const i8,
-                                            bytes.len() as u32,
-                                            0 as u32,
-                                            **scratch,
-                                            Option::None,
-                                            ptr::null_mut()))
-                }
-                Some(callback) => {
-                    check_hs_error!(hs_scan(**self,
-                                            bytes.as_ptr() as *const i8,
-                                            bytes.len() as u32,
-                                            0 as u32,
-                                            **scratch,
-                                            Option::Some(match_event_callback),
-                                            mem::transmute(&callback)))
-                }
-            }
+            check_hs_error!(hs_scan(**self,
+                                    data.as_bytes().as_ptr() as *const i8,
+                                    data.as_bytes().len() as u32,
+                                    0 as u32,
+                                    **scratch,
+                                    w.handler,
+                                    w.context));
         }
 
         Result::Ok(&self)
@@ -199,35 +215,76 @@ impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
         }
 
         unsafe {
-            match handler {
-                None => {
-                    check_hs_error!(hs_scan_vector(**self,
-                                                   ptrs.as_slice().as_ptr() as *const *const i8,
-                                                   lens.as_slice().as_ptr() as *const uint32_t,
-                                                   data.len() as u32,
-                                                   0 as u32,
-                                                   **scratch,
-                                                   Option::None,
-                                                   ptr::null_mut()))
-                }
-                Some(callback) => {
-                    check_hs_error!(hs_scan_vector(**self,
-                                                   ptrs.as_slice().as_ptr() as *const *const i8,
-                                                   lens.as_slice().as_ptr() as *const uint32_t,
-                                                   data.len() as u32,
-                                                   0 as u32,
-                                                   **scratch,
-                                                   Option::Some(match_event_callback),
-                                                   mem::transmute(&callback)))
-                }
-            }
+            let w = wrap_match_event_handler!(handler);
+
+            check_hs_error!(hs_scan_vector(**self,
+                                           ptrs.as_slice().as_ptr() as *const *const i8,
+                                           lens.as_slice().as_ptr() as *const uint32_t,
+                                           data.len() as u32,
+                                           0 as u32,
+                                           **scratch,
+                                           w.handler,
+                                           w.context));
         }
 
         Result::Ok(&self)
     }
 }
 
-impl StreamingScanner for StreamingDatabase {}
+pub struct RawStream(*mut hs_stream_t);
+
+impl Clone for RawStream {
+    fn clone(&self) -> Self {
+        let mut id: *mut hs_stream_t = ptr::null_mut();
+
+        unsafe {
+            assert_hs_error!(hs_copy_stream(&mut id, self.0));
+        }
+
+        RawStream(id)
+    }
+}
+
+impl Stream for RawStream {
+    fn close(&self,
+             scratch: &RawScratch,
+             handler: Option<&MatchEventCallback>)
+             -> Result<&Self, Error> {
+        unsafe {
+            let w = wrap_match_event_handler!(handler);
+
+            check_hs_error!(hs_close_stream(self.0, **scratch, w.handler, w.context));
+        }
+
+        Result::Ok(&self)
+    }
+
+    fn reset(&self,
+             flags: StreamFlags,
+             scratch: &RawScratch,
+             handler: Option<&MatchEventCallback>)
+             -> Result<&Self, Error> {
+        unsafe {
+            let w = wrap_match_event_handler!(handler);
+
+            check_hs_error!(hs_reset_stream(self.0, flags, **scratch, w.handler, w.context));
+        }
+
+        Result::Ok(&self)
+    }
+}
+
+impl StreamingScanner<RawStream> for StreamingDatabase {
+    fn open(&self, flags: StreamFlags) -> Result<RawStream, Error> {
+        let mut id: *mut hs_stream_t = ptr::null_mut();
+
+        unsafe {
+            check_hs_error!(hs_open_stream((**self), flags, &mut id));
+        }
+
+        Result::Ok(RawStream(id))
+    }
+}
 
 #[cfg(test)]
 pub mod tests {
