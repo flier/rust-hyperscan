@@ -3,19 +3,36 @@ use std::error;
 
 use constants::*;
 
+/// Error Codes
 #[derive(Debug, PartialEq)]
 pub enum Error {
+    /// The engine completed normally.
     Success,
-    Failed(i32),
+    /// A parameter passed to this function was invalid.
     Invalid,
+    /// A memory allocation failed.
     NoMem,
+    /// The engine was terminated by callback.
+    ///
+    /// This return value indicates that the target buffer was partially scanned, 
+    /// but that the callback function requested that scanning cease after a match was located.
     ScanTerminated,
+    /// The pattern compiler failed with more detail.
     CompilerError(String),
+    /// The given database was built for a different version of Hyperscan.
     DbVersionError,
+    /// The given database was built for a different platform (i.e., CPU type).
     DbPlatformError,
+    /// The given database was built for a different mode of operation. 
+    /// This error is returned when streaming calls are used with a block or vectored database and vice versa.
     DbModeError,
+    /// A parameter passed to this function was not correctly aligned.
     BadAlign,
+    /// The memory allocator (either malloc() or the allocator set with hs_set_allocator()) 
+    /// did not correctly return memory suitably aligned for the largest representable data type on this platform.
     BadAlloc,
+    /// Unknown error code
+    Failed(i32),
 }
 
 impl From<i32> for Error {

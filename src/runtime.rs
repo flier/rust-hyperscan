@@ -7,6 +7,7 @@ use raw::*;
 use errors::Error;
 use common::{BlockDatabase, VectoredDatabase, StreamingDatabase};
 
+/// A Hyperscan scratch space.
 pub trait Scratch {
     fn size(&self) -> Result<usize, Error>;
 
@@ -77,6 +78,7 @@ impl Scratch for RawScratch {
     }
 }
 
+/// Definition of the match event callback function type.
 pub type MatchEventCallback = Fn(u32, u64, u64, u32) -> bool;
 
 const TRUE: int32_t = 1;
@@ -122,6 +124,7 @@ impl<'a> Scannable for &'a String {
     }
 }
 
+/// The block (non-streaming) regular expression scanner.
 pub trait BlockScanner<T: Scannable> {
     fn scan(&self,
             data: T,
@@ -130,6 +133,7 @@ pub trait BlockScanner<T: Scannable> {
             -> Result<&Self, Error>;
 }
 
+/// The vectored regular expression scanner.
 pub trait VectoredScanner<T: Scannable> {
     fn scan(&self,
             data: &Vec<T>,
@@ -140,12 +144,15 @@ pub trait VectoredScanner<T: Scannable> {
 
 pub type StreamFlags = u32;
 
+/// The stream returned by StreamingDatabase::open_stream
 pub trait Stream {
+    /// Close a stream.
     fn close(&self,
              scratch: &RawScratch,
              handler: Option<&MatchEventCallback>)
              -> Result<&Self, Error>;
 
+    /// Reset a stream to an initial state.
     fn reset(&self,
              flags: StreamFlags,
              scratch: &RawScratch,
@@ -153,7 +160,9 @@ pub trait Stream {
              -> Result<&Self, Error>;
 }
 
+/// The streaming regular expression scanner.
 pub trait StreamingScanner<S: Stream> {
+    /// Open and initialise a stream.
     fn open_stream(&self, flags: StreamFlags) -> Result<S, Error>;
 }
 

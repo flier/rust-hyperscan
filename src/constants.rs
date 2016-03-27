@@ -72,6 +72,44 @@ pub const HS_MODE_STREAM: u32 = 2;
  */
 pub const HS_MODE_VECTORED: u32 = 4;
 
+/**
+ * Compiler mode flag: use full precision to track start of match offsets in
+ * stream state.
+ *
+ * This mode will use the most stream state per pattern, but will always return
+ * an accurate start of match offset regardless of how far back in the past it
+ * was found.
+ *
+ * One of the SOM_HORIZON modes must be selected to use the @ref
+ * HS_FLAG_SOM_LEFTMOST expression flag.
+ */
+pub const HS_MODE_SOM_HORIZON_LARGE: u32 = 1 << 24;
+
+/**
+ * Compiler mode flag: use medium precision to track start of match offsets in
+ * stream state.
+ *
+ * This mode will use less stream state than @ref HS_MODE_SOM_HORIZON_LARGE and
+ * will limit start of match accuracy to offsets within 2^32 bytes of the
+ * end of match offset reported.
+ *
+ * One of the SOM_HORIZON modes must be selected to use the @ref
+ * HS_FLAG_SOM_LEFTMOST expression flag.
+ */
+pub const HS_MODE_SOM_HORIZON_MEDIUM: u32 = 1 << 25;
+
+/**
+ * Compiler mode flag: use limited precision to track start of match offsets in
+ * stream state.
+ *
+ * This mode will use less stream state than @ref HS_MODE_SOM_HORIZON_LARGE and
+ * will limit start of match accuracy to offsets within 2^16 bytes of the
+ * end of match offset reported.
+ *
+ * One of the SOM_HORIZON modes must be selected to use the @ref
+ * HS_FLAG_SOM_LEFTMOST expression flag.
+ */
+pub const HS_MODE_SOM_HORIZON_SMALL: u32 = 1 << 26;
 
 
 /**

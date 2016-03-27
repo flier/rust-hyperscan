@@ -11,6 +11,9 @@ use common::{Type, RawDatabase};
 use errors::Error;
 
 impl<T: Type> RawDatabase<T> {
+    /// The basic regular expression compiler.
+    ///
+    /// This is the function call with which an expression is compiled into a Hyperscan database which can be passed to the runtime functions.
     pub fn compile(expression: &str, flags: u32) -> Result<RawDatabase<T>, Error> {
         let mut db: *mut hs_database_t = ptr::null_mut();
         let platform: *const hs_platform_info_t = ptr::null();
@@ -27,7 +30,7 @@ impl<T: Type> RawDatabase<T> {
                                  err);
         }
 
-        Result::Ok(RawDatabase::new(db))
+        Result::Ok(RawDatabase::from_raw(db))
     }
 }
 
@@ -35,6 +38,7 @@ pub trait DatabaseBuilder {
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error>;
 }
 
+/// A type containing information related to an expression 
 #[derive(Debug, Copy, Clone)]
 pub struct ExpressionInfo {
     /// The minimum length in bytes of a match for the pattern.
@@ -53,7 +57,13 @@ pub struct ExpressionInfo {
     pub matches_only_at_eod: bool,
 }
 
+/// Providing expression information.
 pub trait Expression {
+    ///
+    /// Utility function providing information about a regular expression. 
+    ///
+    /// The information provided in ExpressionInfo includes the minimum and maximum width of a pattern match.
+    ///
     fn info(&self) -> Result<ExpressionInfo, Error>;
 }
 
@@ -207,12 +217,26 @@ macro_rules! patterns {
 }
 
 impl DatabaseBuilder for Pattern {
+    ///
+    /// The basic regular expression compiler.
+    ///
+    /// / This is the function call with which an expression is compiled
+    /// into a Hyperscan database which can be passed to the runtime functions
+    ///
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error> {
         RawDatabase::compile(&self.expression, self.flags.0)
     }
 }
 
 impl DatabaseBuilder for Patterns {
+    ///
+    /// The multiple regular expression compiler.
+    ///
+    /// This is the function call with which a set of expressions is compiled into a database 
+    /// which can be passed to the runtime functions.
+    /// Each expression can be labelled with a unique integer which is passed into the match callback 
+    /// to identify the pattern that has matched.
+    ///
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error> {
         let mut expressions = Vec::with_capacity(self.len());
         let mut ptrs = Vec::with_capacity(self.len());
@@ -247,7 +271,7 @@ impl DatabaseBuilder for Patterns {
                                  err);
         }
 
-        Result::Ok(RawDatabase::new(db))
+        Result::Ok(RawDatabase::from_raw(db))
     }
 }
 

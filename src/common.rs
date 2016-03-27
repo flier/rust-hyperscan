@@ -12,12 +12,16 @@ use constants::*;
 use errors::Error;
 use cptr::CPtr;
 
+/// Compile mode 
 pub trait Type {
     fn mode() -> u32;
 }
 
+/// Block scan (non-streaming) database.
 pub enum Block {}
+/// Streaming database.
 pub enum Streaming {}
+/// Vectored scanning database.
 pub enum Vectored {}
 
 impl Type for Block {
@@ -37,6 +41,7 @@ impl Type for Vectored {
     }
 }
 
+/// A Hyperscan pattern database.
 pub trait Database {
     type DatabaseType;
 
@@ -56,7 +61,6 @@ pub trait Database {
     fn deserialize_at(&self, bytes: &[u8]) -> Result<&Self::DatabaseType, Error>;
 }
 
-/// A Hyperscan pattern database.
 pub struct RawDatabase<T: Type> {
     db: *mut hs_database_t,
     _marker: PhantomData<T>,
@@ -67,13 +71,15 @@ pub type StreamingDatabase = RawDatabase<Streaming>;
 pub type VectoredDatabase = RawDatabase<Vectored>;
 
 impl<T: Type> RawDatabase<T> {
-    pub fn new(db: *mut hs_database_t) -> RawDatabase<T> {
+    /// Constructs a compiled pattern database from a raw pointer.
+    pub fn from_raw(db: *mut hs_database_t) -> RawDatabase<T> {
         RawDatabase {
             db: db,
             _marker: PhantomData,
         }
     }
 
+    /// Free a compiled pattern database.
     pub fn free(&mut self) -> Result<(), Error> {
         unsafe {
             check_hs_error!(hs_free_database(self.db));
@@ -148,7 +154,7 @@ impl<T: Type> Database for RawDatabase<T> {
                                                     &mut db));
         }
 
-        Result::Ok(Self::new(db))
+        Result::Ok(Self::from_raw(db))
     }
 
     fn deserialize_at(&self, bytes: &[u8]) -> Result<&RawDatabase<T>, Error> {
@@ -165,7 +171,6 @@ unsafe impl<T: Type> Send for RawDatabase<T> {}
 unsafe impl<T: Type> Sync for RawDatabase<T> {}
 
 impl<T: Type> Drop for RawDatabase<T> {
-    /// Free a compiled pattern database.
     #[inline]
     fn drop(&mut self) {
         self.free().unwrap()
