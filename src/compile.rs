@@ -34,11 +34,14 @@ impl<T: Type> RawDatabase<T> {
     }
 }
 
+/// The regular expression pattern database builder.
 pub trait DatabaseBuilder {
+    /// This is the function call with which an expression is compiled into
+    /// a Hyperscan database which can be passed to the runtime functions
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error>;
 }
 
-/// A type containing information related to an expression 
+/// A type containing information related to an expression
 #[derive(Debug, Copy, Clone)]
 pub struct ExpressionInfo {
     /// The minimum length in bytes of a match for the pattern.
@@ -60,7 +63,7 @@ pub struct ExpressionInfo {
 /// Providing expression information.
 pub trait Expression {
     ///
-    /// Utility function providing information about a regular expression. 
+    /// Utility function providing information about a regular expression.
     ///
     /// The information provided in ExpressionInfo includes the minimum and maximum width of a pattern match.
     ///
@@ -232,9 +235,9 @@ impl DatabaseBuilder for Patterns {
     ///
     /// The multiple regular expression compiler.
     ///
-    /// This is the function call with which a set of expressions is compiled into a database 
+    /// This is the function call with which a set of expressions is compiled into a database
     /// which can be passed to the runtime functions.
-    /// Each expression can be labelled with a unique integer which is passed into the match callback 
+    /// Each expression can be labelled with a unique integer which is passed into the match callback
     /// to identify the pattern that has matched.
     ///
     fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error> {

@@ -5,23 +5,25 @@ use std::ops::{Deref, DerefMut, Fn};
 
 use raw::*;
 use errors::Error;
-use common::{BlockDatabase, VectoredDatabase, StreamingDatabase};
+use common::{Database, BlockDatabase, VectoredDatabase, StreamingDatabase};
 
 /// A Hyperscan scratch space.
 pub trait Scratch {
+    /// Provides the size of the given scratch space.
     fn size(&self) -> Result<usize, Error>;
 
-    fn realloc(&mut self, db: *const hs_database_t) -> Result<&Self, Error>;
+    /// Reallocate a "scratch" space for use by Hyperscan.
+    fn realloc<T: Database>(&mut self, db: &T) -> Result<&Self, Error>;
 }
 
 pub struct RawScratch(*mut hs_scratch_t);
 
 impl RawScratch {
-    pub fn alloc(db: *const hs_database_t) -> Result<RawScratch, Error> {
+    pub fn alloc<T: Database>(db: &T) -> Result<RawScratch, Error> {
         let mut s: *mut hs_scratch_t = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_alloc_scratch(db, &mut s));
+            check_hs_error!(hs_alloc_scratch(**db, &mut s));
         }
 
         Result::Ok(RawScratch(s))
@@ -69,9 +71,9 @@ impl Scratch for RawScratch {
         Result::Ok(size as usize)
     }
 
-    fn realloc(&mut self, db: *const hs_database_t) -> Result<&Self, Error> {
+    fn realloc<T: Database>(&mut self, db: &T) -> Result<&Self, Error> {
         unsafe {
-            check_hs_error!(hs_alloc_scratch(db, &mut self.0));
+            check_hs_error!(hs_alloc_scratch(**db, &mut self.0));
         }
 
         Result::Ok(self)
@@ -126,6 +128,7 @@ impl<'a> Scannable for &'a String {
 
 /// The block (non-streaming) regular expression scanner.
 pub trait BlockScanner<T: Scannable> {
+    /// This is the function call in which the actual pattern matching takes place for block-mode pattern databases.
     fn scan(&self,
             data: T,
             scratch: &RawScratch,
@@ -135,6 +138,7 @@ pub trait BlockScanner<T: Scannable> {
 
 /// The vectored regular expression scanner.
 pub trait VectoredScanner<T: Scannable> {
+    /// This is the function call in which the actual pattern matching takes place for vectoring-mode pattern databases.
     fn scan(&self,
             data: &Vec<T>,
             scratch: &RawScratch,
@@ -347,7 +351,7 @@ pub mod tests {
 
         assert!(*db != ptr::null_mut());
 
-        let s = RawScratch::alloc(*db).unwrap();
+        let s = RawScratch::alloc(&db).unwrap();
 
         assert!(*s != ptr::null_mut());
 
@@ -361,7 +365,7 @@ pub mod tests {
 
         let db2: VectoredDatabase = pattern!{"foobar"}.build().unwrap();
 
-        assert!(s2.realloc(*db2).unwrap().size().unwrap() > s.size().unwrap());
+        assert!(s2.realloc(&db2).unwrap().size().unwrap() > s.size().unwrap());
     }
 
     #[test]
@@ -369,7 +373,7 @@ pub mod tests {
         let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
                                     .build()
                                     .unwrap();
-        let s = RawScratch::alloc(*db).unwrap();
+        let s = RawScratch::alloc(&db).unwrap();
 
         db.scan("foo test bar", &s, Option::None).unwrap();
 
@@ -392,7 +396,7 @@ pub mod tests {
         let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
                                        .build()
                                        .unwrap();
-        let s = RawScratch::alloc(*db).unwrap();
+        let s = RawScratch::alloc(&db).unwrap();
 
         let data = vec!["foo", "test", "bar"];
 
@@ -420,7 +424,7 @@ pub mod tests {
                                         .build()
                                         .unwrap();
 
-        let s = RawScratch::alloc(*db).unwrap();
+        let s = RawScratch::alloc(&db).unwrap();
         let st = db.open_stream(0).unwrap();
 
         let data = vec!["foo", "test", "bar"];

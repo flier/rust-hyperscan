@@ -12,7 +12,7 @@ use constants::*;
 use errors::Error;
 use cptr::CPtr;
 
-/// Compile mode 
+/// Compile mode
 pub trait Type {
     fn mode() -> u32;
 }
@@ -42,7 +42,7 @@ impl Type for Vectored {
 }
 
 /// A Hyperscan pattern database.
-pub trait Database {
+pub trait Database : Deref<Target=*mut hs_database_t> {
     type DatabaseType;
 
     /// Provides the size of the given database in bytes.
