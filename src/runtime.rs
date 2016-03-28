@@ -8,17 +8,27 @@ use errors::Error;
 use common::{Database, BlockDatabase, VectoredDatabase, StreamingDatabase};
 
 /// A Hyperscan scratch space.
-pub trait Scratch {
+///
+pub trait Scratch : Deref<Target=*mut hs_scratch_t> {
     /// Provides the size of the given scratch space.
+    ///
     fn size(&self) -> Result<usize, Error>;
 
     /// Reallocate a "scratch" space for use by Hyperscan.
+    ///
     fn realloc<T: Database>(&mut self, db: &T) -> Result<&Self, Error>;
 }
 
+/// A large enough region of scratch space to support a given database.
+///
 pub struct RawScratch(*mut hs_scratch_t);
 
 impl RawScratch {
+    /// Allocate a "scratch" space for use by Hyperscan.
+    ///
+    /// This is required for runtime use, and one scratch space per thread,
+    /// or concurrent caller, is required.
+    ///
     pub fn alloc<T: Database>(db: &T) -> Result<RawScratch, Error> {
         let mut s: *mut hs_scratch_t = ptr::null_mut();
 
@@ -127,21 +137,21 @@ impl<'a> Scannable for &'a String {
 }
 
 /// The block (non-streaming) regular expression scanner.
-pub trait BlockScanner<T: Scannable> {
+pub trait BlockScanner<T: Scannable, S: Scratch> {
     /// This is the function call in which the actual pattern matching takes place for block-mode pattern databases.
     fn scan(&self,
             data: T,
-            scratch: &RawScratch,
+            scratch: &S,
             handler: Option<&MatchEventCallback>)
             -> Result<&Self, Error>;
 }
 
 /// The vectored regular expression scanner.
-pub trait VectoredScanner<T: Scannable> {
+pub trait VectoredScanner<T: Scannable, S: Scratch> {
     /// This is the function call in which the actual pattern matching takes place for vectoring-mode pattern databases.
     fn scan(&self,
             data: &Vec<T>,
-            scratch: &RawScratch,
+            scratch: &S,
             handler: Option<&MatchEventCallback>)
             -> Result<&Self, Error>;
 }
@@ -149,25 +159,22 @@ pub trait VectoredScanner<T: Scannable> {
 pub type StreamFlags = u32;
 
 /// The stream returned by StreamingDatabase::open_stream
-pub trait Stream {
+pub trait Stream<S: Scratch> : Deref<Target=*mut hs_stream_t> {
     /// Close a stream.
-    fn close(&self,
-             scratch: &RawScratch,
-             handler: Option<&MatchEventCallback>)
-             -> Result<&Self, Error>;
+    fn close(&self, scratch: &S, handler: Option<&MatchEventCallback>) -> Result<&Self, Error>;
 
     /// Reset a stream to an initial state.
     fn reset(&self,
              flags: StreamFlags,
-             scratch: &RawScratch,
+             scratch: &S,
              handler: Option<&MatchEventCallback>)
              -> Result<&Self, Error>;
 }
 
 /// The streaming regular expression scanner.
-pub trait StreamingScanner<S: Stream> {
+pub trait StreamingScanner<T, S> where T: Stream<S>, S: Scratch {
     /// Open and initialise a stream.
-    fn open_stream(&self, flags: StreamFlags) -> Result<S, Error>;
+    fn open_stream(&self, flags: StreamFlags) -> Result<T, Error>;
 }
 
 struct WrappedMatchEventHandler {
@@ -186,11 +193,11 @@ macro_rules! wrap_match_event_handler {
     })
 }
 
-impl<T: Scannable> BlockScanner<T> for BlockDatabase {
+impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
     #[inline]
     fn scan(&self,
             data: T,
-            scratch: &RawScratch,
+            scratch: &S,
             handler: Option<&MatchEventCallback>)
             -> Result<&Self, Error> {
         unsafe {
@@ -201,7 +208,7 @@ impl<T: Scannable> BlockScanner<T> for BlockDatabase {
                                     bytes.as_ptr() as *const i8,
                                     bytes.len() as u32,
                                     0 as u32,
-                                    scratch.0,
+                                    **scratch,
                                     w.handler,
                                     w.context));
         }
@@ -210,11 +217,11 @@ impl<T: Scannable> BlockScanner<T> for BlockDatabase {
     }
 }
 
-impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
+impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
     #[inline]
     fn scan(&self,
             data: &Vec<T>,
-            scratch: &RawScratch,
+            scratch: &S,
             handler: Option<&MatchEventCallback>)
             -> Result<&Self, Error> {
 
@@ -235,7 +242,7 @@ impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
                                            lens.as_slice().as_ptr() as *const uint32_t,
                                            data.len() as u32,
                                            0 as u32,
-                                           scratch.0,
+                                           **scratch,
                                            w.handler,
                                            w.context));
         }
@@ -244,7 +251,7 @@ impl<T: Scannable> VectoredScanner<T> for VectoredDatabase {
     }
 }
 
-impl StreamingScanner<RawStream> for StreamingDatabase {
+impl StreamingScanner<RawStream, RawScratch> for StreamingDatabase {
     fn open_stream(&self, flags: StreamFlags) -> Result<RawStream, Error> {
         let mut id: *mut hs_stream_t = ptr::null_mut();
 
@@ -256,6 +263,7 @@ impl StreamingScanner<RawStream> for StreamingDatabase {
     }
 }
 
+/// A pattern matching state can be maintained across multiple blocks of target data
 pub struct RawStream(*mut hs_stream_t);
 
 impl Deref for RawStream {
@@ -286,15 +294,12 @@ impl Clone for RawStream {
     }
 }
 
-impl Stream for RawStream {
-    fn close(&self,
-             scratch: &RawScratch,
-             handler: Option<&MatchEventCallback>)
-             -> Result<&Self, Error> {
+impl<S: Scratch> Stream<S> for RawStream {
+    fn close(&self, scratch: &S, handler: Option<&MatchEventCallback>) -> Result<&Self, Error> {
         unsafe {
             let w = wrap_match_event_handler!(handler);
 
-            check_hs_error!(hs_close_stream(self.0, scratch.0, w.handler, w.context));
+            check_hs_error!(hs_close_stream(self.0, **scratch, w.handler, w.context));
         }
 
         Result::Ok(&self)
@@ -302,24 +307,24 @@ impl Stream for RawStream {
 
     fn reset(&self,
              flags: StreamFlags,
-             scratch: &RawScratch,
+             scratch: &S,
              handler: Option<&MatchEventCallback>)
              -> Result<&Self, Error> {
         unsafe {
             let w = wrap_match_event_handler!(handler);
 
-            check_hs_error!(hs_reset_stream(self.0, flags, scratch.0, w.handler, w.context));
+            check_hs_error!(hs_reset_stream(self.0, flags, **scratch, w.handler, w.context));
         }
 
         Result::Ok(&self)
     }
 }
 
-impl<T: Scannable> BlockScanner<T> for RawStream {
+impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
     #[inline]
     fn scan(&self,
             data: T,
-            scratch: &RawScratch,
+            scratch: &S,
             handler: Option<&MatchEventCallback>)
             -> Result<&Self, Error> {
         unsafe {
@@ -330,7 +335,7 @@ impl<T: Scannable> BlockScanner<T> for RawStream {
                                            bytes.as_ptr() as *const i8,
                                            bytes.len() as u32,
                                            0 as u32,
-                                           scratch.0,
+                                           **scratch,
                                            w.handler,
                                            w.context));
         }

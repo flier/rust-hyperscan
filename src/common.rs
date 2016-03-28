@@ -61,6 +61,7 @@ pub trait Database : Deref<Target=*mut hs_database_t> {
     fn deserialize_at(&self, bytes: &[u8]) -> Result<&Self::DatabaseType, Error>;
 }
 
+/// A compiled pattern database that can then be used to scan data.
 pub struct RawDatabase<T: Type> {
     db: *mut hs_database_t,
     _marker: PhantomData<T>,
