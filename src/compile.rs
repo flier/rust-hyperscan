@@ -7,7 +7,7 @@ use regex_syntax;
 use raw::*;
 use constants::*;
 use cptr::CPtr;
-use common::{Type, RawDatabase};
+use common::{Type, Database, RawDatabase};
 use errors::Error;
 
 impl<T: Type> RawDatabase<T> {
@@ -35,10 +35,10 @@ impl<T: Type> RawDatabase<T> {
 }
 
 /// The regular expression pattern database builder.
-pub trait DatabaseBuilder {
+pub trait DatabaseBuilder<D: Database> {
     /// This is the function call with which an expression is compiled into
     /// a Hyperscan database which can be passed to the runtime functions
-    fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error>;
+    fn build(&self) -> Result<D, Error>;
 }
 
 /// A type containing information related to an expression
@@ -219,19 +219,19 @@ macro_rules! patterns {
     }};
 }
 
-impl DatabaseBuilder for Pattern {
+impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Pattern {
     ///
     /// The basic regular expression compiler.
     ///
     /// / This is the function call with which an expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
-    fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error> {
+    fn build(&self) -> Result<RawDatabase<T>, Error> {
         RawDatabase::compile(&self.expression, self.flags.0)
     }
 }
 
-impl DatabaseBuilder for Patterns {
+impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
     ///
     /// The multiple regular expression compiler.
     ///
@@ -240,7 +240,7 @@ impl DatabaseBuilder for Patterns {
     /// Each expression can be labelled with a unique integer which is passed into the match callback
     /// to identify the pattern that has matched.
     ///
-    fn build<T: Type>(&self) -> Result<RawDatabase<T>, Error> {
+    fn build(&self) -> Result<RawDatabase<T>, Error> {
         let mut expressions = Vec::with_capacity(self.len());
         let mut ptrs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
