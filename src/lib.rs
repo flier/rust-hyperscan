@@ -7,18 +7,18 @@ mod constants;
 mod cptr;
 #[macro_use]
 mod errors;
+mod api;
 mod common;
 #[macro_use]
 mod compile;
 mod runtime;
 
-pub use common::{Type, Block, Streaming, Vectored, SerializableDatabase, SerializedDatabase,
-                 Database, RawDatabase, BlockDatabase, StreamingDatabase, VectoredDatabase};
 pub use constants::*;
+pub use api::*;
 pub use errors::Error;
-pub use compile::{CompileFlags, Expression, ExpressionInfo, Pattern, DatabaseBuilder};
-pub use runtime::{Scratch, RawScratch, MatchEventCallback, BlockScanner, VectoredScanner,
-                  StreamingScanner, StreamFlags, Stream, RawStream};
+pub use common::{RawDatabase, BlockDatabase, StreamingDatabase, VectoredDatabase};
+pub use compile::{CompileFlags, Pattern};
+pub use runtime::{RawScratch, RawStream};
 
 #[cfg(test)]
 #[macro_use]

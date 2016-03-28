@@ -6,8 +6,9 @@ use regex_syntax;
 
 use raw::*;
 use constants::*;
+use api::*;
 use cptr::CPtr;
-use common::{Type, Database, RawDatabase};
+use common::RawDatabase;
 use errors::Error;
 
 impl<T: Type> RawDatabase<T> {
@@ -32,42 +33,6 @@ impl<T: Type> RawDatabase<T> {
 
         Result::Ok(RawDatabase::from_raw(db))
     }
-}
-
-/// The regular expression pattern database builder.
-pub trait DatabaseBuilder<D: Database> {
-    /// This is the function call with which an expression is compiled into
-    /// a Hyperscan database which can be passed to the runtime functions
-    fn build(&self) -> Result<D, Error>;
-}
-
-/// A type containing information related to an expression
-#[derive(Debug, Copy, Clone)]
-pub struct ExpressionInfo {
-    /// The minimum length in bytes of a match for the pattern.
-    pub min_width: usize,
-
-    /// The maximum length in bytes of a match for the pattern.
-    pub max_width: usize,
-
-    /// Whether this expression can produce matches that are not returned in order, such as those produced by assertions.
-    pub unordered_matches: bool,
-
-    /// Whether this expression can produce matches at end of data (EOD).
-    pub matches_at_eod: bool,
-
-    /// Whether this expression can *only* produce matches at end of data (EOD).
-    pub matches_only_at_eod: bool,
-}
-
-/// Providing expression information.
-pub trait Expression {
-    ///
-    /// Utility function providing information about a regular expression.
-    ///
-    /// The information provided in ExpressionInfo includes the minimum and maximum width of a pattern match.
-    ///
-    fn info(&self) -> Result<ExpressionInfo, Error>;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -109,18 +74,18 @@ impl fmt::Display for CompileFlags {
 
 impl CompileFlags {
     #[inline]
-    fn is_set(&self, flag: u32) -> bool {
+    pub fn is_set(&self, flag: u32) -> bool {
         self.0 & flag == flag
     }
 
     #[inline]
-    fn set(&mut self, flag: u32) -> &mut Self {
+    pub fn set(&mut self, flag: u32) -> &mut Self {
         self.0 |= flag;
 
         self
     }
 
-    fn parse(s: &str) -> Result<CompileFlags, Error> {
+    pub fn parse(s: &str) -> Result<CompileFlags, Error> {
         let mut flags: u32 = 0;
 
         for c in s.chars() {
