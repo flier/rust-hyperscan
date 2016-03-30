@@ -15,9 +15,11 @@ impl<T: Type> RawDatabase<T> {
     /// The basic regular expression compiler.
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database which can be passed to the runtime functions.
-    pub fn compile(expression: &str, flags: u32) -> Result<RawDatabase<T>, Error> {
+    pub fn compile(expression: &str,
+                   flags: u32,
+                   platform: &PlatformInfo)
+                   -> Result<RawDatabase<T>, Error> {
         let expr = try!(CString::new(expression).map_err(|_| Error::Invalid));
-        let platform: *const hs_platform_info_t = ptr::null();
         let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
@@ -25,7 +27,7 @@ impl<T: Type> RawDatabase<T> {
             check_compile_error!(hs_compile(expr.as_bytes_with_nul().as_ptr() as *const i8,
                                             flags,
                                             T::mode(),
-                                            platform,
+                                            platform.as_ptr(),
                                             &mut db,
                                             &mut err),
                                  err);
@@ -191,8 +193,8 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Pattern {
     /// / This is the function call with which an expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
-    fn build(&self) -> Result<RawDatabase<T>, Error> {
-        RawDatabase::compile(&self.expression, self.flags.0)
+    fn build_for_platform(&self, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
+        RawDatabase::compile(&self.expression, self.flags.0, platform)
     }
 }
 
@@ -205,7 +207,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
     /// Each expression can be labelled with a unique integer which is passed into the match callback
     /// to identify the pattern that has matched.
     ///
-    fn build(&self) -> Result<RawDatabase<T>, Error> {
+    fn build_for_platform(&self, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
         let mut expressions = Vec::with_capacity(self.len());
         let mut ptrs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
@@ -223,7 +225,6 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
             ptrs.push(expr.as_bytes().as_ptr() as *const i8);
         }
 
-        let platform: *const hs_platform_info_t = ptr::null();
         let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
@@ -233,7 +234,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
                                                   ids.as_slice().as_ptr(),
                                                   self.len() as u32,
                                                   T::mode(),
-                                                  platform,
+                                                  platform.as_ptr(),
                                                   &mut db,
                                                   &mut err),
                                  err);
@@ -271,7 +272,7 @@ pub mod tests {
 
     #[test]
     fn test_database_compile() {
-        let db = BlockDatabase::compile("test", 0).unwrap();
+        let db = BlockDatabase::compile("test", 0, &PlatformInfo::default()).unwrap();
 
         assert!(*db != ptr::null_mut());
 

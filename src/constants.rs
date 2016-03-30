@@ -234,3 +234,61 @@ pub const HS_FLAG_PREFILTER: u32 = 128;
  * requirements in streaming mode.
  */
 pub const HS_FLAG_SOM_LEFTMOST: u32 = 256;
+
+
+/**
+ * CPU features flag - Intel(R) Advanced Vector Extensions 2 (Intel(R) AVX2)
+ *
+ * Setting this flag indicates that the target platform supports AVX2
+ * instructions.
+ */
+pub const HS_CPU_FEATURES_AVX2: u32 = 1 << 2;
+
+
+/**
+ * Tuning Parameter - Generic
+ *
+ * This indicates that the compiled database should not be tuned for any
+ * particular target platform.
+ */
+pub const HS_TUNE_FAMILY_GENERIC: u32 = 0;
+
+/**
+ * Tuning Parameter - Intel(R) microarchitecture code name Sandy Bridge
+ *
+ * This indicates that the compiled database should be tuned for the
+ * Sandy Bridge microarchitecture.
+ */
+pub const HS_TUNE_FAMILY_SNB: u32 = 1;
+
+/**
+ * Tuning Parameter - Intel(R) microarchitecture code name Ivy Bridge
+ *
+ * This indicates that the compiled database should be tuned for the
+ * Ivy Bridge microarchitecture.
+ */
+pub const HS_TUNE_FAMILY_IVB: u32 = 2;
+
+/**
+ * Tuning Parameter - Intel(R) microarchitecture code name Haswell
+ *
+ * This indicates that the compiled database should be tuned for the
+ * Haswell microarchitecture.
+ */
+pub const HS_TUNE_FAMILY_HSW: u32 = 3;
+
+/**
+ * Tuning Parameter - Intel(R) microarchitecture code name Silvermont
+ *
+ * This indicates that the compiled database should be tuned for the
+ * Silvermont microarchitecture.
+ */
+pub const HS_TUNE_FAMILY_SLM: u32 = 4;
+
+/**
+ * Tuning Parameter - Intel(R) microarchitecture code name Broadwell
+ *
+ * This indicates that the compiled database should be tuned for the
+ * Broadwell microarchitecture.
+ */
+pub const HS_TUNE_FAMILY_BDW: u32 = 5;

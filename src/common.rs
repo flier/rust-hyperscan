@@ -228,7 +228,7 @@ pub mod tests {
 
     #[test]
     fn test_database() {
-        let db = BlockDatabase::compile("test", 0).unwrap();
+        let db = BlockDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
         assert!(*db != ptr::null_mut());
 
@@ -237,7 +237,7 @@ pub mod tests {
 
     #[test]
     fn test_database_serialize() {
-        let db = StreamingDatabase::compile("test", 0).unwrap();
+        let db = StreamingDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -249,7 +249,7 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize() {
-        let db = VectoredDatabase::compile("test", 0).unwrap();
+        let db = VectoredDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -260,7 +260,7 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize_at() {
-        let db = BlockDatabase::compile("test", 0).unwrap();
+        let db = BlockDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
         let data = db.serialize().unwrap();
 

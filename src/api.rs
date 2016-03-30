@@ -1,4 +1,6 @@
 use std::ptr;
+use std::cell::RefCell;
+use std::clone::Clone;
 use std::ops::Deref;
 use std::os::raw::c_char;
 use std::ffi::CStr;
@@ -108,11 +110,51 @@ pub trait SerializedDatabase {
     }
 }
 
+pub struct PlatformInfo(Option<RefCell<hs_platform_info_t>>);
+
+pub type RawPlatformInfoPtr = *const hs_platform_info_t;
+
+impl PlatformInfo {
+    pub fn null() -> PlatformInfo {
+        PlatformInfo(None)
+    }
+
+    pub fn default() -> PlatformInfo {
+        let mut platform = hs_platform_info_t::default();
+
+        unsafe {
+            assert_hs_error!(hs_populate_platform(&mut platform));
+        }
+
+        PlatformInfo(Some(RefCell::new(platform)))
+    }
+
+    pub fn new(tune: u32, cpu_features: u64) -> PlatformInfo {
+        PlatformInfo(Some(RefCell::new(hs_platform_info_t {
+            tune: tune,
+            cpu_features: cpu_features,
+            reserved1: 0,
+            reserved2: 0,
+        })))
+    }
+
+    pub fn as_ptr(&self) -> RawPlatformInfoPtr {
+        match self.0 {
+            Some(ref info) => &*info.borrow(),
+            None => ptr::null(),
+        }
+    }
+}
+
 /// The regular expression pattern database builder.
 pub trait DatabaseBuilder<D: Database> {
     /// This is the function call with which an expression is compiled into
     /// a Hyperscan database which can be passed to the runtime functions
-    fn build(&self) -> Result<D, Error>;
+    fn build(&self) -> Result<D, Error> {
+        self.build_for_platform(&PlatformInfo::null())
+    }
+
+    fn build_for_platform(&self, platform: &PlatformInfo) -> Result<D, Error>;
 }
 
 /// A type containing information related to an expression
