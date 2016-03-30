@@ -10,7 +10,7 @@ use common::{BlockDatabase, VectoredDatabase, StreamingDatabase};
 
 /// A large enough region of scratch space to support a given database.
 ///
-pub struct RawScratch(*mut hs_scratch_t);
+pub struct RawScratch(RawScratchPtr);
 
 impl RawScratch {
     /// Allocate a "scratch" space for use by Hyperscan.
@@ -20,7 +20,7 @@ impl RawScratch {
     ///
     #[inline]
     pub fn alloc<T: Database>(db: &T) -> Result<RawScratch, Error> {
-        let mut s: *mut hs_scratch_t = ptr::null_mut();
+        let mut s: RawScratchPtr = ptr::null_mut();
 
         unsafe {
             check_hs_error!(hs_alloc_scratch(**db, &mut s));
@@ -42,7 +42,7 @@ impl Drop for RawScratch {
 impl Clone for RawScratch {
     #[inline]
     fn clone(&self) -> Self {
-        let mut s: *mut hs_scratch_t = ptr::null_mut();
+        let mut s: RawScratchPtr = ptr::null_mut();
 
         unsafe {
             assert_hs_error!(hs_clone_scratch(self.0, &mut s));
@@ -53,10 +53,10 @@ impl Clone for RawScratch {
 }
 
 impl Deref for RawScratch {
-    type Target = *mut hs_scratch_t;
+    type Target = RawScratchPtr;
 
     #[inline]
-    fn deref(&self) -> &*mut hs_scratch_t {
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
@@ -180,7 +180,7 @@ impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
 
 impl StreamingScanner<RawStream, RawScratch> for StreamingDatabase {
     fn open_stream(&self, flags: StreamFlags) -> Result<RawStream, Error> {
-        let mut id: *mut hs_stream_t = ptr::null_mut();
+        let mut id: RawStreamPtr = ptr::null_mut();
 
         unsafe {
             check_hs_error!(hs_open_stream(**self, flags, &mut id));
@@ -191,10 +191,10 @@ impl StreamingScanner<RawStream, RawScratch> for StreamingDatabase {
 }
 
 /// A pattern matching state can be maintained across multiple blocks of target data
-pub struct RawStream(*mut hs_stream_t);
+pub struct RawStream(RawStreamPtr);
 
 impl Deref for RawStream {
-    type Target = *mut hs_stream_t;
+    type Target = RawStreamPtr;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -211,7 +211,7 @@ impl DerefMut for RawStream {
 
 impl Clone for RawStream {
     fn clone(&self) -> Self {
-        let mut id: *mut hs_stream_t = ptr::null_mut();
+        let mut id: RawStreamPtr = ptr::null_mut();
 
         unsafe {
             assert_hs_error!(hs_copy_stream(&mut id, self.0));

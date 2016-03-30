@@ -14,7 +14,7 @@ use cptr::CPtr;
 
 /// A compiled pattern database that can then be used to scan data.
 pub struct RawDatabase<T: Type> {
-    db: *mut hs_database_t,
+    db: RawDatabasePtr,
     _marker: PhantomData<T>,
 }
 
@@ -27,7 +27,7 @@ pub type VectoredDatabase = RawDatabase<Vectored>;
 
 impl<T: Type> RawDatabase<T> {
     /// Constructs a compiled pattern database from a raw pointer.
-    pub fn from_raw(db: *mut hs_database_t) -> RawDatabase<T> {
+    pub fn from_raw(db: RawDatabasePtr) -> RawDatabase<T> {
         RawDatabase {
             db: db,
             _marker: PhantomData,
@@ -47,7 +47,7 @@ impl<T: Type> RawDatabase<T> {
 }
 
 impl<T: Type> Deref for RawDatabase<T> {
-    type Target = *mut hs_database_t;
+    type Target = RawDatabasePtr;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -101,7 +101,7 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
     }
 
     fn deserialize(bytes: &[u8]) -> Result<RawDatabase<T>, Error> {
-        let mut db: *mut hs_database_t = ptr::null_mut();
+        let mut db: RawDatabasePtr = ptr::null_mut();
 
         unsafe {
             check_hs_error!(hs_deserialize_database(bytes.as_ptr() as *const i8,

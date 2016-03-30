@@ -16,7 +16,7 @@ impl<T: Type> RawDatabase<T> {
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database which can be passed to the runtime functions.
     pub fn compile(expression: &str, flags: u32) -> Result<RawDatabase<T>, Error> {
-        let mut db: *mut hs_database_t = ptr::null_mut();
+        let mut db: RawDatabasePtr = ptr::null_mut();
         let platform: *const hs_platform_info_t = ptr::null();
         let mut err: *mut hs_compile_error_t = ptr::null_mut();
         let expr = try!(CString::new(expression).map_err(|_| Error::Invalid));
@@ -224,7 +224,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
         }
 
         let platform: *const hs_platform_info_t = ptr::null();
-        let mut db: *mut hs_database_t = ptr::null_mut();
+        let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: *mut hs_compile_error_t = ptr::null_mut();
 
         unsafe {

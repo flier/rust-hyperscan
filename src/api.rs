@@ -41,8 +41,10 @@ impl Type for Vectored {
     }
 }
 
+pub type RawDatabasePtr = *mut hs_database_t;
+
 /// A Hyperscan pattern database.
-pub trait Database : Deref<Target=*mut hs_database_t> {
+pub trait Database : Deref<Target=RawDatabasePtr> {
     /// Provides the size of the given database in bytes.
     fn database_size(&self) -> Result<usize, Error>;
 
@@ -142,9 +144,11 @@ pub trait Expression {
     fn info(&self) -> Result<ExpressionInfo, Error>;
 }
 
+pub type RawScratchPtr = *mut hs_scratch_t;
+
 /// A Hyperscan scratch space.
 ///
-pub trait Scratch : Deref<Target=*mut hs_scratch_t> {
+pub trait Scratch : Deref<Target=RawScratchPtr> {
     /// Provides the size of the given scratch space.
     ///
     fn size(&self) -> Result<usize, Error>;
@@ -154,7 +158,7 @@ pub trait Scratch : Deref<Target=*mut hs_scratch_t> {
     fn realloc<T: Database>(&mut self, db: &T) -> Result<&Self, Error>;
 }
 
-/// A byte stream can be matched 
+/// A byte stream can be matched
 ///
 pub trait Scannable {
     fn as_bytes(&self) -> &[u8];
@@ -224,11 +228,13 @@ pub trait VectoredScanner<T: Scannable, S: Scratch> {
             -> Result<&Self, Error>;
 }
 
+pub type RawStreamPtr = *mut hs_stream_t;
+
 /// Flags modifying the behaviour of the stream.
 pub type StreamFlags = u32;
 
 /// The stream returned by StreamingDatabase::open_stream
-pub trait Stream<S: Scratch> : Deref<Target=*mut hs_stream_t> {
+pub trait Stream<S: Scratch> : Deref<Target=RawStreamPtr> {
     /// Close a stream.
     fn close(&self, scratch: &S, handler: Option<&MatchEventCallback>) -> Result<&Self, Error>;
 
