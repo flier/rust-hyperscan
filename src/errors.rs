@@ -1,7 +1,11 @@
 use std::fmt;
+use std::ptr;
 use std::error;
+use std::string::ToString;
+use std::ffi::CString;
 
 use constants::*;
+use raw::*;
 
 /// Error Codes
 #[derive(Debug, PartialEq)]
@@ -14,7 +18,7 @@ pub enum Error {
     NoMem,
     /// The engine was terminated by callback.
     ///
-    /// This return value indicates that the target buffer was partially scanned, 
+    /// This return value indicates that the target buffer was partially scanned,
     /// but that the callback function requested that scanning cease after a match was located.
     ScanTerminated,
     /// The pattern compiler failed with more detail.
@@ -23,12 +27,12 @@ pub enum Error {
     DbVersionError,
     /// The given database was built for a different platform (i.e., CPU type).
     DbPlatformError,
-    /// The given database was built for a different mode of operation. 
+    /// The given database was built for a different mode of operation.
     /// This error is returned when streaming calls are used with a block or vectored database and vice versa.
     DbModeError,
     /// A parameter passed to this function was not correctly aligned.
     BadAlign,
-    /// The memory allocator (either malloc() or the allocator set with hs_set_allocator()) 
+    /// The memory allocator (either malloc() or the allocator set with hs_set_allocator())
     /// did not correctly return memory suitably aligned for the largest representable data type on this platform.
     BadAlloc,
     /// Unknown error code
@@ -95,15 +99,49 @@ macro_rules! assert_hs_error {
     })
 }
 
+pub trait CompileError : ToString {
+    fn expression(&self) -> usize;
+}
+
+pub type RawCompileErrorPtr = *mut hs_compile_error_t;
+
+/// Providing details of the compile error condition.
+pub struct RawCompileError(pub RawCompileErrorPtr);
+
+impl CompileError for RawCompileError {
+    #[inline]
+    fn expression(&self) -> usize {
+        unsafe { (*self.0).expression as usize }
+    }
+}
+
+impl ToString for RawCompileError {
+    #[inline]
+    fn to_string(&self) -> String {
+        unsafe { CString::from_raw((*self.0).message).into_string().unwrap() }
+    }
+}
+
+impl Drop for RawCompileError {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe {
+            if self.0 != ptr::null_mut() {
+                assert_hs_error!(hs_free_compile_error(self.0));
+            }
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! check_compile_error {
     ($expr:expr, $err:ident) => {
         if $crate::constants::HS_SUCCESS != $expr {
             return match $expr {
                 $crate::constants::HS_COMPILER_ERROR => {
-                    let msg = $crate::std::ffi::CString::from_raw((*$err).message).into_string().unwrap();
+                    let msg = $crate::errors::RawCompileError($err);
 
-                    $crate::std::result::Result::Err($crate::errors::Error::CompilerError(msg))
+                    $crate::std::result::Result::Err($crate::errors::Error::CompilerError(msg.to_string()))
                 },
                 _ =>
                     $crate::std::result::Result::Err($crate::std::convert::From::from($expr)),

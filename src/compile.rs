@@ -9,17 +9,17 @@ use constants::*;
 use api::*;
 use cptr::CPtr;
 use common::RawDatabase;
-use errors::Error;
+use errors::{Error, RawCompileErrorPtr};
 
 impl<T: Type> RawDatabase<T> {
     /// The basic regular expression compiler.
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database which can be passed to the runtime functions.
     pub fn compile(expression: &str, flags: u32) -> Result<RawDatabase<T>, Error> {
-        let mut db: RawDatabasePtr = ptr::null_mut();
-        let platform: *const hs_platform_info_t = ptr::null();
-        let mut err: *mut hs_compile_error_t = ptr::null_mut();
         let expr = try!(CString::new(expression).map_err(|_| Error::Invalid));
+        let platform: *const hs_platform_info_t = ptr::null();
+        let mut db: RawDatabasePtr = ptr::null_mut();
+        let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
             check_compile_error!(hs_compile(expr.as_bytes_with_nul().as_ptr() as *const i8,
@@ -127,9 +127,9 @@ impl fmt::Display for Pattern {
 
 impl Expression for Pattern {
     fn info(&self) -> Result<ExpressionInfo, Error> {
-        let mut info: CPtr<hs_expr_info_t> = CPtr::null();
-        let mut err: *mut hs_compile_error_t = ptr::null_mut();
         let expr = try!(CString::new(self.expression.as_str()).map_err(|_| Error::Invalid));
+        let mut info: CPtr<hs_expr_info_t> = CPtr::null();
+        let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
             check_compile_error!(hs_expression_info(expr.as_bytes_with_nul().as_ptr() as *const i8,
@@ -225,7 +225,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
 
         let platform: *const hs_platform_info_t = ptr::null();
         let mut db: RawDatabasePtr = ptr::null_mut();
-        let mut err: *mut hs_compile_error_t = ptr::null_mut();
+        let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
             check_compile_error!(hs_compile_multi(ptrs.as_slice().as_ptr(),
