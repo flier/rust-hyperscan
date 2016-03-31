@@ -21,23 +21,6 @@ impl<T: Send> fmt::Debug for CPtr<T> {
 }
 
 impl<T: Send> CPtr<T> {
-    pub fn new(value: T) -> CPtr<T> {
-        unsafe {
-            let ptr = libc::malloc(mem::size_of::<T>() as libc::size_t) as *mut T;
-
-            // we *need* valid pointer.
-            assert!(!ptr.is_null());
-
-            // `*ptr` is uninitialized, and `*ptr = value` would
-            // attempt to destroy it `overwrite` moves a value into
-            // this memory without attempting to drop the original
-            // value.
-            ptr::write(&mut *ptr, value);
-
-            CPtr(ptr)
-        }
-    }
-
     #[inline]
     pub fn null() -> CPtr<T> {
         CPtr(ptr::null_mut())
