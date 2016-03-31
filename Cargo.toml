@@ -16,6 +16,8 @@ regex-syntax = "0.3"
 
 [dev-dependencies]
 regex = "0.1"
+getopts = "0.2"
+pcap = "0.5"
 
 [lib]
 name = "hyperscan"
@@ -23,3 +25,7 @@ name = "hyperscan"
 [[example]]
 name = "simplegrep"
 path = "examples/simplegrep.rs"
+
+[[example]]
+name = "pcapscan"
+path = "examples/pcapscan.rs"
