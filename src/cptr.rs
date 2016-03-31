@@ -1,7 +1,6 @@
 use std::ptr;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
-use std::borrow::{Borrow, BorrowMut};
 
 use libc;
 
@@ -28,24 +27,6 @@ impl<T: Send> CPtr<T> {
     #[inline]
     pub fn from_ptr(p: *mut T) -> CPtr<T> {
         CPtr(p)
-    }
-}
-
-impl<T: Send> Borrow<T> for CPtr<T> {
-    // the 'r lifetime results in the same semantics as `&*x` with Box<T>
-    #[inline]
-    fn borrow<'r>(&'r self) -> &'r T {
-        // By construction, self.ptr is valid
-        unsafe { &*self.0 }
-    }
-}
-
-impl<T: Send> BorrowMut<T> for CPtr<T> {
-    // the 'r lifetime results in the same semantics as `&*x` with Box<T>
-    #[inline]
-    fn borrow_mut<'r>(&'r mut self) -> &'r mut T {
-        // By construction, self.ptr is valid
-        unsafe { &mut *self.0 }
     }
 }
 
@@ -93,7 +74,6 @@ impl<T: Send> AsRef<T> for CPtr<T> {
 pub mod tests {
     use std::ptr;
     use std::mem;
-    use std::borrow::Borrow;
 
     use libc;
     use regex::Regex;
@@ -102,20 +82,6 @@ pub mod tests {
 
     struct Foo {
         bar: u32,
-    }
-
-    fn validate_borrow<T: Borrow<Foo>>(b: T) {
-        assert_eq!(b.borrow().bar, 32);
-    }
-
-
-    #[test]
-    fn test_borrow() {
-        let p = CPtr::<Foo>::new(Foo { bar: 32 });
-
-        assert!(*p != ptr::null_mut());
-
-        validate_borrow(p);
     }
 
     #[test]
