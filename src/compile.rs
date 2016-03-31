@@ -1,5 +1,6 @@
 use std::ptr;
 use std::fmt;
+use std::str::FromStr;
 use std::ffi::CString;
 
 use regex_syntax;
@@ -37,7 +38,7 @@ impl<T: Type> RawDatabase<T> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct CompileFlags(pub u32);
 
 impl From<u32> for CompileFlags {
@@ -105,6 +106,15 @@ impl CompileFlags {
     }
 }
 
+impl FromStr for CompileFlags {
+    type Err = Error;
+
+    #[inline]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        CompileFlags::parse(s)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Pattern {
     pub expression: String,
@@ -114,16 +124,42 @@ pub struct Pattern {
 
 impl Pattern {
     pub fn parse(s: &str) -> Result<Pattern, Error> {
-        Result::Err(Error::Invalid)
+        match (s.starts_with('/'), s.rfind('/')) {
+            (true, Some(end)) if end > 0 => unsafe {
+                Result::Ok(Pattern {
+                    expression: String::from(s.slice_unchecked(1, end)),
+                    flags: try!(CompileFlags::parse(s.slice_unchecked(end + 1, s.len()))),
+                    id: 0,
+                })
+            },
+
+            _ => {
+                Result::Ok(Pattern {
+                    expression: String::from(s),
+                    flags: CompileFlags::default(),
+                    id: 0,
+                })
+            }
+        }
     }
 }
 
 impl fmt::Display for Pattern {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
                "/{}/{}",
                regex_syntax::quote(self.expression.as_str()),
                self.flags)
+    }
+}
+
+impl FromStr for Pattern {
+    type Err = Error;
+
+    #[inline]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Pattern::parse(s)
     }
 }
 
@@ -277,6 +313,33 @@ pub mod tests {
         assert!(*db != ptr::null_mut());
 
         validate_database(&db);
+    }
+
+    #[test]
+    fn test_pattern() {
+        let p = Pattern::parse("test").unwrap();
+
+        assert_eq!(p.expression, "test");
+        assert_eq!(p.flags, CompileFlags(0));
+        assert_eq!(p.id, 0);
+
+        let p = Pattern::parse("/test/i").unwrap();
+
+        assert_eq!(p.expression, "test");
+        assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
+        assert_eq!(p.id, 0);
+
+        let p = Pattern::parse("test/i").unwrap();
+
+        assert_eq!(p.expression, "test/i");
+        assert_eq!(p.flags, CompileFlags(0));
+        assert_eq!(p.id, 0);
+
+        let p = Pattern::parse("/t/e/s/t/i").unwrap();
+
+        assert_eq!(p.expression, "t/e/s/t");
+        assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
+        assert_eq!(p.id, 0);
     }
 
     #[test]
