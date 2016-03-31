@@ -21,10 +21,6 @@ pub use compile::{CompileFlags, Pattern};
 pub use runtime::{RawScratch, RawStream};
 
 #[cfg(test)]
-#[macro_use]
-extern crate lazy_static;
-
-#[cfg(test)]
 extern crate regex;
 
 #[cfg(test)]

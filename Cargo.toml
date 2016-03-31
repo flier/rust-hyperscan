@@ -11,7 +11,6 @@ regex-syntax = "0.3"
 
 [dev-dependencies]
 regex = "0.1"
-lazy_static = "0.1"
 
 [lib]
 name = "hyperscan"

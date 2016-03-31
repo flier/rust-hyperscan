@@ -108,6 +108,12 @@ pub type RawCompileErrorPtr = *mut hs_compile_error_t;
 /// Providing details of the compile error condition.
 pub struct RawCompileError(pub RawCompileErrorPtr);
 
+impl fmt::Debug for RawCompileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "RawCompileError({:p})", self.0)
+    }
+}
+
 impl CompileError for RawCompileError {
     #[inline]
     fn expression(&self) -> usize {

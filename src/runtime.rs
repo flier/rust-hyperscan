@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ptr;
 use std::mem;
 use std::os::raw::c_void;
@@ -11,6 +12,12 @@ use common::{BlockDatabase, VectoredDatabase, StreamingDatabase};
 /// A large enough region of scratch space to support a given database.
 ///
 pub struct RawScratch(RawScratchPtr);
+
+impl fmt::Debug for RawScratch {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "RawScratch({:p})", self.0)
+    }
+}
 
 impl RawScratch {
     /// Allocate a "scratch" space for use by Hyperscan.
@@ -192,6 +199,12 @@ impl StreamingScanner<RawStream, RawScratch> for StreamingDatabase {
 
 /// A pattern matching state can be maintained across multiple blocks of target data
 pub struct RawStream(RawStreamPtr);
+
+impl fmt::Debug for RawStream {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "RawStream({:p})", self.0)
+    }
+}
 
 impl Deref for RawStream {
     type Target = RawStreamPtr;

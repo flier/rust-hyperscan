@@ -1,11 +1,24 @@
 use std::mem;
 use std::ptr;
+use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::borrow::{Borrow, BorrowMut};
 
 use libc;
 
 pub struct CPtr<T: Send>(*mut T);
+
+impl<T: Send> fmt::Pointer for CPtr<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:p}", self.0)
+    }
+}
+
+impl<T: Send> fmt::Debug for CPtr<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "CPtr({:p})", self.0)
+    }
+}
 
 impl<T: Send> CPtr<T> {
     pub fn new(value: T) -> CPtr<T> {
@@ -99,7 +112,9 @@ pub mod tests {
     use std::ptr;
     use std::mem;
     use std::borrow::Borrow;
+
     use libc;
+    use regex::Regex;
 
     use super::*;
 
@@ -132,6 +147,10 @@ pub mod tests {
 
             assert!(*p != ptr::null_mut());
             assert_eq!((*p.0).bar, 32);
+
+            assert!(Regex::new(r"CPtr\(\w+\)")
+                        .unwrap()
+                        .is_match(&format!("{:?}", p)));
         }
     }
 }

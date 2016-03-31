@@ -1,4 +1,5 @@
 use std::ptr;
+use std::fmt;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::os::raw::c_char;
@@ -13,19 +14,31 @@ use errors::Error;
 /// Compile mode
 pub trait Type {
     fn mode() -> u32;
+
+    fn name() -> &'static str;
 }
 
 /// Block scan (non-streaming) database.
+#[derive(Debug)]
 pub enum Block {}
+
 /// Streaming database.
+#[derive(Debug)]
 pub enum Streaming {}
+
 /// Vectored scanning database.
+#[derive(Debug)]
 pub enum Vectored {}
 
 impl Type for Block {
     #[inline]
     fn mode() -> u32 {
         HS_MODE_BLOCK
+    }
+
+    #[inline]
+    fn name() -> &'static str {
+        "Block"
     }
 }
 
@@ -34,11 +47,21 @@ impl Type for Streaming {
     fn mode() -> u32 {
         HS_MODE_STREAM
     }
+
+    #[inline]
+    fn name() -> &'static str {
+        "Streaming"
+    }
 }
 impl Type for Vectored {
     #[inline]
     fn mode() -> u32 {
         HS_MODE_VECTORED
+    }
+
+    #[inline]
+    fn name() -> &'static str {
+        "Vectored"
     }
 }
 
@@ -112,6 +135,12 @@ pub trait SerializedDatabase {
 pub struct PlatformInfo(Option<RefCell<hs_platform_info_t>>);
 
 pub type RawPlatformInfoPtr = *const hs_platform_info_t;
+
+impl fmt::Debug for PlatformInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "PlatformInfo({:p})", self.as_ptr())
+    }
+}
 
 impl PlatformInfo {
     pub fn null() -> PlatformInfo {

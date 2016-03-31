@@ -1,4 +1,5 @@
 use std::ptr;
+use std::fmt;
 use std::slice;
 use std::ops::Deref;
 use std::ffi::CStr;
@@ -16,6 +17,12 @@ use cptr::CPtr;
 pub struct RawDatabase<T: Type> {
     db: RawDatabasePtr,
     _marker: PhantomData<T>,
+}
+
+impl<T: Type> fmt::Debug for RawDatabase<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "RawDatabase<{}>{{db: {:p}}}", T::name(), self.db)
+    }
 }
 
 /// Block scan (non-streaming) database.
@@ -150,6 +157,15 @@ pub struct RawSerializedDatabase {
     len: usize,
 }
 
+impl fmt::Debug for RawSerializedDatabase {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "RawSerializedDatabase{{p: {:p}, len: {}}}",
+               self.p,
+               self.len)
+    }
+}
+
 impl RawSerializedDatabase {
     unsafe fn from_raw_parts(bytes: *mut u8, len: usize) -> RawSerializedDatabase {
         RawSerializedDatabase {
@@ -191,6 +207,7 @@ impl Deref for RawSerializedDatabase {
 #[cfg(test)]
 pub mod tests {
     use std::ptr;
+
     use regex::Regex;
 
     use super::super::*;
@@ -198,11 +215,9 @@ pub mod tests {
     const DATABASE_SIZE: usize = 1000;
 
     pub fn validate_database_info(info: &String) {
-        lazy_static! {
-            static ref RE_DB_INFO: Regex = Regex::new(r"^Version: (\d\.\d\.\d) Features:\s+(\w+) Mode: (\w+)$").unwrap();
-        }
-
-        assert!(RE_DB_INFO.is_match(&info));
+        assert!(Regex::new(r"^Version: (\d\.\d\.\d) Features:\s+(\w+) Mode: (\w+)$")
+                    .unwrap()
+                    .is_match(&info));
     }
 
     pub fn validate_database_with_size<T: Database>(db: &T, size: usize) {
@@ -233,6 +248,10 @@ pub mod tests {
         assert!(*db != ptr::null_mut());
 
         validate_database(&db);
+
+        assert!(Regex::new(r"RawDatabase<Block>\{db: \w+\}")
+                    .unwrap()
+                    .is_match(&format!("{:?}", db)));
     }
 
     #[test]
@@ -245,6 +264,10 @@ pub mod tests {
 
         validate_serialized_database(&data);
         validate_serialized_database(data.as_slice());
+
+        assert!(Regex::new(r"RawSerializedDatabase\{p: \w+, len: \d+\}")
+                    .unwrap()
+                    .is_match(&format!("{:?}", data)));
     }
 
     #[test]
