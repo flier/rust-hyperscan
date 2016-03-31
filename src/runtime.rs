@@ -7,7 +7,7 @@ use std::ops::{Deref, DerefMut};
 use raw::*;
 use api::*;
 use errors::Error;
-use common::{BlockDatabase, VectoredDatabase, StreamingDatabase};
+use common::{RawDatabase, BlockDatabase, VectoredDatabase, StreamingDatabase};
 
 /// A large enough region of scratch space to support a given database.
 ///
@@ -25,8 +25,7 @@ impl RawScratch {
     /// This is required for runtime use, and one scratch space per thread,
     /// or concurrent caller, is required.
     ///
-    #[inline]
-    pub fn alloc<T: Database>(db: &T) -> Result<RawScratch, Error> {
+    fn alloc<T: Database>(db: &T) -> Result<RawScratch, Error> {
         let mut s: RawScratchPtr = ptr::null_mut();
 
         unsafe {
@@ -87,6 +86,20 @@ impl Scratch for RawScratch {
         }
 
         Result::Ok(self)
+    }
+}
+
+impl<T: Type> ScratchAllocator<RawScratch> for RawDatabase<T> {
+    #[inline]
+    fn alloc(&self) -> Result<RawScratch, Error> {
+        RawScratch::alloc(self)
+    }
+
+    #[inline]
+    fn realloc(&self, s: &mut RawScratch) -> Result<&Self, Error> {
+        try!(s.realloc(self));
+
+        Ok(self)
     }
 }
 
@@ -297,7 +310,7 @@ pub mod tests {
 
         assert!(*db != ptr::null_mut());
 
-        let s = RawScratch::alloc(&db).unwrap();
+        let s = db.alloc().unwrap();
 
         assert!(*s != ptr::null_mut());
 

@@ -220,12 +220,18 @@ pub type RawScratchPtr = *mut hs_scratch_t;
 ///
 pub trait Scratch : Deref<Target=RawScratchPtr> {
     /// Provides the size of the given scratch space.
-    ///
     fn size(&self) -> Result<usize, Error>;
 
     /// Reallocate a "scratch" space for use by Hyperscan.
-    ///
     fn realloc<T: Database>(&mut self, db: &T) -> Result<&Self, Error>;
+}
+
+pub trait ScratchAllocator<S: Scratch> {
+    /// Allocate a "scratch" space for use by Hyperscan.
+    fn alloc(&self) -> Result<S, Error>;
+
+    /// Reallocate a "scratch" space for use by Hyperscan.
+    fn realloc(&self, s: &mut S) -> Result<&Self, Error>;
 }
 
 /// A byte stream can be matched
