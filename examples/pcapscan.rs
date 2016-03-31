@@ -27,6 +27,7 @@ extern crate hyperscan;
 
 use std::fmt;
 use std::env;
+use std::slice;
 use std::error;
 use std::process::exit;
 use std::path::Path;
@@ -37,7 +38,6 @@ use std::fs::File;
 use std::iter::Iterator;
 
 use getopts::Options;
-use pcap::Capture;
 use hyperscan::{CompileFlags, Pattern, Patterns, StreamingDatabase, BlockDatabase, DatabaseBuilder};
 
 #[derive(Debug)]
@@ -119,6 +119,35 @@ fn parse_file(filename: &str) -> Result<Patterns, io::Error> {
     Ok(patterns.collect())
 }
 
+struct Benchmark {
+    db_streaming: StreamingDatabase,
+    db_block: BlockDatabase,
+    packets: Vec<[u8]>,
+}
+
+impl Benchmark {
+    fn new(db_streaming: StreamingDatabase, db_block: BlockDatabase) -> Benchmark {
+        Benchmark {
+            db_streaming: db_streaming,
+            db_block: db_block,
+            packets: Vec::new(),
+        }
+    }
+
+    fn read_streams(&self, pcap_file: &str) -> Result<(), pcap::Error> {
+        let mut capture = try!(pcap::Capture::from_file(Path::new(pcap_file)));
+
+        while let Ok(packet) = capture.next() {
+
+        }
+
+        Ok(())
+    }
+
+    // Display some information about the compiled database and scanned data.
+    fn display_stat(&self) {}
+}
+
 // Main entry point.
 fn main() {
     // Process command line arguments.
@@ -178,4 +207,23 @@ fn main() {
             exit(-1);
         }
     };
+
+    // Read our input PCAP file in
+    let bench = Benchmark::new(db_streaming, db_block);
+
+    println!("PCAP input file: {}", pcap_file);
+
+    if let Err(err) = bench.read_streams(pcap_file) {
+        write!(io::stderr(),
+               "Unable to read packets from PCAP file. Exiting. {}\n",
+               err);
+        exit(-1);
+    }
+
+
+    if repeat_count != 1 {
+        println!("Repeating PCAP scan {} times.", repeat_count);
+    }
+
+    bench.displayStats();
 }
