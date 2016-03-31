@@ -3,6 +3,11 @@ name = "hyperscan"
 version = "0.1.0"
 authors = ["Flier Lu <flier.lu@nexusguard.com>"]
 build = "build.rs"
+description = "Hyperscan bindings for Rust"
+homepage = "https://github.com/flier/rust-hyperscan"
+repository = "https://github.com/flier/rust-hyperscan.git"
+readme = "README.md"
+keywords = ["regex", "hyperscan", "streaming"]
 
 [dependencies]
 libc = "0.2"
@@ -14,3 +19,7 @@ regex = "0.1"
 
 [lib]
 name = "hyperscan"
+
+[[example]]
+name = "simplegrep"
+path = "examples/simplegrep.rs"
