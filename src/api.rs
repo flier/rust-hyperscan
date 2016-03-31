@@ -280,6 +280,8 @@ pub type ScanFlags = u32;
 /// space), but reusing data structures like stream state and/or scratch space
 /// will produce undefined behavior.
 ///
+/// Fn(id: u32, from: u64, to: u64, flags: u32) -> bool
+///
 pub type MatchEventCallback = Fn(u32, u64, u64, u32) -> bool;
 
 /// The block (non-streaming) regular expression scanner.
