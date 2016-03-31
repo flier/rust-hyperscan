@@ -1,6 +1,5 @@
 use std::ptr;
 use std::cell::RefCell;
-use std::clone::Clone;
 use std::ops::Deref;
 use std::os::raw::c_char;
 use std::ffi::CStr;
@@ -119,7 +118,7 @@ impl PlatformInfo {
         PlatformInfo(None)
     }
 
-    pub fn default() -> PlatformInfo {
+    pub fn host() -> PlatformInfo {
         let mut platform = hs_platform_info_t::default();
 
         unsafe {

@@ -272,7 +272,7 @@ pub mod tests {
 
     #[test]
     fn test_database_compile() {
-        let db = BlockDatabase::compile("test", 0, &PlatformInfo::default()).unwrap();
+        let db = BlockDatabase::compile("test", 0, &PlatformInfo::host()).unwrap();
 
         assert!(*db != ptr::null_mut());
 
