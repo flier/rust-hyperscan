@@ -1,4 +1,3 @@
-use std::mem;
 use std::ptr;
 use std::fmt;
 use std::ops::{Deref, DerefMut};

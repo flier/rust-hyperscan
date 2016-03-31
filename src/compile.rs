@@ -192,9 +192,9 @@ macro_rules! pattern {
         pattern!($expr, flags => $flags, id => 0)
     }};
     ( $expr:expr, flags => $flags:expr, id => $id:expr ) => {{
-        $crate::compile::Pattern{
-            expression: $crate::std::convert::From::from($expr),
-            flags: $crate::std::convert::From::from($flags),
+        $crate::Pattern{
+            expression: ::std::convert::From::from($expr),
+            flags: ::std::convert::From::from($flags),
             id: $id
         }
     }}

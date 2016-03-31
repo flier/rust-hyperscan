@@ -2,13 +2,13 @@ use std::fmt;
 use std::ptr;
 use std::error;
 use std::string::ToString;
-use std::ffi::CString;
+use std::ffi::CStr;
 
 use constants::*;
 use raw::*;
 
 /// Error Codes
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
     /// The engine completed normally.
     Success,
@@ -59,7 +59,15 @@ impl From<i32> for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", error::Error::description(self).to_string())
+        try!(write!(f, "{}", error::Error::description(self).to_string()));
+
+        match *self {
+            Error::CompilerError(ref reason) => try!(write!(f, " {}", reason)),
+            Error::Failed(ref code) => try!(write!(f, " Code: {}", code)),
+            _ => {}
+        }
+
+        Ok(())
     }
 }
 
@@ -67,7 +75,6 @@ impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::Success => "The engine completed normally.",
-            Error::Failed(..) => "Failed.",
             Error::Invalid => "A parameter passed to this function was invalid.",
             Error::NoMem => "A memory allocation failed.",
             Error::ScanTerminated => "The engine was terminated by callback.",
@@ -81,20 +88,21 @@ impl error::Error for Error {
             Error::BadAlloc => {
                 "The memory allocator did not correctly return memory suitably aligned."
             }
+            Error::Failed(..) => "Internal operation failed.",
         }
     }
 }
 
 #[macro_export]
 macro_rules! check_hs_error {
-    ($expr:expr) => (if $expr != $crate::constants::HS_SUCCESS {
-        return $crate::std::result::Result::Err($crate::std::convert::From::from($expr));
+    ($expr:expr) => (if $expr != $crate::HS_SUCCESS {
+        return ::std::result::Result::Err(::std::convert::From::from($expr));
     })
 }
 
 #[macro_export]
 macro_rules! assert_hs_error {
-    ($expr:expr) => (if $expr != $crate::constants::HS_SUCCESS {
+    ($expr:expr) => (if $expr != $crate::HS_SUCCESS {
         panic!("panic, err={}", $expr);
     })
 }
@@ -124,7 +132,7 @@ impl CompileError for RawCompileError {
 impl ToString for RawCompileError {
     #[inline]
     fn to_string(&self) -> String {
-        unsafe { CString::from_raw((*self.0).message).into_string().unwrap() }
+        unsafe { String::from(CStr::from_ptr((*self.0).message).to_str().unwrap()) }
     }
 }
 
@@ -142,15 +150,15 @@ impl Drop for RawCompileError {
 #[macro_export]
 macro_rules! check_compile_error {
     ($expr:expr, $err:ident) => {
-        if $crate::constants::HS_SUCCESS != $expr {
+        if $crate::HS_SUCCESS != $expr {
             return match $expr {
-                $crate::constants::HS_COMPILER_ERROR => {
+                $crate::HS_COMPILER_ERROR => {
                     let msg = $crate::errors::RawCompileError($err);
 
-                    $crate::std::result::Result::Err($crate::errors::Error::CompilerError(msg.to_string()))
+                    ::std::result::Result::Err($crate::errors::Error::CompilerError(msg.to_string()))
                 },
                 _ =>
-                    $crate::std::result::Result::Err($crate::std::convert::From::from($expr)),
+                    ::std::result::Result::Err(::std::convert::From::from($expr)),
             }
         }
     }

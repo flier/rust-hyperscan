@@ -17,7 +17,7 @@ pub use constants::*;
 pub use api::*;
 pub use errors::Error;
 pub use common::{RawDatabase, BlockDatabase, StreamingDatabase, VectoredDatabase};
-pub use compile::{CompileFlags, Pattern};
+pub use compile::{CompileFlags, Pattern, Patterns};
 pub use runtime::{RawScratch, RawStream};
 
 #[cfg(test)]
