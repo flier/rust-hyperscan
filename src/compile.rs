@@ -55,23 +55,17 @@ impl Into<u32> for CompileFlags {
 
 impl fmt::Display for CompileFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "{}{}{}",
-               if self.is_set(HS_FLAG_CASELESS) {
-                   "i"
-               } else {
-                   ""
-               },
-               if self.is_set(HS_FLAG_MULTILINE) {
-                   "m"
-               } else {
-                   ""
-               },
-               if self.is_set(HS_FLAG_DOTALL) {
-                   "s"
-               } else {
-                   ""
-               })
+        if self.is_set(HS_FLAG_CASELESS) {
+            try!(write!(f, "i"))
+        }
+        if self.is_set(HS_FLAG_MULTILINE) {
+            try!(write!(f, "m"))
+        }
+        if self.is_set(HS_FLAG_DOTALL) {
+            try!(write!(f, "s"))
+        }
+
+        Ok(())
     }
 }
 

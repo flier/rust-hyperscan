@@ -390,6 +390,5 @@ pub mod tests {
 
         st.close(&s, Option::Some(&callback))
           .unwrap();
-
     }
 }
