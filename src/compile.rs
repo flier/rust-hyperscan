@@ -34,7 +34,7 @@ impl<T: Type> RawDatabase<T> {
                                  err);
         }
 
-        Result::Ok(RawDatabase::from_raw(db))
+        Ok(RawDatabase::from_raw(db))
     }
 }
 
@@ -64,7 +64,18 @@ impl fmt::Display for CompileFlags {
         if self.is_set(HS_FLAG_DOTALL) {
             try!(write!(f, "s"))
         }
-
+        if self.is_set(HS_FLAG_SINGLEMATCH) {
+            try!(write!(f, "H"))
+        }
+        if self.is_set(HS_FLAG_ALLOWEMPTY) {
+            try!(write!(f, "V"))
+        }
+        if self.is_set(HS_FLAG_UTF8) {
+            try!(write!(f, "8"))
+        }
+        if self.is_set(HS_FLAG_UCP) {
+            try!(write!(f, "W"))
+        }
         Ok(())
     }
 }
@@ -90,13 +101,15 @@ impl CompileFlags {
                 'i' => flags |= HS_FLAG_CASELESS,
                 'm' => flags |= HS_FLAG_MULTILINE,
                 's' => flags |= HS_FLAG_DOTALL,
-                _ => {
-                    return Result::Err(Error::CompilerError(format!("invalid compile flag: {}", c)))
-                }
+                'H' => flags |= HS_FLAG_SINGLEMATCH,
+                'V' => flags |= HS_FLAG_ALLOWEMPTY,
+                '8' => flags |= HS_FLAG_UTF8,
+                'W' => flags |= HS_FLAG_UCP,
+                _ => return Err(Error::CompilerError(format!("invalid compile flag: {}", c))),
             }
         }
 
-        Result::Ok(CompileFlags(flags))
+        Ok(CompileFlags(flags))
     }
 }
 
@@ -120,7 +133,7 @@ impl Pattern {
     pub fn parse(s: &str) -> Result<Pattern, Error> {
         match (s.starts_with('/'), s.rfind('/')) {
             (true, Some(end)) if end > 0 => unsafe {
-                Result::Ok(Pattern {
+                Ok(Pattern {
                     expression: String::from(s.slice_unchecked(1, end)),
                     flags: try!(CompileFlags::parse(s.slice_unchecked(end + 1, s.len()))),
                     id: 0,
@@ -128,7 +141,7 @@ impl Pattern {
             },
 
             _ => {
-                Result::Ok(Pattern {
+                Ok(Pattern {
                     expression: String::from(s),
                     flags: CompileFlags::default(),
                     id: 0,
@@ -170,7 +183,7 @@ impl Expression for Pattern {
                                                     &mut err),
                                  err);
 
-            Result::Ok(ExpressionInfo {
+            Ok(ExpressionInfo {
                 min_width: info.as_ref().min_width as usize,
                 max_width: info.as_ref().max_width as usize,
                 unordered_matches: info.as_ref().unordered_matches != 0,
@@ -270,7 +283,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
                                  err);
         }
 
-        Result::Ok(RawDatabase::from_raw(db))
+        Ok(RawDatabase::from_raw(db))
     }
 }
 

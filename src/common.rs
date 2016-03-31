@@ -48,7 +48,7 @@ impl<T: Type> RawDatabase<T> {
 
             self.db = ptr::null_mut();
 
-            Result::Ok(())
+            Ok(())
         }
     }
 }
@@ -70,7 +70,7 @@ impl<T: Type> Database for RawDatabase<T> {
             check_hs_error!(hs_database_size(self.db, &mut size));
         }
 
-        Result::Ok(size as usize)
+        Ok(size as usize)
     }
 
     fn database_info(&self) -> Result<String, Error> {
@@ -84,8 +84,8 @@ impl<T: Type> Database for RawDatabase<T> {
             println!("p = {:p}", p);
 
             let result = match CStr::from_ptr(p).to_str() {
-                Ok(info) => Result::Ok(info.to_string()),
-                Err(_) => Result::Err(Error::Invalid),
+                Ok(info) => Ok(info.to_string()),
+                Err(_) => Err(Error::Invalid),
             };
 
             libc::free(p as *mut libc::c_void);
@@ -103,7 +103,7 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
         unsafe {
             check_hs_error!(hs_serialize_database(self.db, &mut bytes, &mut size));
 
-            Result::Ok(RawSerializedDatabase::from_raw_parts(bytes as *mut u8, size as usize))
+            Ok(RawSerializedDatabase::from_raw_parts(bytes as *mut u8, size as usize))
         }
     }
 
@@ -116,7 +116,7 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
                                                     &mut db));
         }
 
-        Result::Ok(Self::from_raw(db))
+        Ok(Self::from_raw(db))
     }
 
     fn deserialize_at(&self, bytes: &[u8]) -> Result<&RawDatabase<T>, Error> {
@@ -124,7 +124,7 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
             check_hs_error!(hs_deserialize_database_at(bytes.as_ptr() as *const i8,
                                                        bytes.len() as size_t,
                                                        self.db));
-            Result::Ok(self)
+            Ok(self)
         }
     }
 }
@@ -148,7 +148,7 @@ impl RawDatabase<Streaming> {
             check_hs_error!(hs_stream_size(self.db, &mut size));
         }
 
-        Result::Ok(size as usize)
+        Ok(size as usize)
     }
 }
 

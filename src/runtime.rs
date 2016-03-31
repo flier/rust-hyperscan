@@ -32,7 +32,7 @@ impl RawScratch {
             check_hs_error!(hs_alloc_scratch(**db, &mut s));
         }
 
-        Result::Ok(RawScratch(s))
+        Ok(RawScratch(s))
     }
 }
 
@@ -76,7 +76,7 @@ impl Scratch for RawScratch {
             check_hs_error!(hs_scratch_size(self.0, &mut size));
         }
 
-        Result::Ok(size as usize)
+        Ok(size as usize)
     }
 
     #[inline]
@@ -85,7 +85,7 @@ impl Scratch for RawScratch {
             check_hs_error!(hs_alloc_scratch(**db, &mut self.0));
         }
 
-        Result::Ok(self)
+        Ok(self)
     }
 }
 
@@ -159,7 +159,7 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
                                     w.context));
         }
 
-        Result::Ok(&self)
+        Ok(&self)
     }
 }
 
@@ -194,7 +194,7 @@ impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
                                            w.context));
         }
 
-        Result::Ok(&self)
+        Ok(&self)
     }
 }
 
@@ -206,7 +206,7 @@ impl StreamingScanner<RawStream, RawScratch> for StreamingDatabase {
             check_hs_error!(hs_open_stream(**self, flags, &mut id));
         }
 
-        Result::Ok(RawStream(id))
+        Ok(RawStream(id))
     }
 }
 
@@ -255,7 +255,7 @@ impl<S: Scratch> Stream<S> for RawStream {
             check_hs_error!(hs_close_stream(self.0, **scratch, w.handler, w.context));
         }
 
-        Result::Ok(&self)
+        Ok(&self)
     }
 
     fn reset(&self,
@@ -269,7 +269,7 @@ impl<S: Scratch> Stream<S> for RawStream {
             check_hs_error!(hs_reset_stream(self.0, flags, **scratch, w.handler, w.context));
         }
 
-        Result::Ok(&self)
+        Ok(&self)
     }
 }
 
@@ -294,7 +294,7 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
                                            w.context));
         }
 
-        Result::Ok(&self)
+        Ok(&self)
     }
 }
 

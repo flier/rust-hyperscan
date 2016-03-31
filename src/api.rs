@@ -109,7 +109,7 @@ pub trait SerializedDatabase {
                                                         &mut size));
         }
 
-        Result::Ok(size as usize)
+        Ok(size as usize)
     }
 
     fn database_info(&self) -> Result<String, Error> {
@@ -121,8 +121,8 @@ pub trait SerializedDatabase {
                                                         &mut p));
 
             let result = match CStr::from_ptr(p).to_str() {
-                Ok(info) => Result::Ok(info.to_string()),
-                Err(_) => Result::Err(Error::Invalid),
+                Ok(info) => Ok(info.to_string()),
+                Err(_) => Err(Error::Invalid),
             };
 
             libc::free(p as *mut libc::c_void);
