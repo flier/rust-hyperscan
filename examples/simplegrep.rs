@@ -23,15 +23,15 @@
 //
 //
 
+#[macro_use]
+extern crate hyperscan;
+
 use std::env;
 use std::io;
 use std::io::{Read, Write};
 use std::fs::File;
 use std::process::exit;
 use std::path::Path;
-
-#[macro_use]
-extern crate hyperscan;
 
 use hyperscan::*;
 
@@ -69,10 +69,8 @@ fn main() {
     let pattern = pattern!(args.next().unwrap(), flags => HS_FLAG_DOTALL);
     let input_filename = args.next().unwrap();
 
-    let database: BlockDatabase;
-
-    match pattern.build() {
-        Ok(db) => database = db,
+    let database: BlockDatabase = match pattern.build() {
+        Ok(db) => db,
         Err(err) => {
             write!(io::stderr(),
                    "ERROR: Unable to compile pattern `{}`: {}\n",
@@ -80,13 +78,11 @@ fn main() {
                    err);
             exit(-1);
         }
-    }
+    };
 
     // Next, we read the input data file into a buffer.
-    let input_data: String;
-
-    match read_input_data(&input_filename) {
-        Ok(buf) => input_data = buf,
+    let input_data = match read_input_data(&input_filename) {
+        Ok(buf) => buf,
         Err(err) => {
             write!(io::stderr(),
                    "ERROR: Unable to read file `{}`: {}\n",
@@ -94,7 +90,7 @@ fn main() {
                    err);
             exit(-1);
         }
-    }
+    };
 
     // Finally, we issue a call to hs_scan, which will search the input buffer
     // for the pattern represented in the bytecode. Note that in order to do
@@ -113,7 +109,15 @@ fn main() {
     // match event.
     //
 
-    let scratch = database.alloc().unwrap();
+    let scratch = match database.alloc() {
+        Ok(s) => s,
+        Err(err) => {
+            write!(io::stderr(),
+                   "ERROR: Unable to allocate scratch space. {}\n",
+                   err);
+            exit(-1);
+        }
+    };
 
     println!("Scanning {} bytes with Hyperscan", input_data.len());
 
