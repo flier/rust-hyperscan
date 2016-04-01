@@ -29,6 +29,7 @@ before_install:
 before_script:
   - wget https://github.com/01org/hyperscan/archive/v4.1.0.tar.gz -O /tmp/hyperscan.tar.gz
   - tar -xvf /tmp/hyperscan.tar.gz
-  - cmake hyperscan-4.1.0
+  - cd hyperscan-4.1.0
+  - cmake .
   - make
   - sudo make install
