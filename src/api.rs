@@ -69,6 +69,9 @@ pub type RawDatabasePtr = *mut hs_database_t;
 
 /// A Hyperscan pattern database.
 pub trait Database : Deref<Target=RawDatabasePtr> {
+    /// Provides the compiled mode of the given database.
+    fn database_mode(&self) -> u32;
+
     /// Provides the size of the given database in bytes.
     fn database_size(&self) -> Result<usize, Error>;
 

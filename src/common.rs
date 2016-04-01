@@ -63,6 +63,10 @@ impl<T: Type> Deref for RawDatabase<T> {
 }
 
 impl<T: Type> Database for RawDatabase<T> {
+    fn database_mode(&self) -> u32 {
+        T::mode()
+    }
+
     fn database_size(&self) -> Result<usize, Error> {
         let mut size: size_t = 0;
 

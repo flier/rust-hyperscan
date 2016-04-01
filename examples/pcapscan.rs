@@ -21,24 +21,37 @@
 //
 extern crate getopts;
 extern crate pcap;
+extern crate pnet;
+extern crate byteorder;
+extern crate chrono;
 
 #[macro_use]
 extern crate hyperscan;
 
 use std::fmt;
 use std::env;
-use std::slice;
 use std::error;
 use std::process::exit;
+use std::default::Default;
 use std::path::Path;
 use std::num;
 use std::io;
 use std::io::{Write, BufRead};
 use std::fs::File;
 use std::iter::Iterator;
+use std::collections::HashMap;
+use std::net::SocketAddrV4;
 
 use getopts::Options;
-use hyperscan::{CompileFlags, Pattern, Patterns, StreamingDatabase, BlockDatabase, DatabaseBuilder};
+use pnet::packet::{Packet, PrimitiveValues};
+use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
+use pnet::packet::ip::IpNextHeaderProtocols;
+use pnet::packet::ipv4::Ipv4Packet;
+use pnet::packet::udp::UdpPacket;
+use byteorder::{BigEndian, ReadBytesExt};
+
+use hyperscan::{CompileFlags, Pattern, Patterns, Database, StreamingDatabase, BlockDatabase,
+                DatabaseBuilder};
 
 #[derive(Debug)]
 enum Error {
@@ -63,6 +76,54 @@ impl error::Error for Error {
     }
 }
 
+// Simple timing class
+#[derive(Debug)]
+struct Clock {
+    time_start: chrono::DateTime<chrono::Local>,
+    time_stop: chrono::DateTime<chrono::Local>,
+}
+
+impl Clock {
+    fn new() -> Self {
+        let now = chrono::Local::now();
+
+        Clock {
+            time_start: now,
+            time_stop: now,
+        }
+    }
+
+    fn start(&mut self) {
+        self.time_start = chrono::Local::now();
+    }
+
+    fn stop(&mut self) {
+        self.time_stop = chrono::Local::now();
+    }
+
+    fn elapsed(&self) -> chrono::Duration {
+        self.time_stop - self.time_start
+    }
+}
+
+macro_rules! build_database {
+    ($builder:expr, $mode:expr) => ({
+        let mut clock = Clock::new();
+
+        clock.start();
+
+        let db = try!($builder.build().map_err(Error::Compile));
+
+        clock.stop();
+
+        println!("Hyperscan {} mode database compiled in {}.",
+             $mode,
+             clock.elapsed());
+
+        db
+    })
+}
+
 /**
  * This function will read in the file with the specified name, with an
  * expression per line, ignoring lines starting with '#' and build a Hyperscan
@@ -75,8 +136,8 @@ fn databases_from_file(filename: &str) -> Result<(StreamingDatabase, BlockDataba
     println!("Compiling Hyperscan databases with {} patterns.",
              patterns.len());
 
-    Ok((try!(patterns.build().map_err(Error::Compile)),
-        try!(patterns.build().map_err(Error::Compile))))
+    Ok((build_database!(patterns, "streaming"),
+        build_database!(patterns, "block")))
 }
 
 fn parse_file(filename: &str) -> Result<Patterns, io::Error> {
@@ -119,10 +180,38 @@ fn parse_file(filename: &str) -> Result<Patterns, io::Error> {
     Ok(patterns.collect())
 }
 
+// Key for identifying a stream in our pcap input data, using data from its IP
+// headers.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+struct FiveTuple {
+    proto: u8,
+    src: SocketAddrV4,
+    dst: SocketAddrV4,
+}
+
+impl FiveTuple {
+    fn new(ipv4: &Ipv4Packet) -> FiveTuple {
+        let mut c = io::Cursor::new(ipv4.payload());
+        let src_port = c.read_u16::<BigEndian>().unwrap();
+        let dst_port = c.read_u16::<BigEndian>().unwrap();
+
+        FiveTuple {
+            proto: ipv4.get_next_level_protocol().to_primitive_values().0,
+            src: SocketAddrV4::new(ipv4.get_source(), src_port),
+            dst: SocketAddrV4::new(ipv4.get_destination(), dst_port),
+        }
+    }
+}
+
+const IP_FLAG_DF: u8 = 2;
+const IP_FLAG_MF: u8 = 1;
+
 struct Benchmark {
     db_streaming: StreamingDatabase,
     db_block: BlockDatabase,
-    packets: Vec<[u8]>,
+    packets: Vec<Vec<u8>>,
+    stream_ids: Vec<usize>,
+    stream_map: HashMap<FiveTuple, usize>,
 }
 
 impl Benchmark {
@@ -131,21 +220,111 @@ impl Benchmark {
             db_streaming: db_streaming,
             db_block: db_block,
             packets: Vec::new(),
+            stream_ids: Vec::new(),
+            stream_map: HashMap::new(),
         }
     }
 
-    fn read_streams(&self, pcap_file: &str) -> Result<(), pcap::Error> {
+    fn decode_packet<'a>(packet: &'a pcap::Packet) -> Option<(FiveTuple, Vec<u8>)> {
+        let ether = EthernetPacket::new(packet.data).unwrap();
+
+        if ether.get_ethertype() != EtherTypes::Ipv4 {
+            return None;
+        }
+
+        let ipv4 = Ipv4Packet::new(ether.payload()).unwrap();
+
+        if ipv4.get_version() != 4 {
+            return None;
+        }
+
+        if (ipv4.get_flags() & IP_FLAG_MF) == IP_FLAG_MF || ipv4.get_fragment_offset() != 0 {
+            return None;
+        }
+
+        match ipv4.get_next_level_protocol() {
+            IpNextHeaderProtocols::Tcp => {
+                let payload = ipv4.payload();
+                let data_off = ((payload[12] >> 4) * 4) as usize;
+
+                Some((FiveTuple::new(&ipv4), Vec::from(&payload[data_off..])))
+            }
+
+            IpNextHeaderProtocols::Udp => {
+                let udp = UdpPacket::new(ipv4.payload()).unwrap();
+
+                Some((FiveTuple::new(&ipv4), Vec::from(udp.payload())))
+            }
+            _ => None,
+        }
+    }
+
+    fn read_streams(&mut self, pcap_file: &str) -> Result<(), pcap::Error> {
         let mut capture = try!(pcap::Capture::from_file(Path::new(pcap_file)));
 
         while let Ok(packet) = capture.next() {
+            if let Some((key, payload)) = Self::decode_packet(&packet) {
+                if payload.len() > 0 {
+                    let mut stream_id = self.stream_map.len();
 
+                    self.stream_ids.push(match self.stream_map.insert(key, stream_id) {
+                        Some(id) => id,
+                        None => stream_id,
+                    });
+
+                    self.packets.push(payload);
+                }
+            }
         }
 
         Ok(())
     }
 
+    fn bytes(&self) -> usize {
+        self.packets.iter().fold(0, |bytes, p| bytes + p.len())
+    }
+
     // Display some information about the compiled database and scanned data.
-    fn display_stat(&self) {}
+    fn display_stats(&self) {
+        let num_packets = self.packets.len();
+        let num_streams = self.stream_map.len();
+        let num_bytes = self.bytes();
+
+        println!("{} packets in {} streams, totalling {} bytes.",
+                 num_packets,
+                 num_streams,
+                 num_bytes);
+        println!("Average packet length: {} bytes.", num_bytes / num_packets);
+        println!("Average stream length: {} bytes.", num_bytes / num_streams);
+        println!("");
+
+        match self.db_streaming.database_size() {
+            Ok(size) => {
+                println!("Streaming mode Hyperscan database size    : {} bytes.",
+                         size);
+            }
+            Err(err) => {
+                println!("Error getting streaming mode Hyperscan database size, {}",
+                         err)
+            }
+        }
+
+        match self.db_block.database_size() {
+            Ok(size) => {
+                println!("Block mode Hyperscan database size        : {} bytes.",
+                         size);
+            }
+            Err(err) => println!("Error getting block mode Hyperscan database size, {}", err),
+        }
+
+        match self.db_streaming.stream_size() {
+            Ok(size) => {
+                println!("Streaming mode Hyperscan stream state size: {} bytes (per stream).",
+                         size);
+            }
+            Err(err) => println!("Error getting stream state size, {}", err),
+        }
+    }
 }
 
 // Main entry point.
@@ -209,7 +388,7 @@ fn main() {
     };
 
     // Read our input PCAP file in
-    let bench = Benchmark::new(db_streaming, db_block);
+    let mut bench = Benchmark::new(db_streaming, db_block);
 
     println!("PCAP input file: {}", pcap_file);
 
@@ -225,5 +404,5 @@ fn main() {
         println!("Repeating PCAP scan {} times.", repeat_count);
     }
 
-    bench.displayStats();
+    bench.display_stats();
 }

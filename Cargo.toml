@@ -18,6 +18,10 @@ regex-syntax = "0.3"
 regex = "0.1"
 getopts = "0.2"
 pcap = "0.5"
+pnet = "0.7"
+pnet_macros = "0.7"
+byteorder = "0.5"
+chrono = "0.2"
 
 [lib]
 name = "hyperscan"
