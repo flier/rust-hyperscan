@@ -32,9 +32,7 @@ use std::fmt;
 use std::env;
 use std::error;
 use std::process::exit;
-use std::default::Default;
 use std::path::Path;
-use std::num;
 use std::io;
 use std::io::{Write, BufRead};
 use std::fs::File;
@@ -56,7 +54,6 @@ use hyperscan::{CompileFlags, Pattern, Patterns, Database, StreamingDatabase, Bl
 #[derive(Debug)]
 enum Error {
     Io(io::Error),
-    Parse(num::ParseIntError),
     Compile(hyperscan::Error),
 }
 
@@ -70,7 +67,6 @@ impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::Io(ref err) => err.description(),
-            Error::Parse(ref err) => err.description(),
             Error::Compile(ref err) => err.description(),
         }
     }
@@ -144,37 +140,25 @@ fn parse_file(filename: &str) -> Result<Patterns, io::Error> {
     let f = try!(File::open(filename));
     let lines = io::BufReader::new(f).lines();
     let patterns = lines.filter_map(|line: Result<String, io::Error>| -> Option<Pattern> {
-        let line = match line {
-            Ok(line) => line,
-            Err(err) => {
-                write!(io::stderr(), "ERROR: Could not read line, {}\n", err);
-                exit(-1);
-            }
-        };
+        if let Ok(line) = line {
+            let line = line.trim();
 
-        let line = line.trim();
-
-        if line.len() == 0 || line.starts_with('#') {
-            None
-        } else {
-            match line.find(':') {
-                Some(off) => unsafe {
-                    if let Ok(id) = line.slice_unchecked(0, off).parse() {
-                        Some(Pattern {
-                            expression: String::from(line.slice_unchecked(off + 1, line.len())),
-                            flags: CompileFlags(0),
-                            id: id,
-                        })
-                    } else {
-                        None
+            if line.len() > 0 && !line.starts_with('#') {
+                if let Some(off) = line.find(':') {
+                    unsafe {
+                        if let Ok(id) = line.slice_unchecked(0, off).parse() {
+                            return Some(Pattern {
+                                expression: String::from(line.slice_unchecked(off + 1, line.len())),
+                                flags: CompileFlags(0),
+                                id: id,
+                            });
+                        }
                     }
-                },
-                None => {
-                    write!(io::stderr(), "ERROR: Could not parse line: {}\n", line);
-                    exit(-1);
                 }
             }
         }
+
+        None
     });
 
     Ok(patterns.collect())
@@ -203,7 +187,6 @@ impl FiveTuple {
     }
 }
 
-const IP_FLAG_DF: u8 = 2;
 const IP_FLAG_MF: u8 = 1;
 
 struct Benchmark {
@@ -265,7 +248,7 @@ impl Benchmark {
         while let Ok(packet) = capture.next() {
             if let Some((key, payload)) = Self::decode_packet(&packet) {
                 if payload.len() > 0 {
-                    let mut stream_id = self.stream_map.len();
+                    let stream_id = self.stream_map.len();
 
                     self.stream_ids.push(match self.stream_map.insert(key, stream_id) {
                         Some(id) => id,
@@ -328,6 +311,7 @@ impl Benchmark {
 }
 
 // Main entry point.
+#[allow(unused_must_use)]
 fn main() {
     // Process command line arguments.
     let args: Vec<String> = env::args().collect();
