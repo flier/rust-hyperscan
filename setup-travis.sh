@@ -8,5 +8,5 @@ then
   brew install cmake boost
 else
   sudo apt-get update -qq
-  sudo apt-get install cmake boost
+  sudo apt-get install cmake libboost-dev
 fi
