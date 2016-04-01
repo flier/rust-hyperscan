@@ -10,7 +10,7 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 else
   sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   sudo apt-get update -qq
-  sudo apt-get install -y cmake ragel g++-4.8
+  sudo apt-get install -y cmake ragel g++ g++-4.8
 
   sudo rm -f /usr/bin/g++
   sudo rm -f /usr/bin/gcc
@@ -23,6 +23,6 @@ else
   tar -xzf /tmp/boost.tar.gz
   pushd boost_1_60_0
   ./bootstrap.sh
-  sudo ./b2 -q install -j 2 --prefix=/usr link=static
+  sudo ./b2 -q -d=0 install -j 2 --prefix=/usr link=static
   popd
 fi
