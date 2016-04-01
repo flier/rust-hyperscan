@@ -11,7 +11,7 @@ else
   sudo apt-get install cmake 
 
   wget http://downloads.sourceforge.net/project/boost/boost/1.60.0/boost_1_60_0.tar.gz -O /tmp/boost.tar.gz
-  tar -xvf /tmp/boost.tar.gz
+  tar -xzf /tmp/boost.tar.gz
   pushd boost_1_60_0
   ./bootstrap.sh
   sudo ./b2 install -j 2 --prefix=/usr link=static
