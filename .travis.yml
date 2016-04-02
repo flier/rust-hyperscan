@@ -37,6 +37,7 @@ cache:
 env:
   - BOOST_ROOT=$HOME/boost
   - HYPERSCAN_ROOT=$HOME/hyperscan
+  - PATH=$HOME/bin:$PATH
 
 before_install:
   - .travis/setup-travis.sh
