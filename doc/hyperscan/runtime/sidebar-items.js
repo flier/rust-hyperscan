@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["RawScratch","A large enough region of scratch space to support a given database."],["RawStream","A pattern matching state can be maintained across multiple blocks of target data"]]});
