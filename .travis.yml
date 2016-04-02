@@ -24,8 +24,10 @@ addons:
     packages:
       - cmake
       - cmake-data
+      - g++
       - gcc-4.8
       - g++-4.8
+      - ragel
 
 cache:
   directories:

@@ -9,9 +9,6 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
   brew outdated boost || brew upgrade boost
   brew install ragel
 else
-  apt-get update -qq
-  apt-get install -y cmake ragel g++ g++-4.8
-
   rm -f /usr/bin/g++
   rm -f /usr/bin/gcc
   rm -f /usr/bin/gcov
