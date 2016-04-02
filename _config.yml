@@ -10,7 +10,7 @@ title: rust-hyperscan
 email: flier.lu@gmail.com
 description: > 
  Hyperscan bindings for Rust with Multiple Pattern and Streaming Scan.
-baseurl: "" # the subpath of your site, e.g. /blog
+baseurl: "/rust-hyperscan" # the subpath of your site, e.g. /blog
 url: "http://flier.github.io/rust-hyperscan/" 
 twitter_username: flier_lu
 github_username:  flier
