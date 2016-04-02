@@ -4,8 +4,9 @@ version = "0.1.0"
 authors = ["Flier Lu <flier.lu@nexusguard.com>"]
 build = "build.rs"
 description = "Hyperscan bindings for Rust"
-homepage = "https://github.com/flier/rust-hyperscan"
-repository = "https://github.com/flier/rust-hyperscan.git"
+homepage = "http://flier.github.io/rust-hyperscan/"
+repository = "https://github.com/flier/rust-hyperscan"
+documentation = "http://flier.github.io/rust-hyperscan/doc"
 readme = "README.md"
 keywords = ["regex", "hyperscan", "streaming"]
 
