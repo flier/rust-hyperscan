@@ -1,15 +1,14 @@
 #/bin/sh -f
 set -e
 
-if [ ! -f "$HOME/hyperscan-4.1.0/Makefile" ]; then
+if [ ! -d "$HOME/hyperscan" ]; then
 	wget https://github.com/01org/hyperscan/archive/v4.1.0.tar.gz -O /tmp/hyperscan.tar.gz
-	cd $HOME
 	tar -xvf /tmp/hyperscan.tar.gz
+	cd hyperscan-4.1.0
+	cmake . -DCMAKE_INSTALL_PREFIX=$HOME/hyperscan -DCMAKE_POSITION_INDEPENDENT_CODE=on -DBOOST_ROOT=$HOME/boost
+	make
+	make install
 else
 	echo 'Using cached hyperscan directory.';
 fi
 
-cd $HOME/hyperscan-4.1.0
-cmake . -DCMAKE_POSITION_INDEPENDENT_CODE=on
-make
-make install

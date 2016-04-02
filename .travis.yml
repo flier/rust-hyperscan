@@ -31,8 +31,11 @@ addons:
 
 cache:
   directories:
-    - $HOME/boost_1_60_0
-    - $HOME/hyperscan-4.1.0
+    - $HOME/boost
+    - $HOME/hyperscan
+
+env:
+  - HYPERSCAN_ROOT=$HOME/hyperscan
 
 before_install:
   - .travis/setup-travis.sh
