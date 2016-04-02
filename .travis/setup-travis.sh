@@ -10,10 +10,12 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 	brew install ragel
 else
 	mkdir $HOME/bin
+
 	ln -s /usr/bin/g++-4.8 $HOME/bin/g++
 	ln -s /usr/bin/gcc-4.8 $HOME/bin/gcc
 	ln -s /usr/bin/gcov-4.8 $HOME/bin/gcov
-	export PATH=$HOME/bin:$PATH
+	
+    export PATH=$HOME/bin:$PATH
 
 	if [ ! -f "$HOME/boost/include/boost/config.hpp" ]; then
 		wget http://downloads.sourceforge.net/project/boost/boost/1.60.0/boost_1_60_0.tar.gz -O /tmp/boost.tar.gz

@@ -39,7 +39,6 @@ before_install:
   - .travis/setup-travis.sh
   - export BOOST_ROOT=$HOME/boost
   - export HYPERSCAN_ROOT=$HOME/hyperscan
-  - export PATH=$HOME/bin:$PATH
 
 before_script:
   - .travis/build-hyperscan.sh
