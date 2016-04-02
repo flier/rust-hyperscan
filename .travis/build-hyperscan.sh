@@ -11,4 +11,4 @@ fi
 cd hyperscan-4.1.0
 cmake . -DCMAKE_POSITION_INDEPENDENT_CODE=on
 make
-sudo make install
+make install
