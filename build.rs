@@ -6,13 +6,8 @@ fn main() {
         Err(_) => String::from("/usr/local"),
     };
 
-    if env::var("TARGET").unwrap() == "hyperscan" {
-        println!("cargo:rustc-flags=-l static=hs -L native={}/lib -l stdc++ -L native=/usr/lib",
-                 root_dir);
-    } else {
-        println!("cargo:rustc-flags=-L native={}/lib -l stdc++ -L native=/usr/lib",
-                 root_dir);
-    }
+    println!("cargo:rustc-flags=-L native={}/lib -l stdc++ -L native=/usr/lib",
+             root_dir);
     println!("cargo:root={}", root_dir);
     println!("cargo:libdir={}/lib", root_dir);
     println!("cargo:include={}/include", root_dir);
