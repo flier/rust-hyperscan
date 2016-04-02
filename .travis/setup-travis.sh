@@ -9,7 +9,7 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
   brew outdated boost || brew upgrade boost
   brew install ragel
 else
-  if [ ! -d "$HOME/boost_1_60_0" ]; then
+  if [ ! -f "$HOME/boost_1_60_0/b2" ]; then
 	wget http://downloads.sourceforge.net/project/boost/boost/1.60.0/boost_1_60_0.tar.gz -O /tmp/boost.tar.gz
 	cd $HOME
 	tar -xzf /tmp/boost.tar.gz
