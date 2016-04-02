@@ -35,6 +35,7 @@ cache:
     - $HOME/hyperscan
 
 env:
+  - BOOST_ROOT=$HOME/boost
   - HYPERSCAN_ROOT=$HOME/hyperscan
 
 before_install:
