@@ -1,7 +1,7 @@
 #/bin/sh -f
 set -e
 
-if [ ! -d "$HOME/hyperscan" ]; then
+if [ ! -f "$HOME/hyperscan/lib/libhs.a" ]; then
 	wget https://github.com/01org/hyperscan/archive/v4.1.0.tar.gz -O /tmp/hyperscan.tar.gz
 	tar -xvf /tmp/hyperscan.tar.gz
 	cd hyperscan-4.1.0
