@@ -8,7 +8,6 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
   brew outdated boost || brew upgrade boost
   brew install ragel
 else
-  sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   sudo apt-get update -qq
   sudo apt-get install -y cmake ragel g++ g++-4.8
 
