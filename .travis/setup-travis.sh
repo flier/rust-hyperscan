@@ -11,12 +11,13 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 else
   if [ ! -d "$HOME/boost_1_60_0" ]; then
 	wget http://downloads.sourceforge.net/project/boost/boost/1.60.0/boost_1_60_0.tar.gz -O /tmp/boost.tar.gz
+	cd $HOME
 	tar -xzf /tmp/boost.tar.gz
   else
   	echo 'Using cached boost directory.';
   fi
 
-  cd boost_1_60_0 
+  cd $HOME/boost_1_60_0 
   ./bootstrap.sh 
   ./b2 -q -d=0 install -j 2 --prefix=/usr link=static
 fi
