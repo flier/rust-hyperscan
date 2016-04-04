@@ -1466,12 +1466,12 @@ impl ::std::default::Default for Struct___va_list_tag {
         unsafe { ::std::mem::zeroed() }
     }
 }
-#[link(name = "hs", kind = "static")]
+#[link(name = "hs")]
 extern "C" {
     pub static mut __mb_cur_max: ::std::os::raw::c_int;
     pub static mut suboptarg: *mut ::std::os::raw::c_char;
 }
-#[link(name = "hs", kind = "static")]
+#[link(name = "hs")]
 extern "C" {
     pub fn signal(arg1: ::std::os::raw::c_int,
                   arg2:

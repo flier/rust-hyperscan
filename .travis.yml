@@ -28,7 +28,9 @@ addons:
       - gcc-4.8
       - g++-4.8
       - ragel
+      - libbz2-dev
       - libpcap-dev
+      - python-dev
 
 cache:
   directories:

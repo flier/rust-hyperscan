@@ -30,7 +30,11 @@ name = "hyperscan"
 [[example]]
 name = "simplegrep"
 path = "examples/simplegrep.rs"
+test = false
+bench = false
 
 [[example]]
 name = "pcapscan"
 path = "examples/pcapscan.rs"
+test = false
+bench = false
