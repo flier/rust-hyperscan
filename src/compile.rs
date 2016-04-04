@@ -264,17 +264,17 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
             ids.push(pattern.id as uint32_t);
         }
 
-        for expr in expressions {
-            ptrs.push(expr.as_bytes().as_ptr() as *const i8);
+        for expr in &expressions {
+            ptrs.push(expr.as_bytes_with_nul().as_ptr() as *const i8);
         }
 
         let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(hs_compile_multi(ptrs.as_slice().as_ptr(),
-                                                  flags.as_slice().as_ptr(),
-                                                  ids.as_slice().as_ptr(),
+            check_compile_error!(hs_compile_multi(ptrs.as_ptr(),
+                                                  flags.as_ptr(),
+                                                  ids.as_ptr(),
                                                   self.len() as u32,
                                                   T::mode(),
                                                   platform.as_ptr(),
