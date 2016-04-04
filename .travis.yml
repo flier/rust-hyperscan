@@ -1,3 +1,4 @@
+sudo: false
 language: rust
 rust:
   - stable
@@ -6,8 +7,6 @@ rust:
 matrix:
   allow_failures:
     - rust: nightly
-
-sudo: false
 os:
   - linux
   - osx
@@ -31,6 +30,7 @@ addons:
       - libbz2-dev
       - libpcap-dev
       - python-dev
+      - tree
 
 cache:
   directories:
@@ -44,3 +44,9 @@ before_install:
 
 before_script:
   - .travis/build-hyperscan.sh
+
+after_failure:
+  - tree -h
+env:
+  global:
+    - RUST_BACKTRACE=1
