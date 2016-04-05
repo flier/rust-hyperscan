@@ -35,7 +35,7 @@ pub type VectoredDatabase = RawDatabase<Vectored>;
 impl<T: Type> RawDatabase<T> {
     /// Constructs a compiled pattern database from a raw pointer.
     pub fn from_raw(db: RawDatabasePtr) -> RawDatabase<T> {
-        debug!("construct {} database {:p}", T::name(), db);
+        trace!("construct {} database {:p}", T::name(), db);
 
         RawDatabase {
             db: db,
@@ -48,7 +48,7 @@ impl<T: Type> RawDatabase<T> {
         unsafe {
             check_hs_error!(hs_free_database(self.db));
 
-            debug!("free {} database {:p}", T::name(), self.db);
+            trace!("free {} database {:p}", T::name(), self.db);
 
             self.db = ptr::null_mut();
 

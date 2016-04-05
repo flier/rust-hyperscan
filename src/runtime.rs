@@ -31,7 +31,7 @@ impl RawScratch {
             check_hs_error!(hs_alloc_scratch(**db, &mut s));
         }
 
-        debug!("allocated scratch at {:p} for {} database {:p}",
+        trace!("allocated scratch at {:p} for {} database {:p}",
                s,
                db.database_name(),
                **db);
@@ -46,7 +46,7 @@ impl Drop for RawScratch {
         unsafe {
             assert_hs_error!(hs_free_scratch(self.0));
 
-            debug!("freed scratch at {:p}", self.0);
+            trace!("freed scratch at {:p}", self.0);
 
             self.0 = ptr::null_mut();
         }
@@ -62,7 +62,7 @@ impl Clone for RawScratch {
             assert_hs_error!(hs_clone_scratch(self.0, &mut s));
         }
 
-        debug!("cloned scratch from {:p} to {:p}", self.0, s);
+        trace!("cloned scratch from {:p} to {:p}", self.0, s);
 
         RawScratch(s)
     }
@@ -97,7 +97,7 @@ impl Scratch for RawScratch {
             check_hs_error!(hs_alloc_scratch(**db, &mut self.0));
         }
 
-        debug!("reallocated scratch {:p} for {} database {:p}",
+        trace!("reallocated scratch {:p} for {} database {:p}",
                self.0,
                db.database_name(),
                **db);
@@ -140,7 +140,7 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
                                     mem::transmute(callback),
                                     mem::transmute(context)));
 
-            debug!("block scan {} bytes with {} database at {:p}",
+            trace!("block scan {} bytes with {} database at {:p}",
                    bytes.len(),
                    self.database_name(),
                    **self)
@@ -180,7 +180,7 @@ impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
                                            mem::transmute(context)));
         }
 
-        debug!("vectored scan {} bytes in {} parts with {} database at {:p}",
+        trace!("vectored scan {} bytes in {} parts with {} database at {:p}",
                lens.iter().fold(0, |sum, len| sum + len),
                lens.len(),
                self.database_name(),
@@ -198,7 +198,7 @@ impl StreamingScanner<RawStream, RawScratch> for StreamingDatabase {
             check_hs_error!(hs_open_stream(**self, flags, &mut id));
         }
 
-        debug!("stream opened at {:p} for {} database at {:p}",
+        trace!("stream opened at {:p} for {} database at {:p}",
                id,
                self.database_name(),
                **self);
@@ -259,7 +259,7 @@ impl<S: Scratch> Stream<S> for RawStream {
                                             mem::transmute(context)));
         }
 
-        debug!("stream closed at {:p}", self.0);
+        trace!("stream closed at {:p}", self.0);
 
         Ok(&self)
     }
@@ -278,7 +278,7 @@ impl<S: Scratch> Stream<S> for RawStream {
                                             mem::transmute(context)));
         }
 
-        debug!("stream reset at {:p}", self.0);
+        trace!("stream reset at {:p}", self.0);
 
         Ok(&self)
     }
@@ -306,7 +306,7 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
                                            mem::transmute(context)));
         }
 
-        debug!("stream scan {} bytes with stream at {:p}",
+        trace!("stream scan {} bytes with stream at {:p}",
                bytes.len(),
                self.0);
 
