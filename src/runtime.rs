@@ -31,6 +31,11 @@ impl RawScratch {
             check_hs_error!(hs_alloc_scratch(**db, &mut s));
         }
 
+        debug!("allocated scratch at {:p} for {} database {:p}",
+               s,
+               db.database_name(),
+               **db);
+
         Ok(RawScratch(s))
     }
 }
@@ -40,6 +45,10 @@ impl Drop for RawScratch {
     fn drop(&mut self) {
         unsafe {
             assert_hs_error!(hs_free_scratch(self.0));
+
+            debug!("freed scratch at {:p}", self.0);
+
+            self.0 = ptr::null_mut();
         }
     }
 }
@@ -52,6 +61,8 @@ impl Clone for RawScratch {
         unsafe {
             assert_hs_error!(hs_clone_scratch(self.0, &mut s));
         }
+
+        debug!("cloned scratch from {:p} to {:p}", self.0, s);
 
         RawScratch(s)
     }
@@ -75,6 +86,8 @@ impl Scratch for RawScratch {
             check_hs_error!(hs_scratch_size(self.0, &mut size));
         }
 
+        debug!("scratch {:p} size: {}", self.0, size);
+
         Ok(size as usize)
     }
 
@@ -83,6 +96,11 @@ impl Scratch for RawScratch {
         unsafe {
             check_hs_error!(hs_alloc_scratch(**db, &mut self.0));
         }
+
+        debug!("reallocated scratch {:p} for {} database {:p}",
+               self.0,
+               db.database_name(),
+               **db);
 
         Ok(self)
     }
@@ -121,6 +139,11 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
                                     **scratch,
                                     mem::transmute(callback),
                                     mem::transmute(context)));
+
+            debug!("block scan {} bytes with {} database at {:p}",
+                   bytes.len(),
+                   self.database_name(),
+                   **self)
         }
 
         Ok(&self)
@@ -157,6 +180,12 @@ impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
                                            mem::transmute(context)));
         }
 
+        debug!("vectored scan {} bytes in {} parts with {} database at {:p}",
+               lens.iter().fold(0, |sum, len| sum + len),
+               lens.len(),
+               self.database_name(),
+               **self);
+
         Ok(&self)
     }
 }
@@ -168,6 +197,11 @@ impl StreamingScanner<RawStream, RawScratch> for StreamingDatabase {
         unsafe {
             check_hs_error!(hs_open_stream(**self, flags, &mut id));
         }
+
+        debug!("stream opened at {:p} for {} database at {:p}",
+               id,
+               self.database_name(),
+               **self);
 
         Ok(RawStream(id))
     }
@@ -206,6 +240,8 @@ impl Clone for RawStream {
             assert_hs_error!(hs_copy_stream(&mut id, self.0));
         }
 
+        debug!("stream cloned from {:p} to {:p}", self.0, id);
+
         RawStream(id)
     }
 }
@@ -222,6 +258,8 @@ impl<S: Scratch> Stream<S> for RawStream {
                                             mem::transmute(callback),
                                             mem::transmute(context)));
         }
+
+        debug!("stream closed at {:p}", self.0);
 
         Ok(&self)
     }
@@ -240,6 +278,8 @@ impl<S: Scratch> Stream<S> for RawStream {
                                             mem::transmute(context)));
         }
 
+        debug!("stream reset at {:p}", self.0);
+
         Ok(&self)
     }
 }
@@ -253,9 +293,10 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
                callback: Option<MatchEventCallback<D>>,
                context: Option<&D>)
                -> Result<&Self, Error> {
-        unsafe {
-            let bytes = data.as_bytes();
 
+        let bytes = data.as_bytes();
+
+        unsafe {
             check_hs_error!(hs_scan_stream(self.0,
                                            bytes.as_ptr() as *const i8,
                                            bytes.len() as u32,
@@ -265,18 +306,26 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
                                            mem::transmute(context)));
         }
 
+        debug!("stream scan {} bytes with stream at {:p}",
+               bytes.len(),
+               self.0);
+
         Ok(&self)
     }
 }
 
 #[cfg(test)]
 pub mod tests {
+    extern crate env_logger;
+
     use std::ptr;
 
     use super::super::*;
 
     #[test]
     fn test_scratch() {
+        let _ = env_logger::init();
+
         let db: BlockDatabase = pattern!{"test"}.build().unwrap();
 
         assert!(*db != ptr::null_mut());
@@ -300,6 +349,8 @@ pub mod tests {
 
     #[test]
     fn test_block_scan() {
+        let _ = env_logger::init();
+
         let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
                                     .build()
                                     .unwrap();
@@ -322,6 +373,8 @@ pub mod tests {
 
     #[test]
     fn test_vectored_scan() {
+        let _ = env_logger::init();
+
         let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
                                        .build()
                                        .unwrap();
@@ -348,6 +401,8 @@ pub mod tests {
 
     #[test]
     fn test_streaming_scan() {
+        let _ = env_logger::init();
+
         let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}
                                         .build()
                                         .unwrap();

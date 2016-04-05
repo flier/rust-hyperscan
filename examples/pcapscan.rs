@@ -25,7 +25,9 @@ extern crate pnet;
 extern crate byteorder;
 extern crate time;
 extern crate stopwatch;
-
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 #[macro_use]
 extern crate hyperscan;
 
@@ -391,6 +393,8 @@ impl Benchmark {
 // Main entry point.
 #[allow(unused_must_use)]
 fn main() {
+    env_logger::init().unwrap();
+
     // Process command line arguments.
     let args: Vec<String> = env::args().collect();
     let prog = Path::new(&args[0]).file_name().unwrap().to_str().unwrap();

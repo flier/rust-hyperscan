@@ -2,6 +2,7 @@ use std::ptr;
 use std::fmt;
 use std::str::FromStr;
 use std::ffi::CString;
+use std::iter::FromIterator;
 
 use regex_syntax;
 
@@ -11,32 +12,6 @@ use api::*;
 use cptr::CPtr;
 use common::RawDatabase;
 use errors::{Error, RawCompileErrorPtr};
-
-impl<T: Type> RawDatabase<T> {
-    /// The basic regular expression compiler.
-    ///
-    /// This is the function call with which an expression is compiled into a Hyperscan database which can be passed to the runtime functions.
-    pub fn compile(expression: &str,
-                   flags: u32,
-                   platform: &PlatformInfo)
-                   -> Result<RawDatabase<T>, Error> {
-        let expr = try!(CString::new(expression).map_err(|_| Error::Invalid));
-        let mut db: RawDatabasePtr = ptr::null_mut();
-        let mut err: RawCompileErrorPtr = ptr::null_mut();
-
-        unsafe {
-            check_compile_error!(hs_compile(expr.as_bytes_with_nul().as_ptr() as *const i8,
-                                            flags,
-                                            T::mode(),
-                                            platform.as_ptr(),
-                                            &mut db,
-                                            &mut err),
-                                 err);
-        }
-
-        Ok(RawDatabase::from_raw(db))
-    }
-}
 
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct CompileFlags(pub u32);
@@ -131,23 +106,27 @@ pub struct Pattern {
 
 impl Pattern {
     pub fn parse(s: &str) -> Result<Pattern, Error> {
-        match (s.starts_with('/'), s.rfind('/')) {
+        let pattern = match (s.starts_with('/'), s.rfind('/')) {
             (true, Some(end)) if end > 0 => unsafe {
-                Ok(Pattern {
+                Pattern {
                     expression: String::from(s.slice_unchecked(1, end)),
                     flags: try!(CompileFlags::parse(s.slice_unchecked(end + 1, s.len()))),
                     id: 0,
-                })
+                }
             },
 
             _ => {
-                Ok(Pattern {
+                Pattern {
                     expression: String::from(s),
                     flags: CompileFlags::default(),
                     id: 0,
-                })
+                }
             }
-        }
+        };
+
+        debug!("pattern `{}` parsed to `{}`", s, pattern);
+
+        Ok(pattern)
     }
 }
 
@@ -155,7 +134,8 @@ impl fmt::Display for Pattern {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
-               "/{}/{}",
+               "{}:/{}/{}",
+               self.id,
                regex_syntax::quote(self.expression.as_str()),
                self.flags)
     }
@@ -183,13 +163,17 @@ impl Expression for Pattern {
                                                     &mut err),
                                  err);
 
-            Ok(ExpressionInfo {
+            let info = ExpressionInfo {
                 min_width: info.as_ref().min_width as usize,
                 max_width: info.as_ref().max_width as usize,
                 unordered_matches: info.as_ref().unordered_matches != 0,
                 matches_at_eod: info.as_ref().matches_at_eod != 0,
                 matches_only_at_eod: info.as_ref().matches_only_at_eod != 0,
-            })
+            };
+
+            debug!("expression `{}` info: {:?}", self, info);
+
+            Ok(info)
         }
     }
 }
@@ -225,8 +209,41 @@ macro_rules! patterns {
 
             v.push(pattern!{$expr, flags => $flags, id => id});
         )*
+
         v
     }};
+}
+
+impl<T: Type> RawDatabase<T> {
+    /// The basic regular expression compiler.
+    ///
+    /// This is the function call with which an expression is compiled into a Hyperscan database which can be passed to the runtime functions.
+    pub fn compile(expression: &str,
+                   flags: u32,
+                   platform: &PlatformInfo)
+                   -> Result<RawDatabase<T>, Error> {
+        let expr = try!(CString::new(expression).map_err(|_| Error::Invalid));
+        let mut db: RawDatabasePtr = ptr::null_mut();
+        let mut err: RawCompileErrorPtr = ptr::null_mut();
+
+        unsafe {
+            check_compile_error!(hs_compile(expr.as_bytes_with_nul().as_ptr() as *const i8,
+                                            flags,
+                                            T::mode(),
+                                            platform.as_ptr(),
+                                            &mut db,
+                                            &mut err),
+                                 err);
+        }
+
+        debug!("pattern `/{}/{}` compiled to {} database {:p}",
+               expression,
+               CompileFlags(flags),
+               T::name(),
+               db);
+
+        Ok(RawDatabase::from_raw(db))
+    }
 }
 
 impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Pattern {
@@ -283,12 +300,21 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
                                  err);
         }
 
+        debug!("patterns [{}] compiled to {} database {:p}",
+               Vec::from_iter(self.iter()
+                                  .map(|p| format!("`{}`", p)))
+                   .join(", "),
+               T::name(),
+               db);
+
         Ok(RawDatabase::from_raw(db))
     }
 }
 
 #[cfg(test)]
 pub mod tests {
+    extern crate env_logger;
+
     use std::ptr;
 
     use super::super::*;
@@ -298,6 +324,8 @@ pub mod tests {
 
     #[test]
     fn test_compile_flags() {
+        let _ = env_logger::init();
+
         let mut flags = CompileFlags(HS_FLAG_CASELESS | HS_FLAG_DOTALL);
 
         assert_eq!(flags, CompileFlags(HS_FLAG_CASELESS | HS_FLAG_DOTALL));
@@ -315,6 +343,8 @@ pub mod tests {
 
     #[test]
     fn test_database_compile() {
+        let _ = env_logger::init();
+
         let db = BlockDatabase::compile("test", 0, &PlatformInfo::host()).unwrap();
 
         assert!(*db != ptr::null_mut());
@@ -324,7 +354,15 @@ pub mod tests {
 
     #[test]
     fn test_pattern() {
+        let _ = env_logger::init();
+
         let p = Pattern::parse("test").unwrap();
+
+        assert_eq!(p.expression, "test");
+        assert_eq!(p.flags, CompileFlags(0));
+        assert_eq!(p.id, 0);
+
+        let p = Pattern::parse("/test/").unwrap();
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, CompileFlags(0));
@@ -351,6 +389,8 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build() {
+        let _ = env_logger::init();
+
         let p = &pattern!{"test"};
 
         assert_eq!(p.expression, "test");
@@ -372,6 +412,8 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build_with_flags() {
+        let _ = env_logger::init();
+
         let p = &pattern!{"test", flags => HS_FLAG_CASELESS};
 
         assert_eq!(p.expression, "test");
@@ -385,6 +427,8 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build() {
+        let _ = env_logger::init();
+
         let db: BlockDatabase = patterns!(["test", "foo", "bar"]).build().unwrap();
 
         validate_database_with_size(&db, DATABASE_SIZE);
@@ -392,6 +436,8 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build_with_flags() {
+        let _ = env_logger::init();
+
         let db: BlockDatabase =
             patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS|HS_FLAG_DOTALL)
                 .build()

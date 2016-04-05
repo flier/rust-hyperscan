@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate log;
 extern crate libc;
 extern crate regex_syntax;

@@ -35,6 +35,8 @@ pub type VectoredDatabase = RawDatabase<Vectored>;
 impl<T: Type> RawDatabase<T> {
     /// Constructs a compiled pattern database from a raw pointer.
     pub fn from_raw(db: RawDatabasePtr) -> RawDatabase<T> {
+        debug!("construct {} database {:p}", T::name(), db);
+
         RawDatabase {
             db: db,
             _marker: PhantomData,
@@ -45,6 +47,8 @@ impl<T: Type> RawDatabase<T> {
     pub fn free(&mut self) -> Result<(), Error> {
         unsafe {
             check_hs_error!(hs_free_database(self.db));
+
+            debug!("free {} database {:p}", T::name(), self.db);
 
             self.db = ptr::null_mut();
 
@@ -67,12 +71,21 @@ impl<T: Type> Database for RawDatabase<T> {
         T::mode()
     }
 
+    fn database_name(&self) -> &'static str {
+        T::name()
+    }
+
     fn database_size(&self) -> Result<usize, Error> {
         let mut size: size_t = 0;
 
         unsafe {
             check_hs_error!(hs_database_size(self.db, &mut size));
         }
+
+        debug!("database size of {} database {:p}: {}",
+               T::name(),
+               self.db,
+               size);
 
         Ok(size as usize)
     }
@@ -81,16 +94,17 @@ impl<T: Type> Database for RawDatabase<T> {
         let mut p: *mut c_char = ptr::null_mut();
 
         unsafe {
-            println!("db = {:p}", self.db);
-
             check_hs_error!(hs_database_info(self.db, &mut p));
-
-            println!("p = {:p}", p);
 
             let result = match CStr::from_ptr(p).to_str() {
                 Ok(info) => Ok(info.to_string()),
                 Err(_) => Err(Error::Invalid),
             };
+
+            debug!("database info of {} database {:p}: {:?}",
+                   T::name(),
+                   self.db,
+                   result);
 
             libc::free(p as *mut libc::c_void);
 
@@ -107,6 +121,11 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
         unsafe {
             check_hs_error!(hs_serialize_database(self.db, &mut bytes, &mut size));
 
+            debug!("serialized {} database {:p} to {} bytes",
+                   T::name(),
+                   self.db,
+                   size);
+
             Ok(RawSerializedDatabase::from_raw_parts(bytes as *mut u8, size as usize))
         }
     }
@@ -118,6 +137,11 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
             check_hs_error!(hs_deserialize_database(bytes.as_ptr() as *const i8,
                                                     bytes.len() as size_t,
                                                     &mut db));
+
+            debug!("deserialized {} database to {:p} from {} bytes",
+                   T::name(),
+                   db,
+                   bytes.len());
         }
 
         Ok(Self::from_raw(db))
@@ -128,6 +152,12 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
             check_hs_error!(hs_deserialize_database_at(bytes.as_ptr() as *const i8,
                                                        bytes.len() as size_t,
                                                        self.db));
+
+            debug!("deserialized {} database at {:p} from {} bytes",
+                   T::name(),
+                   self.db,
+                   bytes.len());
+
             Ok(self)
         }
     }
@@ -210,6 +240,8 @@ impl Deref for RawSerializedDatabase {
 
 #[cfg(test)]
 pub mod tests {
+    extern crate env_logger;
+
     use std::ptr;
 
     use regex::Regex;
@@ -247,6 +279,8 @@ pub mod tests {
 
     #[test]
     fn test_database() {
+        let _ = env_logger::init();
+
         let db = BlockDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
         assert!(*db != ptr::null_mut());
@@ -260,6 +294,8 @@ pub mod tests {
 
     #[test]
     fn test_database_serialize() {
+        let _ = env_logger::init();
+
         let db = StreamingDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
         let data = db.serialize().unwrap();
@@ -276,6 +312,8 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize() {
+        let _ = env_logger::init();
+
         let db = VectoredDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
         let data = db.serialize().unwrap();
@@ -287,6 +325,8 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize_at() {
+        let _ = env_logger::init();
+
         let db = BlockDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
         let data = db.serialize().unwrap();
