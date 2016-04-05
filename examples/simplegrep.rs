@@ -122,13 +122,17 @@ fn main() {
     println!("Scanning {} bytes with Hyperscan", input_data.len());
 
     // This is the function that will be called for each match that occurs.
-    let event_handler = move |_: u32, _: u64, to: u64, _: u32| -> bool {
+    fn event_handler(_: u32, _: u64, to: u64, _: u32, pattern: &hyperscan::Pattern) -> u32 {
         println!("Match for pattern \"{}\" at offset {}", &pattern, to);
 
-        false
+        0
     };
 
-    if let Err(err) = database.scan(input_data.as_str(), 0, &scratch, Some(&event_handler)) {
+    if let Err(err) = database.scan(input_data.as_str(),
+                                    0,
+                                    &scratch,
+                                    Some(event_handler),
+                                    Some(&pattern)) {
         write!(io::stderr(),
                "ERROR: Unable to scan input buffer. Exiting. {}\n",
                err);

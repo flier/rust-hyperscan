@@ -23,7 +23,8 @@ extern crate getopts;
 extern crate pcap;
 extern crate pnet;
 extern crate byteorder;
-extern crate chrono;
+extern crate time;
+extern crate stopwatch;
 
 #[macro_use]
 extern crate hyperscan;
@@ -39,6 +40,7 @@ use std::fs::File;
 use std::iter::Iterator;
 use std::collections::HashMap;
 use std::net::SocketAddrV4;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use getopts::Options;
 use pnet::packet::{Packet, PrimitiveValues};
@@ -47,9 +49,10 @@ use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::udp::UdpPacket;
 use byteorder::{BigEndian, ReadBytesExt};
+use stopwatch::Stopwatch;
 
 use hyperscan::{CompileFlags, Pattern, Patterns, Database, StreamingDatabase, BlockDatabase,
-                DatabaseBuilder};
+                DatabaseBuilder, RawScratch, Scratch, ScratchAllocator, BlockScanner};
 
 #[derive(Debug)]
 enum Error {
@@ -72,49 +75,15 @@ impl error::Error for Error {
     }
 }
 
-// Simple timing class
-#[derive(Debug)]
-struct Clock {
-    time_start: chrono::DateTime<chrono::Local>,
-    time_stop: chrono::DateTime<chrono::Local>,
-}
-
-impl Clock {
-    fn new() -> Self {
-        let now = chrono::Local::now();
-
-        Clock {
-            time_start: now,
-            time_stop: now,
-        }
-    }
-
-    fn start(&mut self) {
-        self.time_start = chrono::Local::now();
-    }
-
-    fn stop(&mut self) {
-        self.time_stop = chrono::Local::now();
-    }
-
-    fn elapsed(&self) -> chrono::Duration {
-        self.time_stop - self.time_start
-    }
-}
-
 macro_rules! build_database {
     ($builder:expr, $mode:expr) => ({
-        let mut clock = Clock::new();
-
-        clock.start();
+        let sw = Stopwatch::start_new();
 
         let db = try!($builder.build().map_err(Error::Compile));
 
-        clock.stop();
-
         println!("Hyperscan {} mode database compiled in {}.",
              $mode,
-             clock.elapsed());
+             sw.elapsed());
 
         db
     })
@@ -190,22 +159,47 @@ impl FiveTuple {
 const IP_FLAG_MF: u8 = 1;
 
 struct Benchmark {
-    db_streaming: StreamingDatabase,
-    db_block: BlockDatabase,
-    packets: Vec<Vec<u8>>,
+    /// Packet data to be scanned.
+    packets: Vec<Box<Vec<u8>>>,
+
+    /// The stream ID to which each packet belongs
     stream_ids: Vec<usize>,
+
+    /// Map used to construct stream_ids
     stream_map: HashMap<FiveTuple, usize>,
+
+    /// Hyperscan compiled database (streaming mode)
+    db_streaming: StreamingDatabase,
+
+    /// Hyperscan compiled database (block mode)
+    db_block: BlockDatabase,
+
+    /// Hyperscan temporary scratch space (used in both modes)
+    scratch: RawScratch,
+
+    // Vector of Hyperscan stream state (used in streaming mode)
+    //
+    // Count of matches found during scanning
+    match_count: AtomicUsize,
 }
 
 impl Benchmark {
-    fn new(db_streaming: StreamingDatabase, db_block: BlockDatabase) -> Benchmark {
-        Benchmark {
-            db_streaming: db_streaming,
-            db_block: db_block,
+    fn new(db_streaming: StreamingDatabase,
+           db_block: BlockDatabase)
+           -> Result<Benchmark, hyperscan::Error> {
+        let mut s = try!(db_streaming.alloc());
+
+        try!(s.realloc(&db_block));
+
+        Ok(Benchmark {
             packets: Vec::new(),
             stream_ids: Vec::new(),
             stream_map: HashMap::new(),
-        }
+            db_streaming: db_streaming,
+            db_block: db_block,
+            scratch: s,
+            match_count: AtomicUsize::new(0),
+        })
     }
 
     fn decode_packet<'a>(packet: &'a pcap::Packet) -> Option<(FiveTuple, Vec<u8>)> {
@@ -255,7 +249,7 @@ impl Benchmark {
                         None => stream_id,
                     });
 
-                    self.packets.push(payload);
+                    self.packets.push(Box::new(payload));
                 }
             }
         }
@@ -263,8 +257,48 @@ impl Benchmark {
         Ok(())
     }
 
+    // Return the number of bytes scanned
     fn bytes(&self) -> usize {
         self.packets.iter().fold(0, |bytes, p| bytes + p.len())
+    }
+
+    // Return the number of matches found.
+    fn matches(&self) -> usize {
+        self.match_count.load(Ordering::Relaxed)
+    }
+
+    // Clear the number of matches found.
+    fn clear_matches(&mut self) {
+        self.match_count.store(0, Ordering::Relaxed);
+    }
+
+    // Open a Hyperscan stream for each stream in stream_ids
+    fn open_streams(&mut self) {}
+
+    // Close all open Hyperscan streams (potentially generating any end-anchored matches)
+    fn close_streams(&mut self) {}
+
+    // Scan each packet (in the ordering given in the PCAP file) through Hyperscan using the streaming interface.
+    fn scan_streams(&mut self) {}
+
+    // Scan each packet (in the ordering given in the PCAP file) through Hyperscan using the block-mode interface.
+    fn scan_block(&mut self) {
+        fn on_match(_: u32, _: u64, _: u64, _: u32, match_count: &AtomicUsize) -> u32 {
+            match_count.fetch_add(1, Ordering::Relaxed);
+
+            0
+        }
+
+        for packet in &self.packets {
+            if let Err(err) = self.db_block
+                                  .scan(&**packet,
+                                        0,
+                                        &self.scratch,
+                                        Some(on_match),
+                                        Some(&self.match_count)) {
+                println!("ERROR: Unable to scan packet. Exiting. {}", err)
+            }
+        }
     }
 
     // Display some information about the compiled database and scanned data.
@@ -372,7 +406,7 @@ fn main() {
     };
 
     // Read our input PCAP file in
-    let mut bench = Benchmark::new(db_streaming, db_block);
+    let mut bench = Benchmark::new(db_streaming, db_block).unwrap();
 
     println!("PCAP input file: {}", pcap_file);
 
@@ -389,4 +423,69 @@ fn main() {
     }
 
     bench.display_stats();
+
+    let mut sw = Stopwatch::start_new();
+
+    // Streaming mode scans.
+    let mut streaming_scan = time::Duration::zero();
+    let mut streaming_open_close = time::Duration::zero();
+
+    for _ in 0..repeat_count {
+        // Open streams.
+        sw.restart();
+        bench.open_streams();
+        streaming_open_close = streaming_open_close + sw.elapsed();
+
+        // Scan all our packets in streaming mode.
+        sw.restart();
+        bench.scan_streams();
+        streaming_scan = streaming_scan + sw.elapsed();
+
+        // Close streams.
+        sw.restart();
+        bench.close_streams();
+        streaming_open_close = streaming_open_close + sw.elapsed();
+    }
+
+    // Collect data from streaming mode scans.
+    let bytes = bench.bytes();
+    let total_bytes = (bytes * 8 * repeat_count) as f64;
+    let tput_stream_scanning = total_bytes * 1000.0 / streaming_scan.num_milliseconds() as f64;
+    let tput_stream_overhead = total_bytes * 1000.0 /
+                               (streaming_scan + streaming_open_close).num_milliseconds() as f64;
+    let matches_stream = bench.matches();
+    let match_rate_stream = (matches_stream as f64) / ((bytes * repeat_count) as f64 / 1024.0); // matches per kilobyte
+
+
+    // Scan all our packets in block mode.
+    bench.clear_matches();
+    sw.restart();
+    for _ in 0..repeat_count {
+        bench.scan_block();
+    }
+    let scan_block = sw.elapsed();
+
+    // Collect data from block mode scans.
+    let tput_block_scanning = total_bytes / scan_block.num_milliseconds() as f64;
+    let matches_block = bench.matches();
+    let match_rate_block = (matches_block as f64) / ((bytes * repeat_count) as f64 / 1024.0); // matches per kilobyte
+
+    println!("\nStreaming mode:\n");
+    println!("  Total matches: {}", matches_stream);
+    println!("  Match rate:    {:.4} matches/kilobyte", match_rate_stream);
+    println!("  Throughput (with stream overhead): {:.2} megabits/sec",
+             tput_stream_overhead / 1000000.0);
+    println!("  Throughput (no stream overhead):   {:.2} megabits/sec",
+             tput_stream_scanning / 1000000.0);
+
+    println!("\nBlock mode:\n");
+    println!("  Total matches: {}", matches_block);
+    println!("  Match rate:    {:.4} matches/kilobyte", match_rate_block);
+    println!("  Throughput:    {:.2} megabits/sec",
+             tput_block_scanning / 1000000.0);
+
+    if bytes < (2 * 1024 * 1024) {
+        println!("\nWARNING: Input PCAP file is less than 2MB in size.\n
+                  This test may have been too short to calculate accurate results.");
+    }
 }

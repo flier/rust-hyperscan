@@ -1,7 +1,6 @@
 use std::fmt;
 use std::ptr;
 use std::mem;
-use std::os::raw::c_void;
 use std::ops::{Deref, DerefMut};
 
 use raw::*;
@@ -103,51 +102,16 @@ impl<T: Type> ScratchAllocator<RawScratch> for RawDatabase<T> {
     }
 }
 
-const TRUE: int32_t = 1;
-const FALSE: int32_t = 0;
-
-unsafe extern "C" fn match_event_callback(id: uint32_t,
-                                          from: uint64_t,
-                                          to: uint64_t,
-                                          flags: uint32_t,
-                                          context: *mut c_void)
-                                          -> int32_t {
-
-    let callback: &*const MatchEventCallback = mem::transmute(context);
-
-    if (**callback)(id as u32, from as u64, to as u64, flags as u32) {
-        TRUE
-    } else {
-        FALSE
-    }
-}
-
-struct WrappedMatchEventHandler {
-    handler: match_event_handler,
-    context: *mut c_void,
-}
-
-macro_rules! wrap_match_event_handler {
-    ($handler:ident) => (match $handler {
-        None => {
-            WrappedMatchEventHandler{ handler: Option::None, context: ptr::null_mut()}
-        }
-        Some(callback) => {
-            WrappedMatchEventHandler{ handler: Option::Some(match_event_callback), context: mem::transmute(&callback)}
-        }
-    })
-}
-
 impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
     #[inline]
-    fn scan(&self,
-            data: T,
-            flags: ScanFlags,
-            scratch: &S,
-            handler: Option<&MatchEventCallback>)
-            -> Result<&Self, Error> {
+    fn scan<D>(&self,
+               data: T,
+               flags: ScanFlags,
+               scratch: &S,
+               callback: Option<MatchEventCallback<D>>,
+               context: Option<&D>)
+               -> Result<&Self, Error> {
         unsafe {
-            let w = wrap_match_event_handler!(handler);
             let bytes = data.as_bytes();
 
             check_hs_error!(hs_scan(**self,
@@ -155,8 +119,8 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
                                     bytes.len() as u32,
                                     flags as u32,
                                     **scratch,
-                                    w.handler,
-                                    w.context));
+                                    mem::transmute(callback),
+                                    mem::transmute(context)));
         }
 
         Ok(&self)
@@ -165,12 +129,13 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
 
 impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
     #[inline]
-    fn scan(&self,
-            data: &Vec<T>,
-            flags: ScanFlags,
-            scratch: &S,
-            handler: Option<&MatchEventCallback>)
-            -> Result<&Self, Error> {
+    fn scan<D>(&self,
+               data: &Vec<T>,
+               flags: ScanFlags,
+               scratch: &S,
+               callback: Option<MatchEventCallback<D>>,
+               context: Option<&D>)
+               -> Result<&Self, Error> {
 
         let mut ptrs = Vec::with_capacity(data.len());
         let mut lens = Vec::with_capacity(data.len());
@@ -182,16 +147,14 @@ impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
         }
 
         unsafe {
-            let w = wrap_match_event_handler!(handler);
-
             check_hs_error!(hs_scan_vector(**self,
                                            ptrs.as_slice().as_ptr() as *const *const i8,
                                            lens.as_slice().as_ptr() as *const uint32_t,
                                            data.len() as u32,
                                            flags as u32,
                                            **scratch,
-                                           w.handler,
-                                           w.context));
+                                           mem::transmute(callback),
+                                           mem::transmute(context)));
         }
 
         Ok(&self)
@@ -248,25 +211,33 @@ impl Clone for RawStream {
 }
 
 impl<S: Scratch> Stream<S> for RawStream {
-    fn close(&self, scratch: &S, handler: Option<&MatchEventCallback>) -> Result<&Self, Error> {
+    fn close<D>(&self,
+                scratch: &S,
+                callback: Option<MatchEventCallback<D>>,
+                context: Option<&D>)
+                -> Result<&Self, Error> {
         unsafe {
-            let w = wrap_match_event_handler!(handler);
-
-            check_hs_error!(hs_close_stream(self.0, **scratch, w.handler, w.context));
+            check_hs_error!(hs_close_stream(self.0,
+                                            **scratch,
+                                            mem::transmute(callback),
+                                            mem::transmute(context)));
         }
 
         Ok(&self)
     }
 
-    fn reset(&self,
-             flags: StreamFlags,
-             scratch: &S,
-             handler: Option<&MatchEventCallback>)
-             -> Result<&Self, Error> {
+    fn reset<D>(&self,
+                flags: StreamFlags,
+                scratch: &S,
+                callback: Option<MatchEventCallback<D>>,
+                context: Option<&D>)
+                -> Result<&Self, Error> {
         unsafe {
-            let w = wrap_match_event_handler!(handler);
-
-            check_hs_error!(hs_reset_stream(self.0, flags, **scratch, w.handler, w.context));
+            check_hs_error!(hs_reset_stream(self.0,
+                                            flags,
+                                            **scratch,
+                                            mem::transmute(callback),
+                                            mem::transmute(context)));
         }
 
         Ok(&self)
@@ -275,14 +246,14 @@ impl<S: Scratch> Stream<S> for RawStream {
 
 impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
     #[inline]
-    fn scan(&self,
-            data: T,
-            flags: ScanFlags,
-            scratch: &S,
-            handler: Option<&MatchEventCallback>)
-            -> Result<&Self, Error> {
+    fn scan<D>(&self,
+               data: T,
+               flags: ScanFlags,
+               scratch: &S,
+               callback: Option<MatchEventCallback<D>>,
+               context: Option<&D>)
+               -> Result<&Self, Error> {
         unsafe {
-            let w = wrap_match_event_handler!(handler);
             let bytes = data.as_bytes();
 
             check_hs_error!(hs_scan_stream(self.0,
@@ -290,8 +261,8 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
                                            bytes.len() as u32,
                                            flags as u32,
                                            **scratch,
-                                           w.handler,
-                                           w.context));
+                                           mem::transmute(callback),
+                                           mem::transmute(context)));
         }
 
         Ok(&self)
@@ -334,19 +305,18 @@ pub mod tests {
                                     .unwrap();
         let s = RawScratch::alloc(&db).unwrap();
 
-        db.scan("foo test bar", 0, &s, Option::None).unwrap();
+        db.scan::<BlockDatabase>("foo test bar", 0, &s, None, None).unwrap();
 
-        let callback = |id: u32, from: u64, to: u64, flags: u32| {
+        fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
             assert_eq!(id, 0);
             assert_eq!(from, 4);
             assert_eq!(to, 8);
             assert_eq!(flags, 0);
 
-            true
+            1
         };
 
-        assert_eq!(db.scan("foo test bar".as_bytes(), 0, &s, Option::Some(&callback))
-                     .err(),
+        assert_eq!(db.scan("foo test bar".as_bytes(), 0, &s, Some(callback), Some(&db)).err(),
                    Some(Error::ScanTerminated));
     }
 
@@ -359,21 +329,20 @@ pub mod tests {
 
         let data = vec!["foo", "test", "bar"];
 
-        db.scan(&data, 0, &s, Option::None).unwrap();
+        db.scan::<VectoredDatabase>(&data, 0, &s, None, None).unwrap();
 
-        let callback = |id: u32, from: u64, to: u64, flags: u32| {
+        fn callback(id: u32, from: u64, to: u64, flags: u32, _: &VectoredDatabase) -> u32 {
             assert_eq!(id, 0);
             assert_eq!(from, 3);
             assert_eq!(to, 7);
             assert_eq!(flags, 0);
 
-            true
+            1
         };
 
         let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
 
-        assert_eq!(db.scan(&data, 0, &s, Option::Some(&callback))
-                     .err(),
+        assert_eq!(db.scan(&data, 0, &s, Some(callback), Some(&db)).err(),
                    Some(Error::ScanTerminated));
     }
 
@@ -387,21 +356,20 @@ pub mod tests {
         let st = db.open_stream(0).unwrap();
 
         let data = vec!["foo", "test", "bar"];
-        let callback = |id: u32, from: u64, to: u64, flags: u32| {
+
+        fn callback(id: u32, from: u64, to: u64, flags: u32, _: &StreamingDatabase) -> u32 {
             assert_eq!(id, 0);
             assert_eq!(from, 0);
             assert_eq!(to, 7);
             assert_eq!(flags, 0);
 
-            false
-        };
-
-        for d in data {
-            st.scan(d, 0, &s, Option::Some(&callback))
-              .unwrap();
+            0
         }
 
-        st.close(&s, Option::Some(&callback))
-          .unwrap();
+        for d in data {
+            st.scan(d, 0, &s, Some(callback), Some(&db)).unwrap();
+        }
+
+        st.close(&s, Some(callback), Some(&db)).unwrap();
     }
 }
