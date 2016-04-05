@@ -51,8 +51,9 @@ use pnet::packet::udp::UdpPacket;
 use byteorder::{BigEndian, ReadBytesExt};
 use stopwatch::Stopwatch;
 
-use hyperscan::{CompileFlags, Pattern, Patterns, Database, StreamingDatabase, BlockDatabase,
-                DatabaseBuilder, RawScratch, Scratch, ScratchAllocator, BlockScanner};
+use hyperscan::{CompileFlags, Pattern, Patterns, Database, DatabaseBuilder, StreamingDatabase,
+                BlockDatabase, RawScratch, Scratch, ScratchAllocator, BlockScanner,
+                StreamingScanner, Stream, RawStream};
 
 #[derive(Debug)]
 enum Error {
@@ -135,7 +136,7 @@ fn parse_file(filename: &str) -> Result<Patterns, io::Error> {
 
 // Key for identifying a stream in our pcap input data, using data from its IP
 // headers.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 struct FiveTuple {
     proto: u8,
     src: SocketAddrV4,
@@ -178,7 +179,8 @@ struct Benchmark {
     scratch: RawScratch,
 
     // Vector of Hyperscan stream state (used in streaming mode)
-    //
+    streams: Vec<RawStream>,
+
     // Count of matches found during scanning
     match_count: AtomicUsize,
 }
@@ -198,6 +200,7 @@ impl Benchmark {
             db_streaming: db_streaming,
             db_block: db_block,
             scratch: s,
+            streams: Vec::new(),
             match_count: AtomicUsize::new(0),
         })
     }
@@ -242,13 +245,18 @@ impl Benchmark {
         while let Ok(packet) = capture.next() {
             if let Some((key, payload)) = Self::decode_packet(&packet) {
                 if payload.len() > 0 {
-                    let stream_id = self.stream_map.len();
+                    let stream_id = match self.stream_map.get(&key) {
+                        Some(&id) => id,
+                        None => {
+                            let id = self.stream_map.len();
 
-                    self.stream_ids.push(match self.stream_map.insert(key, stream_id) {
-                        Some(id) => id,
-                        None => stream_id,
-                    });
+                            assert!(self.stream_map.insert(key, id).is_none());
 
+                            id
+                        }
+                    };
+
+                    self.stream_ids.push(stream_id);
                     self.packets.push(Box::new(payload));
                 }
             }
@@ -272,29 +280,65 @@ impl Benchmark {
         self.match_count.store(0, Ordering::Relaxed);
     }
 
+    fn on_match(_: u32, _: u64, _: u64, _: u32, match_count: &AtomicUsize) -> u32 {
+        match_count.fetch_add(1, Ordering::Relaxed);
+
+        0
+    }
+
     // Open a Hyperscan stream for each stream in stream_ids
-    fn open_streams(&mut self) {}
+    fn open_streams(&mut self) {
+        self.streams = self.stream_map
+                           .iter()
+                           .map(|_| self.db_streaming.open_stream(0).unwrap())
+                           .collect()
+    }
 
     // Close all open Hyperscan streams (potentially generating any end-anchored matches)
-    fn close_streams(&mut self) {}
+    fn close_streams(&mut self) {
+        for stream in &self.streams {
+            if let Err(err) = stream.close(&self.scratch,
+                                           Some(Self::on_match),
+                                           Some(&self.match_count)) {
+                println!("ERROR: Unable to close stream. Exiting. {}", err);
+            }
+        }
+    }
+
+    fn reset_streams(&mut self) {
+        for stream in &self.streams {
+            if let Err(err) = stream.reset(0,
+                                           &self.scratch,
+                                           Some(Self::on_match),
+                                           Some(&self.match_count)) {
+                println!("ERROR: Unable to reset stream. Exiting. {}", err);
+            }
+        }
+    }
 
     // Scan each packet (in the ordering given in the PCAP file) through Hyperscan using the streaming interface.
-    fn scan_streams(&mut self) {}
+    fn scan_streams(&mut self) {
+        for i in 0..self.packets.len() {
+            let ref stream = self.streams[self.stream_ids[i]];
+
+            if let Err(err) = stream.scan(&**self.packets[i],
+                                          0,
+                                          &self.scratch,
+                                          Some(Self::on_match),
+                                          Some(&self.match_count)) {
+                println!("ERROR: Unable to scan packet. Exiting. {}", err)
+            }
+        }
+    }
 
     // Scan each packet (in the ordering given in the PCAP file) through Hyperscan using the block-mode interface.
     fn scan_block(&mut self) {
-        fn on_match(_: u32, _: u64, _: u64, _: u32, match_count: &AtomicUsize) -> u32 {
-            match_count.fetch_add(1, Ordering::Relaxed);
-
-            0
-        }
-
         for packet in &self.packets {
             if let Err(err) = self.db_block
                                   .scan(&**packet,
                                         0,
                                         &self.scratch,
-                                        Some(on_match),
+                                        Some(Self::on_match),
                                         Some(&self.match_count)) {
                 println!("ERROR: Unable to scan packet. Exiting. {}", err)
             }
@@ -430,22 +474,29 @@ fn main() {
     let mut streaming_scan = time::Duration::zero();
     let mut streaming_open_close = time::Duration::zero();
 
-    for _ in 0..repeat_count {
-        // Open streams.
-        sw.restart();
-        bench.open_streams();
-        streaming_open_close = streaming_open_close + sw.elapsed();
+    for i in 0..repeat_count {
+        if i == 0 {
+            // Open streams.
+            sw.restart();
+            bench.open_streams();
+            streaming_open_close = streaming_open_close + sw.elapsed();
+        } else {
+            // Reset streams.
+            sw.restart();
+            bench.reset_streams();
+            streaming_open_close = streaming_open_close + sw.elapsed();
+        }
 
         // Scan all our packets in streaming mode.
         sw.restart();
         bench.scan_streams();
         streaming_scan = streaming_scan + sw.elapsed();
-
-        // Close streams.
-        sw.restart();
-        bench.close_streams();
-        streaming_open_close = streaming_open_close + sw.elapsed();
     }
+
+    // Close streams.
+    sw.restart();
+    bench.close_streams();
+    streaming_open_close = streaming_open_close + sw.elapsed();
 
     // Collect data from streaming mode scans.
     let bytes = bench.bytes();
@@ -466,7 +517,7 @@ fn main() {
     let scan_block = sw.elapsed();
 
     // Collect data from block mode scans.
-    let tput_block_scanning = total_bytes / scan_block.num_milliseconds() as f64;
+    let tput_block_scanning = total_bytes * 1000.0 / scan_block.num_milliseconds() as f64;
     let matches_block = bench.matches();
     let match_rate_block = (matches_block as f64) / ((bytes * repeat_count) as f64 / 1024.0); // matches per kilobyte
 
