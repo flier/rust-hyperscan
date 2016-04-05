@@ -53,9 +53,9 @@ use pnet::packet::udp::UdpPacket;
 use byteorder::{BigEndian, ReadBytesExt};
 use stopwatch::Stopwatch;
 
-use hyperscan::{CompileFlags, Pattern, Patterns, Database, DatabaseBuilder, StreamingDatabase,
-                BlockDatabase, RawScratch, Scratch, ScratchAllocator, BlockScanner,
-                StreamingScanner, Stream, RawStream};
+use hyperscan::{Pattern, Patterns, Database, DatabaseBuilder, StreamingDatabase, BlockDatabase,
+                RawScratch, Scratch, ScratchAllocator, BlockScanner, StreamingScanner, Stream,
+                RawStream};
 
 #[derive(Debug)]
 enum Error {
@@ -110,28 +110,21 @@ fn databases_from_file(filename: &str) -> Result<(StreamingDatabase, BlockDataba
 
 fn parse_file(filename: &str) -> Result<Patterns, io::Error> {
     let f = try!(File::open(filename));
-    let lines = io::BufReader::new(f).lines();
-    let patterns = lines.filter_map(|line: Result<String, io::Error>| -> Option<Pattern> {
-        if let Ok(line) = line {
-            let line = line.trim();
+    let patterns = io::BufReader::new(f)
+                       .lines()
+                       .filter_map(|line: Result<String, io::Error>| -> Option<Pattern> {
+                           if let Ok(line) = line {
+                               let line = line.trim();
 
-            if line.len() > 0 && !line.starts_with('#') {
-                if let Some(off) = line.find(':') {
-                    unsafe {
-                        if let Ok(id) = line.slice_unchecked(0, off).parse() {
-                            return Some(Pattern {
-                                expression: String::from(line.slice_unchecked(off + 1, line.len())),
-                                flags: CompileFlags(0),
-                                id: id,
-                            });
-                        }
-                    }
-                }
-            }
-        }
+                               if line.len() > 0 && !line.starts_with('#') {
+                                   if let Ok(pattern) = Pattern::parse(line) {
+                                       return Some(pattern);
+                                   }
+                               }
+                           }
 
-        None
-    });
+                           None
+                       });
 
     Ok(patterns.collect())
 }

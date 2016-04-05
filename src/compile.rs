@@ -106,27 +106,37 @@ pub struct Pattern {
 
 impl Pattern {
     pub fn parse(s: &str) -> Result<Pattern, Error> {
-        let pattern = match (s.starts_with('/'), s.rfind('/')) {
-            (true, Some(end)) if end > 0 => unsafe {
-                Pattern {
-                    expression: String::from(s.slice_unchecked(1, end)),
-                    flags: try!(CompileFlags::parse(s.slice_unchecked(end + 1, s.len()))),
-                    id: 0,
+        unsafe {
+            let (id, expr) = match s.find(':') {
+                Some(off) => {
+                    (try!(s.slice_unchecked(0, off).parse().map_err(|_| Error::Invalid)),
+                     s.slice_unchecked(off + 1, s.len()))
                 }
-            },
+                None => (0, s),
+            };
 
-            _ => {
-                Pattern {
-                    expression: String::from(s),
-                    flags: CompileFlags::default(),
-                    id: 0,
+            let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
+                (true, Some(end)) if end > 0 => {
+                    Pattern {
+                        expression: String::from(expr.slice_unchecked(1, end)),
+                        flags: try!(CompileFlags::parse(expr.slice_unchecked(end + 1, expr.len()))),
+                        id: id,
+                    }
                 }
-            }
-        };
 
-        debug!("pattern `{}` parsed to `{}`", s, pattern);
+                _ => {
+                    Pattern {
+                        expression: String::from(expr),
+                        flags: CompileFlags::default(),
+                        id: id,
+                    }
+                }
+            };
 
-        Ok(pattern)
+            debug!("pattern `{}` parsed to `{}`", s, pattern);
+
+            Ok(pattern)
+        }
     }
 }
 
@@ -373,6 +383,13 @@ pub mod tests {
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
         assert_eq!(p.id, 0);
+
+        let p = Pattern::parse("3:/test/i").unwrap();
+
+        assert_eq!(p.expression, "test");
+        assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
+        assert_eq!(p.id, 3);
+
 
         let p = Pattern::parse("test/i").unwrap();
 
