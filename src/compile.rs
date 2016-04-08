@@ -109,7 +109,7 @@ impl Pattern {
         unsafe {
             let (id, expr) = match s.find(':') {
                 Some(off) => {
-                    (try!(s.slice_unchecked(0, off).parse().map_err(|_| Error::Invalid)),
+                    (try!(s.slice_unchecked(0, off).parse()),
                      s.slice_unchecked(off + 1, s.len()))
                 }
                 None => (0, s),
@@ -162,7 +162,7 @@ impl FromStr for Pattern {
 
 impl Expression for Pattern {
     fn info(&self) -> Result<ExpressionInfo, Error> {
-        let expr = try!(CString::new(self.expression.as_str()).map_err(|_| Error::Invalid));
+        let expr = try!(CString::new(self.expression.as_str()));
         let mut info: CPtr<hs_expr_info_t> = CPtr::null();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
@@ -232,7 +232,7 @@ impl<T: Type> RawDatabase<T> {
                    flags: u32,
                    platform: &PlatformInfo)
                    -> Result<RawDatabase<T>, Error> {
-        let expr = try!(CString::new(expression).map_err(|_| Error::Invalid));
+        let expr = try!(CString::new(expression));
         let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
@@ -284,7 +284,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
         let mut ids = Vec::with_capacity(self.len());
 
         for pattern in self {
-            let expr = try!(CString::new(pattern.expression.as_str()).map_err(|_| Error::Invalid));
+            let expr = try!(CString::new(pattern.expression.as_str()));
 
             expressions.push(expr);
             flags.push(pattern.flags.0 as uint32_t);

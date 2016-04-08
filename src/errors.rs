@@ -8,10 +8,8 @@ use constants::*;
 use raw::*;
 
 /// Error Codes
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Error {
-    /// The engine completed normally.
-    Success,
     /// A parameter passed to this function was invalid.
     Invalid,
     /// A memory allocation failed.
@@ -37,12 +35,16 @@ pub enum Error {
     BadAlloc,
     /// Unknown error code
     Failed(i32),
+    /// An error which can be returned when parsing an integer.
+    ParseError(::std::num::ParseIntError),
+    /// An error returned from CString::new to indicate that a nul byte was found in the vector provided.
+    NulError(::std::ffi::NulError),
 }
 
 impl From<i32> for Error {
     fn from(err: i32) -> Error {
         match err {
-            HS_SUCCESS => Error::Success,
+            HS_SUCCESS => unreachable!(),
             HS_INVALID => Error::Invalid,
             HS_NOMEM => Error::NoMem,
             HS_SCAN_TERMINATED => Error::ScanTerminated,
@@ -54,6 +56,17 @@ impl From<i32> for Error {
             HS_BAD_ALLOC => Error::BadAlloc,
             _ => Error::Failed(err),
         }
+    }
+}
+
+impl From<::std::num::ParseIntError> for Error {
+    fn from(err: ::std::num::ParseIntError) -> Error {
+        Error::ParseError(err)
+    }
+}
+impl From<::std::ffi::NulError> for Error {
+    fn from(err: ::std::ffi::NulError) -> Error {
+        Error::NulError(err)
     }
 }
 
@@ -74,7 +87,6 @@ impl fmt::Display for Error {
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Success => "The engine completed normally.",
             Error::Invalid => "A parameter passed to this function was invalid.",
             Error::NoMem => "A memory allocation failed.",
             Error::ScanTerminated => "The engine was terminated by callback.",
@@ -89,6 +101,8 @@ impl error::Error for Error {
                 "The memory allocator did not correctly return memory suitably aligned."
             }
             Error::Failed(..) => "Internal operation failed.",
+            Error::ParseError(ref err) => err.description(),
+            Error::NulError(ref err) => err.description(),
         }
     }
 }

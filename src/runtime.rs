@@ -367,8 +367,10 @@ pub mod tests {
             1
         };
 
-        assert_eq!(db.scan("foo test bar".as_bytes(), 0, &s, Some(callback), Some(&db)).err(),
-                   Some(Error::ScanTerminated));
+        assert_eq!(db.scan("foo test bar".as_bytes(), 0, &s, Some(callback), Some(&db))
+                     .err()
+                     .unwrap(),
+                   Error::ScanTerminated);
     }
 
     #[test]
