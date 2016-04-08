@@ -200,14 +200,14 @@ impl Benchmark {
         })
     }
 
-    fn decode_packet<'a>(packet: &'a pcap::Packet) -> Option<(FiveTuple, Vec<u8>)> {
-        let ether = EthernetPacket::new(packet.data).unwrap();
+    fn decode_packet(packet: &pcap::Packet) -> Option<(FiveTuple, Vec<u8>)> {
+        let ether = EthernetPacket::new(&packet.data).unwrap();
 
         if ether.get_ethertype() != EtherTypes::Ipv4 {
             return None;
         }
 
-        let ipv4 = Ipv4Packet::new(ether.payload()).unwrap();
+        let ipv4 = Ipv4Packet::new(&ether.payload()).unwrap();
 
         if ipv4.get_version() != 4 {
             return None;
@@ -226,7 +226,7 @@ impl Benchmark {
             }
 
             IpNextHeaderProtocols::Udp => {
-                let udp = UdpPacket::new(ipv4.payload()).unwrap();
+                let udp = UdpPacket::new(&ipv4.payload()).unwrap();
 
                 Some((FiveTuple::new(&ipv4), Vec::from(udp.payload())))
             }
@@ -237,7 +237,7 @@ impl Benchmark {
     fn read_streams(&mut self, pcap_file: &str) -> Result<(), pcap::Error> {
         let mut capture = try!(pcap::Capture::from_file(Path::new(pcap_file)));
 
-        while let Ok(packet) = capture.next() {
+        while let Ok(ref packet) = capture.next() {
             if let Some((key, payload)) = Self::decode_packet(&packet) {
                 if payload.len() > 0 {
                     let stream_id = match self.stream_map.get(&key) {
@@ -291,7 +291,7 @@ impl Benchmark {
 
     // Close all open Hyperscan streams (potentially generating any end-anchored matches)
     fn close_streams(&mut self) {
-        for stream in &self.streams {
+        for ref stream in &self.streams {
             if let Err(err) = stream.close(&self.scratch,
                                            Some(Self::on_match),
                                            Some(&self.match_count)) {
@@ -301,7 +301,7 @@ impl Benchmark {
     }
 
     fn reset_streams(&mut self) {
-        for stream in &self.streams {
+        for ref stream in &self.streams {
             if let Err(err) = stream.reset(0,
                                            &self.scratch,
                                            Some(Self::on_match),
@@ -313,10 +313,10 @@ impl Benchmark {
 
     // Scan each packet (in the ordering given in the PCAP file) through Hyperscan using the streaming interface.
     fn scan_streams(&mut self) {
-        for i in 0..self.packets.len() {
+        for (i, ref packet) in self.packets.iter().enumerate() {
             let ref stream = self.streams[self.stream_ids[i]];
 
-            if let Err(err) = stream.scan(&**self.packets[i],
+            if let Err(err) = stream.scan(packet.as_ref().as_slice(),
                                           0,
                                           &self.scratch,
                                           Some(Self::on_match),
@@ -328,9 +328,9 @@ impl Benchmark {
 
     // Scan each packet (in the ordering given in the PCAP file) through Hyperscan using the block-mode interface.
     fn scan_block(&mut self) {
-        for packet in &self.packets {
+        for ref packet in &self.packets {
             if let Err(err) = self.db_block
-                                  .scan(&**packet,
+                                  .scan(packet.as_ref().as_slice(),
                                         0,
                                         &self.scratch,
                                         Some(Self::on_match),
