@@ -59,8 +59,20 @@ use hyperscan::{Pattern, Patterns, Database, DatabaseBuilder, StreamingDatabase,
 
 #[derive(Debug)]
 enum Error {
-    Io(io::Error),
-    Compile(hyperscan::Error),
+    IoError(io::Error),
+    CompileError(hyperscan::Error),
+}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::IoError(err)
+    }
+}
+
+impl From<hyperscan::Error> for Error {
+    fn from(err: hyperscan::Error) -> Error {
+        Error::CompileError(err)
+    }
 }
 
 impl fmt::Display for Error {
@@ -72,8 +84,8 @@ impl fmt::Display for Error {
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Io(ref err) => err.description(),
-            Error::Compile(ref err) => err.description(),
+            Error::IoError(ref err) => err.description(),
+            Error::CompileError(ref err) => err.description(),
         }
     }
 }
@@ -82,7 +94,7 @@ macro_rules! build_database {
     ($builder:expr, $mode:expr) => ({
         let sw = Stopwatch::start_new();
 
-        let db = try!($builder.build().map_err(Error::Compile));
+        let db = try!($builder.build());
 
         println!("Hyperscan {} mode database compiled in {}.",
              $mode,
@@ -99,7 +111,7 @@ macro_rules! build_database {
  */
 fn databases_from_file(filename: &str) -> Result<(StreamingDatabase, BlockDatabase), Error> {
     // do the actual file reading and string handling
-    let patterns = try!(parse_file(filename).map_err(Error::Io));
+    let patterns = try!(parse_file(filename));
 
     println!("Compiling Hyperscan databases with {} patterns.",
              patterns.len());
