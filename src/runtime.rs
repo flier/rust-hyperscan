@@ -322,6 +322,8 @@ pub mod tests {
 
     use super::super::*;
 
+    const SCRATCH_SIZE: usize = 2639;
+
     #[test]
     fn test_scratch() {
         let _ = env_logger::init();
@@ -334,13 +336,13 @@ pub mod tests {
 
         assert!(*s != ptr::null_mut());
 
-        assert_eq!(s.size().unwrap(), 2385);
+        assert_eq!(s.size().unwrap(), SCRATCH_SIZE);
 
         let mut s2 = s.clone();
 
         assert!(*s2 != ptr::null_mut());
 
-        assert_eq!(s2.size().unwrap(), 2385);
+        assert_eq!(s2.size().unwrap(), SCRATCH_SIZE);
 
         let db2: VectoredDatabase = pattern!{"foobar"}.build().unwrap();
 
@@ -352,8 +354,8 @@ pub mod tests {
         let _ = env_logger::init();
 
         let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
-                                    .build()
-                                    .unwrap();
+            .build()
+            .unwrap();
         let s = RawScratch::alloc(&db).unwrap();
 
         db.scan::<BlockDatabase>("foo test bar", 0, &s, None, None).unwrap();
@@ -368,8 +370,8 @@ pub mod tests {
         };
 
         assert_eq!(db.scan("foo test bar".as_bytes(), 0, &s, Some(callback), Some(&db))
-                     .err()
-                     .unwrap(),
+                       .err()
+                       .unwrap(),
                    Error::ScanTerminated);
     }
 
@@ -378,8 +380,8 @@ pub mod tests {
         let _ = env_logger::init();
 
         let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
-                                       .build()
-                                       .unwrap();
+            .build()
+            .unwrap();
         let s = RawScratch::alloc(&db).unwrap();
 
         let data = vec!["foo", "test", "bar"];
@@ -406,8 +408,8 @@ pub mod tests {
         let _ = env_logger::init();
 
         let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}
-                                        .build()
-                                        .unwrap();
+            .build()
+            .unwrap();
 
         let s = RawScratch::alloc(&db).unwrap();
         let st = db.open_stream(0).unwrap();

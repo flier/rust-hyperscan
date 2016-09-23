@@ -109,8 +109,7 @@ impl Pattern {
         unsafe {
             let (id, expr) = match s.find(':') {
                 Some(off) => {
-                    (try!(s.slice_unchecked(0, off).parse()),
-                     s.slice_unchecked(off + 1, s.len()))
+                    (try!(s.slice_unchecked(0, off).parse()), s.slice_unchecked(off + 1, s.len()))
                 }
                 None => (0, s),
             };
@@ -227,7 +226,8 @@ macro_rules! patterns {
 impl<T: Type> RawDatabase<T> {
     /// The basic regular expression compiler.
     ///
-    /// This is the function call with which an expression is compiled into a Hyperscan database which can be passed to the runtime functions.
+    /// This is the function call with which an expression is compiled into a Hyperscan database
+    // which can be passed to the runtime functions.
     pub fn compile(expression: &str,
                    flags: u32,
                    platform: &PlatformInfo)
@@ -274,8 +274,8 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
     ///
     /// This is the function call with which a set of expressions is compiled into a database
     /// which can be passed to the runtime functions.
-    /// Each expression can be labelled with a unique integer which is passed into the match callback
-    /// to identify the pattern that has matched.
+    /// Each expression can be labelled with a unique integer
+    // which is passed into the match callback to identify the pattern that has matched.
     ///
     fn build_for_platform(&self, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
         let mut expressions = Vec::with_capacity(self.len());
@@ -312,7 +312,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
 
         debug!("patterns [{}] compiled to {} database {:p}",
                Vec::from_iter(self.iter()
-                                  .map(|p| format!("`{}`", p)))
+                       .map(|p| format!("`{}`", p)))
                    .join(", "),
                T::name(),
                db);
@@ -330,7 +330,7 @@ pub mod tests {
     use super::super::*;
     use super::super::common::tests::*;
 
-    const DATABASE_SIZE: usize = 2800;
+    const DATABASE_SIZE: usize = 2792;
 
     #[test]
     fn test_compile_flags() {

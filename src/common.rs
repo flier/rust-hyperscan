@@ -174,7 +174,6 @@ impl<T: Type> Drop for RawDatabase<T> {
 }
 
 impl RawDatabase<Streaming> {
-    /// Provides the size of the stream state allocated by a single stream opened against the given database.
     pub fn stream_size(&self) -> Result<usize, Error> {
         let mut size: size_t = 0;
 
@@ -248,16 +247,16 @@ pub mod tests {
 
     use super::super::*;
 
-    const DATABASE_SIZE: usize = 1000;
+    const DATABASE_SIZE: usize = 872;
 
     pub fn validate_database_info(info: &String) {
         assert!(Regex::new(r"^Version: (\d\.\d\.\d) Features:\s+(\w+) Mode: (\w+)$")
-                    .unwrap()
-                    .is_match(&info));
+            .unwrap()
+            .is_match(&info));
     }
 
     pub fn validate_database_with_size<T: Database>(db: &T, size: usize) {
-        assert!(db.database_size().unwrap() >= size);
+        assert_eq!(db.database_size().unwrap(), size);
 
         let db_info = db.database_info().unwrap();
 
@@ -288,8 +287,8 @@ pub mod tests {
         validate_database(&db);
 
         assert!(Regex::new(r"RawDatabase<Block>\{db: \w+\}")
-                    .unwrap()
-                    .is_match(&format!("{:?}", db)));
+            .unwrap()
+            .is_match(&format!("{:?}", db)));
     }
 
     #[test]
@@ -306,8 +305,8 @@ pub mod tests {
         validate_serialized_database(data.as_slice());
 
         assert!(Regex::new(r"RawSerializedDatabase\{p: \w+, len: \d+\}")
-                    .unwrap()
-                    .is_match(&format!("{:?}", data)));
+            .unwrap()
+            .is_match(&format!("{:?}", data)));
     }
 
     #[test]

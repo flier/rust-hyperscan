@@ -1,6 +1,6 @@
 [package]
 name = "hyperscan"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Flier Lu <flier.lu@nexusguard.com>"]
 build = "build.rs"
 description = "Hyperscan bindings for Rust"
@@ -15,12 +15,16 @@ libc = "0.2"
 log = "0.3"
 regex-syntax = "0.3"
 
+[build-dependencies]
+bindgen = { git = "https://github.com/Yamakaky/rust-bindgen.git" }
+env_logger = "0.3"
+
 [dev-dependencies]
 env_logger = "0.3"
 regex = "0.1"
 getopts = "0.2"
 pcap = "0.5"
-pnet = "0.7"
+pnet = "0.12"
 byteorder = "*"
 time = "*"
 stopwatch = "*"
