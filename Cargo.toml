@@ -17,6 +17,7 @@ regex-syntax = "0.3"
 
 [build-dependencies]
 bindgen = { git = "https://github.com/Yamakaky/rust-bindgen.git" }
+log = "0.3"
 env_logger = "0.3"
 
 [dev-dependencies]
@@ -31,6 +32,7 @@ stopwatch = "*"
 
 [lib]
 name = "hyperscan"
+doctest = false
 
 [[example]]
 name = "simplegrep"
