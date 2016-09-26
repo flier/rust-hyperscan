@@ -57,6 +57,5 @@ fn main() {
 
     println!("cargo:rerun-if-changed={}/include/hs/hs.h", root_dir);
     println!("cargo:rustc-link-lib=dylib=c++");
-    println!("cargo:rustc-link-lib=static=hs");
     println!("cargo:rustc-link-search=native={}/lib", root_dir);
 }
