@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,26 +44,26 @@
 
     <section id='main' class="content trait">
 <h1 class='fqn'><span class='in-band'>Trait <a href='index.html'>hyperscan</a>::<wbr><a class='trait' href=''>Stream</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1973' class='srclink' href='../src/hyperscan/api.rs.html#318-328' title='goto source code'>[src]</a></span></h1>
-<pre class='rust trait'>pub trait Stream&lt;S: <a class='trait' href='../hyperscan/trait.Scratch.html' title='hyperscan::Scratch'>Scratch</a>&gt;: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a class='type' href='../hyperscan/type.RawStreamPtr.html' title='hyperscan::RawStreamPtr'>RawStreamPtr</a>&gt; {
-    fn <a href='#tymethod.close' class='fnname'>close</a>(&amp;self, scratch: &amp;S, handler: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
-    fn <a href='#tymethod.reset' class='fnname'>reset</a>(&amp;self, flags: <a class='type' href='../hyperscan/type.StreamFlags.html' title='hyperscan::StreamFlags'>StreamFlags</a>, scratch: &amp;S, handler: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-2742' class='srclink' href='../src/hyperscan/src/api.rs.html#359-374' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait Stream&lt;S:&nbsp;<a class='trait' href='../hyperscan/trait.Scratch.html' title='hyperscan::Scratch'>Scratch</a>&gt;: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a class='type' href='../hyperscan/type.RawStreamPtr.html' title='hyperscan::RawStreamPtr'>RawStreamPtr</a>&gt; {
+    fn <a href='#tymethod.close' class='fnname'>close</a>&lt;D&gt;(&amp;self, scratch: &amp;S, callback: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&lt;D&gt;&gt;, context: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;D&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
+    fn <a href='#tymethod.reset' class='fnname'>reset</a>&lt;D&gt;(&amp;self, flags: <a class='type' href='../hyperscan/type.StreamFlags.html' title='hyperscan::StreamFlags'>StreamFlags</a>, scratch: &amp;S, callback: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&lt;D&gt;&gt;, context: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;D&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
 }</pre><div class='docblock'><p>The stream returned by StreamingDatabase::open_stream</p>
 </div>
             <h2 id='required-methods'>Required Methods</h2>
             <div class='methods'>
-        <h3 id='tymethod.close' class='method stab '><code>fn <a href='#tymethod.close' class='fnname'>close</a>(&amp;self, scratch: &amp;S, handler: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Close a stream.</p>
-</div><h3 id='tymethod.reset' class='method stab '><code>fn <a href='#tymethod.reset' class='fnname'>reset</a>(&amp;self, flags: <a class='type' href='../hyperscan/type.StreamFlags.html' title='hyperscan::StreamFlags'>StreamFlags</a>, scratch: &amp;S, handler: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Reset a stream to an initial state.</p>
+        <h3 id='tymethod.close' class='method stab '><code>fn <a href='#tymethod.close' class='fnname'>close</a>&lt;D&gt;(&amp;self, scratch: &amp;S, callback: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&lt;D&gt;&gt;, context: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;D&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Close a stream.</p>
+</div><h3 id='tymethod.reset' class='method stab '><code>fn <a href='#tymethod.reset' class='fnname'>reset</a>&lt;D&gt;(&amp;self, flags: <a class='type' href='../hyperscan/type.StreamFlags.html' title='hyperscan::StreamFlags'>StreamFlags</a>, scratch: &amp;S, callback: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&lt;D&gt;&gt;, context: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;D&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Reset a stream to an initial state.</p>
 </div></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl&lt;S: <a class='trait' href='../hyperscan/trait.Scratch.html' title='hyperscan::Scratch'>Scratch</a>&gt; <a class='trait' href='../hyperscan/trait.Stream.html' title='hyperscan::Stream'>Stream</a>&lt;S&gt; for <a class='struct' href='../hyperscan/struct.RawStream.html' title='hyperscan::RawStream'>RawStream</a></code></li>
+    <li><code>impl&lt;S:&nbsp;<a class='trait' href='../hyperscan/trait.Scratch.html' title='hyperscan::Scratch'>Scratch</a>&gt; Stream&lt;S&gt; for <a class='struct' href='../hyperscan/struct.RawStream.html' title='hyperscan::RawStream'>RawStream</a></code></li>
 </ul><script type="text/javascript" async
-                              src="../implementors/hyperscan/trait.Stream.js">
-                      </script></section>
+                         src="../implementors/hyperscan/trait.Stream.js">
+                 </script></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -85,6 +86,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -105,7 +108,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

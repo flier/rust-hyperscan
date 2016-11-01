@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,659 +44,543 @@
 
     <section id='main' class="content mod">
 <h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>hyperscan</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-0' class='srclink' href='../src/hyperscan/lib.rs.html#1-29' title='goto source code'>[src]</a></span></h1>
-<h2 id='macros' class='section-header'><a href="#macros">Macros</a></h2>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-0' class='srclink' href='../src/hyperscan/src/lib.rs.html#1-60' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Hyperscan is a high-performance regular expression matching library.</p>
+
+<h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1>
+<pre class='rust rust-example-rendered'>
+<span class='attribute'>#[<span class='ident'>macro_use</span>]</span>
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>hyperscan</span>;
+
+<span class='kw'>use</span> <span class='ident'>hyperscan</span>::<span class='op'>*</span>;
+
+<span class='kw'>fn</span> <span class='ident'>callback</span>(<span class='ident'>id</span>: <span class='ident'>u32</span>, <span class='ident'>from</span>: <span class='ident'>u64</span>, <span class='ident'>to</span>: <span class='ident'>u64</span>, <span class='ident'>flags</span>: <span class='ident'>u32</span>, _: <span class='kw-2'>&amp;</span><span class='ident'>BlockDatabase</span>) <span class='op'>-&gt;</span> <span class='ident'>u32</span> {
+    <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>id</span>, <span class='number'>0</span>);
+    <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>from</span>, <span class='number'>5</span>);
+    <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>to</span>, <span class='number'>9</span>);
+    <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>flags</span>, <span class='number'>0</span>);
+
+    <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;found pattern #{} @ [{}, {})&quot;</span>, <span class='ident'>id</span>, <span class='ident'>from</span>, <span class='ident'>to</span>);
+
+    <span class='number'>0</span>
+}
+
+<span class='kw'>fn</span> <span class='ident'>main</span>() {
+    <span class='kw'>let</span> <span class='ident'>pattern</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='macro'>pattern</span><span class='macro'>!</span>{<span class='string'>&quot;test&quot;</span>, <span class='ident'>flags</span> <span class='op'>=&gt;</span> <span class='ident'>HS_FLAG_CASELESS</span><span class='op'>|</span><span class='ident'>HS_FLAG_SOM_LEFTMOST</span>};
+    <span class='kw'>let</span> <span class='ident'>db</span>: <span class='ident'>BlockDatabase</span> <span class='op'>=</span> <span class='ident'>pattern</span>.<span class='ident'>build</span>().<span class='ident'>unwrap</span>();
+    <span class='kw'>let</span> <span class='ident'>scratch</span> <span class='op'>=</span> <span class='ident'>db</span>.<span class='ident'>alloc</span>().<span class='ident'>unwrap</span>();
+
+    <span class='ident'>db</span>.<span class='ident'>scan</span>::<span class='op'>&lt;</span><span class='ident'>BlockDatabase</span><span class='op'>&gt;</span>(<span class='string'>&quot;some test data&quot;</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>scratch</span>, <span class='prelude-val'>Some</span>(<span class='ident'>callback</span>), <span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>db</span>)).<span class='ident'>unwrap</span>();
+}</pre>
+</div><h2 id='macros' class='section-header'><a href="#macros">Macros</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='macro' href='macro.assert_hs_error!.html'
-                               title='hyperscan::assert_hs_error!'>assert_hs_error!</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='macro' href='macro.check_compile_error!.html'
-                               title='hyperscan::check_compile_error!'>check_compile_error!</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='macro' href='macro.check_hs_error!.html'
-                               title='hyperscan::check_hs_error!'>check_hs_error!</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='macro' href='macro.pattern!.html'
-                               title='hyperscan::pattern!'>pattern!</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='macro' href='macro.patterns!.html'
-                               title='hyperscan::patterns!'>patterns!</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                </table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.pattern!.html'
+                                  title='hyperscan::pattern!'>pattern!</a></td>
+                           <td class='docblock short'>
+                                <p>Define <code>Pattern</code> with flags</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.patterns!.html'
+                                  title='hyperscan::patterns!'>patterns!</a></td>
+                           <td class='docblock short'>
+                                <p>Define multi <code>Pattern</code> with flags and ID</p>
+                           </td>
+                       </tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.CompileFlags.html'
-                               title='hyperscan::CompileFlags'>CompileFlags</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.ExpressionInfo.html'
-                               title='hyperscan::ExpressionInfo'>ExpressionInfo</a></td>
-                        <td class='docblock short'>
-                             <p>A type containing information related to an expression</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.Pattern.html'
-                               title='hyperscan::Pattern'>Pattern</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.PlatformInfo.html'
-                               title='hyperscan::PlatformInfo'>PlatformInfo</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.RawDatabase.html'
-                               title='hyperscan::RawDatabase'>RawDatabase</a></td>
-                        <td class='docblock short'>
-                             <p>A compiled pattern database that can then be used to scan data.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.RawScratch.html'
-                               title='hyperscan::RawScratch'>RawScratch</a></td>
-                        <td class='docblock short'>
-                             <p>A large enough region of scratch space to support a given database.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.RawStream.html'
-                               title='hyperscan::RawStream'>RawStream</a></td>
-                        <td class='docblock short'>
-                             <p>A pattern matching state can be maintained across multiple blocks of target data</p>
-
-                        </td>
-                    </tr>
-                </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.CompileFlags.html'
+                                  title='hyperscan::CompileFlags'>CompileFlags</a></td>
+                           <td class='docblock short'>
+                                <p>Flags which modify the behaviour of the expression.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.ExpressionInfo.html'
+                                  title='hyperscan::ExpressionInfo'>ExpressionInfo</a></td>
+                           <td class='docblock short'>
+                                <p>A type containing information related to an expression</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.Pattern.html'
+                                  title='hyperscan::Pattern'>Pattern</a></td>
+                           <td class='docblock short'>
+                                <p>Pattern that has matched.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.PlatformInfo.html'
+                                  title='hyperscan::PlatformInfo'>PlatformInfo</a></td>
+                           <td class='docblock short'>
+                                <p>A type containing information on the target platform
+which may optionally be provided to the compile calls</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.RawDatabase.html'
+                                  title='hyperscan::RawDatabase'>RawDatabase</a></td>
+                           <td class='docblock short'>
+                                <p>A compiled pattern database that can then be used to scan data.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.RawScratch.html'
+                                  title='hyperscan::RawScratch'>RawScratch</a></td>
+                           <td class='docblock short'>
+                                <p>A large enough region of scratch space to support a given database.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.RawStream.html'
+                                  title='hyperscan::RawStream'>RawStream</a></td>
+                           <td class='docblock short'>
+                                <p>A pattern matching state can be maintained across multiple blocks of target data</p>
+                           </td>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='enum' href='enum.Block.html'
-                               title='hyperscan::Block'>Block</a></td>
-                        <td class='docblock short'>
-                             <p>Block scan (non-streaming) database.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='enum' href='enum.Error.html'
-                               title='hyperscan::Error'>Error</a></td>
-                        <td class='docblock short'>
-                             <p>Error Codes</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='enum' href='enum.Streaming.html'
-                               title='hyperscan::Streaming'>Streaming</a></td>
-                        <td class='docblock short'>
-                             <p>Streaming database.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='enum' href='enum.Vectored.html'
-                               title='hyperscan::Vectored'>Vectored</a></td>
-                        <td class='docblock short'>
-                             <p>Vectored scanning database.</p>
-
-                        </td>
-                    </tr>
-                </table><h2 id='constants' class='section-header'><a href="#constants">Constants</a></h2>
+                       <tr class=' module-item'>
+                           <td><a class='enum' href='enum.Block.html'
+                                  title='hyperscan::Block'>Block</a></td>
+                           <td class='docblock short'>
+                                <p>Block scan (non-streaming) database.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='enum' href='enum.Error.html'
+                                  title='hyperscan::Error'>Error</a></td>
+                           <td class='docblock short'>
+                                <p>Error Codes</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='enum' href='enum.Streaming.html'
+                                  title='hyperscan::Streaming'>Streaming</a></td>
+                           <td class='docblock short'>
+                                <p>Streaming database.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='enum' href='enum.Vectored.html'
+                                  title='hyperscan::Vectored'>Vectored</a></td>
+                           <td class='docblock short'>
+                                <p>Vectored scanning database.</p>
+                           </td>
+                       </tr></table><h2 id='constants' class='section-header'><a href="#constants">Constants</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_BAD_ALIGN.html'
-                               title='hyperscan::HS_BAD_ALIGN'>HS_BAD_ALIGN</a></td>
-                        <td class='docblock short'>
-                             <p>A parameter passed to this function was not correctly aligned.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_BAD_ALLOC.html'
-                               title='hyperscan::HS_BAD_ALLOC'>HS_BAD_ALLOC</a></td>
-                        <td class='docblock short'>
-                             <p>The memory allocator (either malloc() or the allocator set with @ref
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_BAD_ALIGN.html'
+                                  title='hyperscan::HS_BAD_ALIGN'>HS_BAD_ALIGN</a></td>
+                           <td class='docblock short'>
+                                <p>A parameter passed to this function was not correctly aligned.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_BAD_ALLOC.html'
+                                  title='hyperscan::HS_BAD_ALLOC'>HS_BAD_ALLOC</a></td>
+                           <td class='docblock short'>
+                                <p>The memory allocator (either malloc() or the allocator set with @ref
 hs_set_allocator()) did not correctly return memory suitably aligned for the
 largest representable data type on this platform.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_COMPILER_ERROR.html'
-                               title='hyperscan::HS_COMPILER_ERROR'>HS_COMPILER_ERROR</a></td>
-                        <td class='docblock short'>
-                             <p>The pattern compiler failed, and the @ref hs_compile_error_t should be
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_COMPILER_ERROR.html'
+                                  title='hyperscan::HS_COMPILER_ERROR'>HS_COMPILER_ERROR</a></td>
+                           <td class='docblock short'>
+                                <p>The pattern compiler failed, and the @ref hs_compile_error_t should be
 inspected for more detail.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_CPU_FEATURES_AVX2.html'
-                               title='hyperscan::HS_CPU_FEATURES_AVX2'>HS_CPU_FEATURES_AVX2</a></td>
-                        <td class='docblock short'>
-                             <p>CPU features flag - Intel(R) Advanced Vector Extensions 2 (Intel(R) AVX2)</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_DB_MODE_ERROR.html'
-                               title='hyperscan::HS_DB_MODE_ERROR'>HS_DB_MODE_ERROR</a></td>
-                        <td class='docblock short'>
-                             <p>The given database was built for a different mode of operation. This error
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_CPU_FEATURES_AVX2.html'
+                                  title='hyperscan::HS_CPU_FEATURES_AVX2'>HS_CPU_FEATURES_AVX2</a></td>
+                           <td class='docblock short'>
+                                <p>CPU features flag - Intel(R) Advanced Vector Extensions 2 (Intel(R) AVX2)</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_DB_MODE_ERROR.html'
+                                  title='hyperscan::HS_DB_MODE_ERROR'>HS_DB_MODE_ERROR</a></td>
+                           <td class='docblock short'>
+                                <p>The given database was built for a different mode of operation. This error
 is returned when streaming calls are used with a block or vectored database
 and vice versa.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_DB_PLATFORM_ERROR.html'
-                               title='hyperscan::HS_DB_PLATFORM_ERROR'>HS_DB_PLATFORM_ERROR</a></td>
-                        <td class='docblock short'>
-                             <p>The given database was built for a different platform (i.e., CPU type).</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_DB_VERSION_ERROR.html'
-                               title='hyperscan::HS_DB_VERSION_ERROR'>HS_DB_VERSION_ERROR</a></td>
-                        <td class='docblock short'>
-                             <p>The given database was built for a different version of Hyperscan.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_FLAG_ALLOWEMPTY.html'
-                               title='hyperscan::HS_FLAG_ALLOWEMPTY'>HS_FLAG_ALLOWEMPTY</a></td>
-                        <td class='docblock short'>
-                             <p>Compile flag: Allow expressions that can match against empty buffers.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_FLAG_CASELESS.html'
-                               title='hyperscan::HS_FLAG_CASELESS'>HS_FLAG_CASELESS</a></td>
-                        <td class='docblock short'>
-                             <p>Compile flag: Set case-insensitive matching.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_FLAG_DOTALL.html'
-                               title='hyperscan::HS_FLAG_DOTALL'>HS_FLAG_DOTALL</a></td>
-                        <td class='docblock short'>
-                             <p>Compile flag: Matching a <code>.</code> will not exclude newlines.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_FLAG_MULTILINE.html'
-                               title='hyperscan::HS_FLAG_MULTILINE'>HS_FLAG_MULTILINE</a></td>
-                        <td class='docblock short'>
-                             <p>Compile flag: Set multi-line anchoring.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_FLAG_PREFILTER.html'
-                               title='hyperscan::HS_FLAG_PREFILTER'>HS_FLAG_PREFILTER</a></td>
-                        <td class='docblock short'>
-                             <p>Compile flag: Enable prefiltering mode for this expression.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_FLAG_SINGLEMATCH.html'
-                               title='hyperscan::HS_FLAG_SINGLEMATCH'>HS_FLAG_SINGLEMATCH</a></td>
-                        <td class='docblock short'>
-                             <p>Compile flag: Set single-match only mode.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_FLAG_SOM_LEFTMOST.html'
-                               title='hyperscan::HS_FLAG_SOM_LEFTMOST'>HS_FLAG_SOM_LEFTMOST</a></td>
-                        <td class='docblock short'>
-                             <p>Compile flag: Enable leftmost start of match reporting.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_FLAG_UCP.html'
-                               title='hyperscan::HS_FLAG_UCP'>HS_FLAG_UCP</a></td>
-                        <td class='docblock short'>
-                             <p>Compile flag: Enable Unicode property support for this expression.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_FLAG_UTF8.html'
-                               title='hyperscan::HS_FLAG_UTF8'>HS_FLAG_UTF8</a></td>
-                        <td class='docblock short'>
-                             <p>Compile flag: Enable UTF-8 mode for this expression.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_INVALID.html'
-                               title='hyperscan::HS_INVALID'>HS_INVALID</a></td>
-                        <td class='docblock short'>
-                             <p>A parameter passed to this function was invalid.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_MODE_BLOCK.html'
-                               title='hyperscan::HS_MODE_BLOCK'>HS_MODE_BLOCK</a></td>
-                        <td class='docblock short'>
-                             <p>Compiler mode flag: Block scan (non-streaming) database.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_MODE_SOM_HORIZON_LARGE.html'
-                               title='hyperscan::HS_MODE_SOM_HORIZON_LARGE'>HS_MODE_SOM_HORIZON_LARGE</a></td>
-                        <td class='docblock short'>
-                             <p>Compiler mode flag: use full precision to track start of match offsets in
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_DB_PLATFORM_ERROR.html'
+                                  title='hyperscan::HS_DB_PLATFORM_ERROR'>HS_DB_PLATFORM_ERROR</a></td>
+                           <td class='docblock short'>
+                                <p>The given database was built for a different platform (i.e., CPU type).</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_DB_VERSION_ERROR.html'
+                                  title='hyperscan::HS_DB_VERSION_ERROR'>HS_DB_VERSION_ERROR</a></td>
+                           <td class='docblock short'>
+                                <p>The given database was built for a different version of Hyperscan.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_FLAG_ALLOWEMPTY.html'
+                                  title='hyperscan::HS_FLAG_ALLOWEMPTY'>HS_FLAG_ALLOWEMPTY</a></td>
+                           <td class='docblock short'>
+                                <p>Compile flag: Allow expressions that can match against empty buffers.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_FLAG_CASELESS.html'
+                                  title='hyperscan::HS_FLAG_CASELESS'>HS_FLAG_CASELESS</a></td>
+                           <td class='docblock short'>
+                                <p>Compile flag: Set case-insensitive matching.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_FLAG_DOTALL.html'
+                                  title='hyperscan::HS_FLAG_DOTALL'>HS_FLAG_DOTALL</a></td>
+                           <td class='docblock short'>
+                                <p>Compile flag: Matching a <code>.</code> will not exclude newlines.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_FLAG_MULTILINE.html'
+                                  title='hyperscan::HS_FLAG_MULTILINE'>HS_FLAG_MULTILINE</a></td>
+                           <td class='docblock short'>
+                                <p>Compile flag: Set multi-line anchoring.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_FLAG_PREFILTER.html'
+                                  title='hyperscan::HS_FLAG_PREFILTER'>HS_FLAG_PREFILTER</a></td>
+                           <td class='docblock short'>
+                                <p>Compile flag: Enable prefiltering mode for this expression.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_FLAG_SINGLEMATCH.html'
+                                  title='hyperscan::HS_FLAG_SINGLEMATCH'>HS_FLAG_SINGLEMATCH</a></td>
+                           <td class='docblock short'>
+                                <p>Compile flag: Set single-match only mode.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_FLAG_SOM_LEFTMOST.html'
+                                  title='hyperscan::HS_FLAG_SOM_LEFTMOST'>HS_FLAG_SOM_LEFTMOST</a></td>
+                           <td class='docblock short'>
+                                <p>Compile flag: Enable leftmost start of match reporting.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_FLAG_UCP.html'
+                                  title='hyperscan::HS_FLAG_UCP'>HS_FLAG_UCP</a></td>
+                           <td class='docblock short'>
+                                <p>Compile flag: Enable Unicode property support for this expression.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_FLAG_UTF8.html'
+                                  title='hyperscan::HS_FLAG_UTF8'>HS_FLAG_UTF8</a></td>
+                           <td class='docblock short'>
+                                <p>Compile flag: Enable UTF-8 mode for this expression.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_INVALID.html'
+                                  title='hyperscan::HS_INVALID'>HS_INVALID</a></td>
+                           <td class='docblock short'>
+                                <p>A parameter passed to this function was invalid.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_MODE_BLOCK.html'
+                                  title='hyperscan::HS_MODE_BLOCK'>HS_MODE_BLOCK</a></td>
+                           <td class='docblock short'>
+                                <p>Compiler mode flag: Block scan (non-streaming) database.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_MODE_SOM_HORIZON_LARGE.html'
+                                  title='hyperscan::HS_MODE_SOM_HORIZON_LARGE'>HS_MODE_SOM_HORIZON_LARGE</a></td>
+                           <td class='docblock short'>
+                                <p>Compiler mode flag: use full precision to track start of match offsets in
 stream state.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_MODE_SOM_HORIZON_MEDIUM.html'
-                               title='hyperscan::HS_MODE_SOM_HORIZON_MEDIUM'>HS_MODE_SOM_HORIZON_MEDIUM</a></td>
-                        <td class='docblock short'>
-                             <p>Compiler mode flag: use medium precision to track start of match offsets in
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_MODE_SOM_HORIZON_MEDIUM.html'
+                                  title='hyperscan::HS_MODE_SOM_HORIZON_MEDIUM'>HS_MODE_SOM_HORIZON_MEDIUM</a></td>
+                           <td class='docblock short'>
+                                <p>Compiler mode flag: use medium precision to track start of match offsets in
 stream state.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_MODE_SOM_HORIZON_SMALL.html'
-                               title='hyperscan::HS_MODE_SOM_HORIZON_SMALL'>HS_MODE_SOM_HORIZON_SMALL</a></td>
-                        <td class='docblock short'>
-                             <p>Compiler mode flag: use limited precision to track start of match offsets in
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_MODE_SOM_HORIZON_SMALL.html'
+                                  title='hyperscan::HS_MODE_SOM_HORIZON_SMALL'>HS_MODE_SOM_HORIZON_SMALL</a></td>
+                           <td class='docblock short'>
+                                <p>Compiler mode flag: use limited precision to track start of match offsets in
 stream state.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_MODE_STREAM.html'
-                               title='hyperscan::HS_MODE_STREAM'>HS_MODE_STREAM</a></td>
-                        <td class='docblock short'>
-                             <p>Compiler mode flag: Streaming database.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_MODE_VECTORED.html'
-                               title='hyperscan::HS_MODE_VECTORED'>HS_MODE_VECTORED</a></td>
-                        <td class='docblock short'>
-                             <p>Compiler mode flag: Vectored scanning database.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_NOMEM.html'
-                               title='hyperscan::HS_NOMEM'>HS_NOMEM</a></td>
-                        <td class='docblock short'>
-                             <p>A memory allocation failed.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_SCAN_TERMINATED.html'
-                               title='hyperscan::HS_SCAN_TERMINATED'>HS_SCAN_TERMINATED</a></td>
-                        <td class='docblock short'>
-                             <p>The engine was terminated by callback.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_SUCCESS.html'
-                               title='hyperscan::HS_SUCCESS'>HS_SUCCESS</a></td>
-                        <td class='docblock short'>
-                             <p>The engine completed normally.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_TUNE_FAMILY_BDW.html'
-                               title='hyperscan::HS_TUNE_FAMILY_BDW'>HS_TUNE_FAMILY_BDW</a></td>
-                        <td class='docblock short'>
-                             <p>Tuning Parameter - Intel(R) microarchitecture code name Broadwell</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_TUNE_FAMILY_GENERIC.html'
-                               title='hyperscan::HS_TUNE_FAMILY_GENERIC'>HS_TUNE_FAMILY_GENERIC</a></td>
-                        <td class='docblock short'>
-                             <p>Tuning Parameter - Generic</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_TUNE_FAMILY_HSW.html'
-                               title='hyperscan::HS_TUNE_FAMILY_HSW'>HS_TUNE_FAMILY_HSW</a></td>
-                        <td class='docblock short'>
-                             <p>Tuning Parameter - Intel(R) microarchitecture code name Haswell</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_TUNE_FAMILY_IVB.html'
-                               title='hyperscan::HS_TUNE_FAMILY_IVB'>HS_TUNE_FAMILY_IVB</a></td>
-                        <td class='docblock short'>
-                             <p>Tuning Parameter - Intel(R) microarchitecture code name Ivy Bridge</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_TUNE_FAMILY_SLM.html'
-                               title='hyperscan::HS_TUNE_FAMILY_SLM'>HS_TUNE_FAMILY_SLM</a></td>
-                        <td class='docblock short'>
-                             <p>Tuning Parameter - Intel(R) microarchitecture code name Silvermont</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='constant' href='constant.HS_TUNE_FAMILY_SNB.html'
-                               title='hyperscan::HS_TUNE_FAMILY_SNB'>HS_TUNE_FAMILY_SNB</a></td>
-                        <td class='docblock short'>
-                             <p>Tuning Parameter - Intel(R) microarchitecture code name Sandy Bridge</p>
-
-                        </td>
-                    </tr>
-                </table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_MODE_STREAM.html'
+                                  title='hyperscan::HS_MODE_STREAM'>HS_MODE_STREAM</a></td>
+                           <td class='docblock short'>
+                                <p>Compiler mode flag: Streaming database.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_MODE_VECTORED.html'
+                                  title='hyperscan::HS_MODE_VECTORED'>HS_MODE_VECTORED</a></td>
+                           <td class='docblock short'>
+                                <p>Compiler mode flag: Vectored scanning database.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_NOMEM.html'
+                                  title='hyperscan::HS_NOMEM'>HS_NOMEM</a></td>
+                           <td class='docblock short'>
+                                <p>A memory allocation failed.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_SCAN_TERMINATED.html'
+                                  title='hyperscan::HS_SCAN_TERMINATED'>HS_SCAN_TERMINATED</a></td>
+                           <td class='docblock short'>
+                                <p>The engine was terminated by callback.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_SUCCESS.html'
+                                  title='hyperscan::HS_SUCCESS'>HS_SUCCESS</a></td>
+                           <td class='docblock short'>
+                                <p>The engine completed normally.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_TUNE_FAMILY_BDW.html'
+                                  title='hyperscan::HS_TUNE_FAMILY_BDW'>HS_TUNE_FAMILY_BDW</a></td>
+                           <td class='docblock short'>
+                                <p>Tuning Parameter - Intel(R) microarchitecture code name Broadwell</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_TUNE_FAMILY_GENERIC.html'
+                                  title='hyperscan::HS_TUNE_FAMILY_GENERIC'>HS_TUNE_FAMILY_GENERIC</a></td>
+                           <td class='docblock short'>
+                                <p>Tuning Parameter - Generic</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_TUNE_FAMILY_HSW.html'
+                                  title='hyperscan::HS_TUNE_FAMILY_HSW'>HS_TUNE_FAMILY_HSW</a></td>
+                           <td class='docblock short'>
+                                <p>Tuning Parameter - Intel(R) microarchitecture code name Haswell</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_TUNE_FAMILY_IVB.html'
+                                  title='hyperscan::HS_TUNE_FAMILY_IVB'>HS_TUNE_FAMILY_IVB</a></td>
+                           <td class='docblock short'>
+                                <p>Tuning Parameter - Intel(R) microarchitecture code name Ivy Bridge</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_TUNE_FAMILY_SLM.html'
+                                  title='hyperscan::HS_TUNE_FAMILY_SLM'>HS_TUNE_FAMILY_SLM</a></td>
+                           <td class='docblock short'>
+                                <p>Tuning Parameter - Intel(R) microarchitecture code name Silvermont</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.HS_TUNE_FAMILY_SNB.html'
+                                  title='hyperscan::HS_TUNE_FAMILY_SNB'>HS_TUNE_FAMILY_SNB</a></td>
+                           <td class='docblock short'>
+                                <p>Tuning Parameter - Intel(R) microarchitecture code name Sandy Bridge</p>
+                           </td>
+                       </tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.BlockScanner.html'
-                               title='hyperscan::BlockScanner'>BlockScanner</a></td>
-                        <td class='docblock short'>
-                             <p>The block (non-streaming) regular expression scanner.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.Database.html'
-                               title='hyperscan::Database'>Database</a></td>
-                        <td class='docblock short'>
-                             <p>A Hyperscan pattern database.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.DatabaseBuilder.html'
-                               title='hyperscan::DatabaseBuilder'>DatabaseBuilder</a></td>
-                        <td class='docblock short'>
-                             <p>The regular expression pattern database builder.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.Expression.html'
-                               title='hyperscan::Expression'>Expression</a></td>
-                        <td class='docblock short'>
-                             <p>Providing expression information.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.Scannable.html'
-                               title='hyperscan::Scannable'>Scannable</a></td>
-                        <td class='docblock short'>
-                             <p>A byte stream can be matched</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.Scratch.html'
-                               title='hyperscan::Scratch'>Scratch</a></td>
-                        <td class='docblock short'>
-                             <p>A Hyperscan scratch space.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.ScratchAllocator.html'
-                               title='hyperscan::ScratchAllocator'>ScratchAllocator</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.SerializableDatabase.html'
-                               title='hyperscan::SerializableDatabase'>SerializableDatabase</a></td>
-                        <td class='docblock short'>
-                             <p>A pattern database can be serialized to a stream of bytes.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.SerializedDatabase.html'
-                               title='hyperscan::SerializedDatabase'>SerializedDatabase</a></td>
-                        <td class='docblock short'>
-                             <p>A pattern database was serialized to a stream of bytes.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.Stream.html'
-                               title='hyperscan::Stream'>Stream</a></td>
-                        <td class='docblock short'>
-                             <p>The stream returned by StreamingDatabase::open_stream</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.StreamingScanner.html'
-                               title='hyperscan::StreamingScanner'>StreamingScanner</a></td>
-                        <td class='docblock short'>
-                             <p>The streaming regular expression scanner.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.Type.html'
-                               title='hyperscan::Type'>Type</a></td>
-                        <td class='docblock short'>
-                             <p>Compile mode</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='trait' href='trait.VectoredScanner.html'
-                               title='hyperscan::VectoredScanner'>VectoredScanner</a></td>
-                        <td class='docblock short'>
-                             <p>The vectored regular expression scanner.</p>
-
-                        </td>
-                    </tr>
-                </table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.BlockScanner.html'
+                                  title='hyperscan::BlockScanner'>BlockScanner</a></td>
+                           <td class='docblock short'>
+                                <p>The block (non-streaming) regular expression scanner.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.Database.html'
+                                  title='hyperscan::Database'>Database</a></td>
+                           <td class='docblock short'>
+                                <p>A Hyperscan pattern database.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.DatabaseBuilder.html'
+                                  title='hyperscan::DatabaseBuilder'>DatabaseBuilder</a></td>
+                           <td class='docblock short'>
+                                <p>The regular expression pattern database builder.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.Expression.html'
+                                  title='hyperscan::Expression'>Expression</a></td>
+                           <td class='docblock short'>
+                                <p>Providing expression information.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.Scannable.html'
+                                  title='hyperscan::Scannable'>Scannable</a></td>
+                           <td class='docblock short'>
+                                <p>A byte stream can be matched</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.Scratch.html'
+                                  title='hyperscan::Scratch'>Scratch</a></td>
+                           <td class='docblock short'>
+                                <p>A Hyperscan scratch space.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.ScratchAllocator.html'
+                                  title='hyperscan::ScratchAllocator'>ScratchAllocator</a></td>
+                           <td class='docblock short'>
+                                <p><code>Scratch</code> allocator</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.SerializableDatabase.html'
+                                  title='hyperscan::SerializableDatabase'>SerializableDatabase</a></td>
+                           <td class='docblock short'>
+                                <p>A pattern database can be serialized to a stream of bytes.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.SerializedDatabase.html'
+                                  title='hyperscan::SerializedDatabase'>SerializedDatabase</a></td>
+                           <td class='docblock short'>
+                                <p>A pattern database was serialized to a stream of bytes.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.Stream.html'
+                                  title='hyperscan::Stream'>Stream</a></td>
+                           <td class='docblock short'>
+                                <p>The stream returned by StreamingDatabase::open_stream</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.StreamingScanner.html'
+                                  title='hyperscan::StreamingScanner'>StreamingScanner</a></td>
+                           <td class='docblock short'>
+                                <p>The streaming regular expression scanner.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.Type.html'
+                                  title='hyperscan::Type'>Type</a></td>
+                           <td class='docblock short'>
+                                <p>Compile mode</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.VectoredScanner.html'
+                                  title='hyperscan::VectoredScanner'>VectoredScanner</a></td>
+                           <td class='docblock short'>
+                                <p>The vectored regular expression scanner.</p>
+                           </td>
+                       </tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.BlockDatabase.html'
-                               title='hyperscan::BlockDatabase'>BlockDatabase</a></td>
-                        <td class='docblock short'>
-                             <p>Block scan (non-streaming) database.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.MatchEventCallback.html'
-                               title='hyperscan::MatchEventCallback'>MatchEventCallback</a></td>
-                        <td class='docblock short'>
-                             <p>Definition of the match event callback function type.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.Patterns.html'
-                               title='hyperscan::Patterns'>Patterns</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.RawDatabasePtr.html'
-                               title='hyperscan::RawDatabasePtr'>RawDatabasePtr</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.RawPlatformInfoPtr.html'
-                               title='hyperscan::RawPlatformInfoPtr'>RawPlatformInfoPtr</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.RawScratchPtr.html'
-                               title='hyperscan::RawScratchPtr'>RawScratchPtr</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.RawStreamPtr.html'
-                               title='hyperscan::RawStreamPtr'>RawStreamPtr</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.ScanFlags.html'
-                               title='hyperscan::ScanFlags'>ScanFlags</a></td>
-                        <td class='docblock short'>
-                             <p>Flags modifying the behaviour of scan function</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.StreamFlags.html'
-                               title='hyperscan::StreamFlags'>StreamFlags</a></td>
-                        <td class='docblock short'>
-                             <p>Flags modifying the behaviour of the stream.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.StreamingDatabase.html'
-                               title='hyperscan::StreamingDatabase'>StreamingDatabase</a></td>
-                        <td class='docblock short'>
-                             <p>Streaming database.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.VectoredDatabase.html'
-                               title='hyperscan::VectoredDatabase'>VectoredDatabase</a></td>
-                        <td class='docblock short'>
-                             <p>Vectored scanning database.</p>
-
-                        </td>
-                    </tr>
-                </table></section>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.BlockDatabase.html'
+                                  title='hyperscan::BlockDatabase'>BlockDatabase</a></td>
+                           <td class='docblock short'>
+                                <p>Block scan (non-streaming) database.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.MatchEventCallback.html'
+                                  title='hyperscan::MatchEventCallback'>MatchEventCallback</a></td>
+                           <td class='docblock short'>
+                                <p>Definition of the match event callback function type.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.MatchEventCallbackMut.html'
+                                  title='hyperscan::MatchEventCallbackMut'>MatchEventCallbackMut</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.Patterns.html'
+                                  title='hyperscan::Patterns'>Patterns</a></td>
+                           <td class='docblock short'>
+                                <p>Vec of <code>Pattern</code></p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.RawDatabasePtr.html'
+                                  title='hyperscan::RawDatabasePtr'>RawDatabasePtr</a></td>
+                           <td class='docblock short'>
+                                <p>Raw <code>Database</code> pointer</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.RawPlatformInfoPtr.html'
+                                  title='hyperscan::RawPlatformInfoPtr'>RawPlatformInfoPtr</a></td>
+                           <td class='docblock short'>
+                                <p>Raw <code>PlatformInfo</code> pointer</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.RawScratchPtr.html'
+                                  title='hyperscan::RawScratchPtr'>RawScratchPtr</a></td>
+                           <td class='docblock short'>
+                                <p>Raw <code>Scratch</code> pointer</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.RawStreamPtr.html'
+                                  title='hyperscan::RawStreamPtr'>RawStreamPtr</a></td>
+                           <td class='docblock short'>
+                                <p>Raw <code>Stream</code> pointer</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.ScanFlags.html'
+                                  title='hyperscan::ScanFlags'>ScanFlags</a></td>
+                           <td class='docblock short'>
+                                <p>Flags modifying the behaviour of scan function</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.StreamFlags.html'
+                                  title='hyperscan::StreamFlags'>StreamFlags</a></td>
+                           <td class='docblock short'>
+                                <p>Flags modifying the behaviour of the stream.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.StreamingDatabase.html'
+                                  title='hyperscan::StreamingDatabase'>StreamingDatabase</a></td>
+                           <td class='docblock short'>
+                                <p>Streaming database.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.VectoredDatabase.html'
+                                  title='hyperscan::VectoredDatabase'>VectoredDatabase</a></td>
+                           <td class='docblock short'>
+                                <p>Vectored scanning database.</p>
+                           </td>
+                       </tr></table></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -718,6 +603,8 @@ stream state.</p>
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -738,7 +625,7 @@ stream state.</p>
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,10 +44,10 @@
 
     <section id='main' class="content trait">
 <h1 class='fqn'><span class='in-band'>Trait <a href='index.html'>hyperscan</a>::<wbr><a class='trait' href=''>Type</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1799' class='srclink' href='../src/hyperscan/api.rs.html#15-19' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-2533' class='srclink' href='../src/hyperscan/src/api.rs.html#16-20' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait Type {
     fn <a href='#tymethod.mode' class='fnname'>mode</a>() -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>;
     fn <a href='#tymethod.name' class='fnname'>name</a>() -&gt; &amp;'static <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>;
@@ -57,12 +58,12 @@
         <h3 id='tymethod.mode' class='method stab '><code>fn <a href='#tymethod.mode' class='fnname'>mode</a>() -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a></code></h3><h3 id='tymethod.name' class='method stab '><code>fn <a href='#tymethod.name' class='fnname'>name</a>() -&gt; &amp;'static <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a></code></h3></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl <a class='trait' href='../hyperscan/trait.Type.html' title='hyperscan::Type'>Type</a> for <a class='enum' href='../hyperscan/enum.Block.html' title='hyperscan::Block'>Block</a></code></li>
-<li><code>impl <a class='trait' href='../hyperscan/trait.Type.html' title='hyperscan::Type'>Type</a> for <a class='enum' href='../hyperscan/enum.Streaming.html' title='hyperscan::Streaming'>Streaming</a></code></li>
-<li><code>impl <a class='trait' href='../hyperscan/trait.Type.html' title='hyperscan::Type'>Type</a> for <a class='enum' href='../hyperscan/enum.Vectored.html' title='hyperscan::Vectored'>Vectored</a></code></li>
+    <li><code>impl Type for <a class='enum' href='../hyperscan/enum.Block.html' title='hyperscan::Block'>Block</a></code></li>
+<li><code>impl Type for <a class='enum' href='../hyperscan/enum.Streaming.html' title='hyperscan::Streaming'>Streaming</a></code></li>
+<li><code>impl Type for <a class='enum' href='../hyperscan/enum.Vectored.html' title='hyperscan::Vectored'>Vectored</a></code></li>
 </ul><script type="text/javascript" async
-                              src="../implementors/hyperscan/trait.Type.js">
-                      </script></section>
+                         src="../implementors/hyperscan/trait.Type.js">
+                 </script></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -85,6 +86,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -105,7 +108,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

@@ -9,8 +9,9 @@
 
     <title>runtime.rs.html -- source</title>
 
-    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
-    <link rel="stylesheet" type="text/css" href="../../main.css">
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
 
     
     
@@ -448,11 +449,37 @@
 <span id="405">405</span>
 <span id="406">406</span>
 <span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fmt</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ptr</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>mem</span>;
-<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>os</span>::<span class='ident'>raw</span>::<span class='ident'>c_void</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ops</span>::{<span class='ident'>Deref</span>, <span class='ident'>DerefMut</span>};
 
 <span class='kw'>use</span> <span class='ident'>raw</span>::<span class='op'>*</span>;
@@ -483,6 +510,11 @@
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_alloc_scratch</span>(<span class='op'>*</span><span class='op'>*</span><span class='ident'>db</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>s</span>));
         }
 
+        <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;allocated scratch at {:p} for {} database {:p}&quot;</span>,
+               <span class='ident'>s</span>,
+               <span class='ident'>db</span>.<span class='ident'>database_name</span>(),
+               <span class='op'>*</span><span class='op'>*</span><span class='ident'>db</span>);
+
         <span class='prelude-val'>Ok</span>(<span class='ident'>RawScratch</span>(<span class='ident'>s</span>))
     }
 }
@@ -492,18 +524,24 @@
     <span class='kw'>fn</span> <span class='ident'>drop</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) {
         <span class='kw'>unsafe</span> {
             <span class='macro'>assert_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_free_scratch</span>(<span class='self'>self</span>.<span class='number'>0</span>));
+
+            <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;freed scratch at {:p}&quot;</span>, <span class='self'>self</span>.<span class='number'>0</span>);
+
+            <span class='self'>self</span>.<span class='number'>0</span> <span class='op'>=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>();
         }
     }
 }
 
 <span class='kw'>impl</span> <span class='ident'>Clone</span> <span class='kw'>for</span> <span class='ident'>RawScratch</span> {
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>clone</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw'>Self</span> {
+    <span class='kw'>fn</span> <span class='ident'>clone</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='self'>Self</span> {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>s</span>: <span class='ident'>RawScratchPtr</span> <span class='op'>=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>();
 
         <span class='kw'>unsafe</span> {
             <span class='macro'>assert_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_clone_scratch</span>(<span class='self'>self</span>.<span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>s</span>));
         }
+
+        <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;cloned scratch from {:p} to {:p}&quot;</span>, <span class='self'>self</span>.<span class='number'>0</span>, <span class='ident'>s</span>);
 
         <span class='ident'>RawScratch</span>(<span class='ident'>s</span>)
     }
@@ -513,7 +551,7 @@
     <span class='kw'>type</span> <span class='ident'>Target</span> <span class='op'>=</span> <span class='ident'>RawScratchPtr</span>;
 
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>deref</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='ident'>Self</span>::<span class='ident'>Target</span> {
+    <span class='kw'>fn</span> <span class='ident'>deref</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='self'>Self</span>::<span class='ident'>Target</span> {
         <span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='number'>0</span>
     }
 }
@@ -527,14 +565,21 @@
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_scratch_size</span>(<span class='self'>self</span>.<span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>size</span>));
         }
 
+        <span class='macro'>debug</span><span class='macro'>!</span>(<span class='string'>&quot;scratch {:p} size: {}&quot;</span>, <span class='self'>self</span>.<span class='number'>0</span>, <span class='ident'>size</span>);
+
         <span class='prelude-val'>Ok</span>(<span class='ident'>size</span> <span class='kw'>as</span> <span class='ident'>usize</span>)
     }
 
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>realloc</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Database</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>db</span>: <span class='kw-2'>&amp;</span><span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='kw'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>realloc</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Database</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>db</span>: <span class='kw-2'>&amp;</span><span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='self'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
         <span class='kw'>unsafe</span> {
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_alloc_scratch</span>(<span class='op'>*</span><span class='op'>*</span><span class='ident'>db</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>.<span class='number'>0</span>));
         }
+
+        <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;reallocated scratch {:p} for {} database {:p}&quot;</span>,
+               <span class='self'>self</span>.<span class='number'>0</span>,
+               <span class='ident'>db</span>.<span class='ident'>database_name</span>(),
+               <span class='op'>*</span><span class='op'>*</span><span class='ident'>db</span>);
 
         <span class='prelude-val'>Ok</span>(<span class='self'>self</span>)
     }
@@ -547,58 +592,23 @@
     }
 
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>realloc</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>s</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>RawScratch</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='kw'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>realloc</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>s</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>RawScratch</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='self'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
         <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>s</span>.<span class='ident'>realloc</span>(<span class='self'>self</span>));
 
         <span class='prelude-val'>Ok</span>(<span class='self'>self</span>)
     }
 }
 
-<span class='kw'>const</span> <span class='ident'>TRUE</span>: <span class='ident'>int32_t</span> <span class='op'>=</span> <span class='number'>1</span>;
-<span class='kw'>const</span> <span class='ident'>FALSE</span>: <span class='ident'>int32_t</span> <span class='op'>=</span> <span class='number'>0</span>;
-
-<span class='kw'>unsafe</span> <span class='kw'>extern</span> <span class='string'>&quot;C&quot;</span> <span class='kw'>fn</span> <span class='ident'>match_event_callback</span>(<span class='ident'>id</span>: <span class='ident'>uint32_t</span>,
-                                          <span class='ident'>from</span>: <span class='ident'>uint64_t</span>,
-                                          <span class='ident'>to</span>: <span class='ident'>uint64_t</span>,
-                                          <span class='ident'>flags</span>: <span class='ident'>uint32_t</span>,
-                                          <span class='ident'>context</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_void</span>)
-                                          <span class='op'>-&gt;</span> <span class='ident'>int32_t</span> {
-
-    <span class='kw'>let</span> <span class='ident'>callback</span>: <span class='kw-2'>&amp;</span><span class='op'>*</span><span class='kw'>const</span> <span class='ident'>MatchEventCallback</span> <span class='op'>=</span> <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>context</span>);
-
-    <span class='kw'>if</span> (<span class='op'>*</span><span class='op'>*</span><span class='ident'>callback</span>)(<span class='ident'>id</span> <span class='kw'>as</span> <span class='ident'>u32</span>, <span class='ident'>from</span> <span class='kw'>as</span> <span class='ident'>u64</span>, <span class='ident'>to</span> <span class='kw'>as</span> <span class='ident'>u64</span>, <span class='ident'>flags</span> <span class='kw'>as</span> <span class='ident'>u32</span>) {
-        <span class='ident'>TRUE</span>
-    } <span class='kw'>else</span> {
-        <span class='ident'>FALSE</span>
-    }
-}
-
-<span class='kw'>struct</span> <span class='ident'>WrappedMatchEventHandler</span> {
-    <span class='ident'>handler</span>: <span class='ident'>match_event_handler</span>,
-    <span class='ident'>context</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_void</span>,
-}
-
-<span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>wrap_match_event_handler</span> {
-    (<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>handler</span>:<span class='ident'>ident</span>) <span class='op'>=&gt;</span> (<span class='kw'>match</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>handler</span> {
-        <span class='prelude-val'>None</span> <span class='op'>=&gt;</span> {
-            <span class='ident'>WrappedMatchEventHandler</span>{ <span class='ident'>handler</span>: <span class='prelude-ty'>Option</span>::<span class='prelude-val'>None</span>, <span class='ident'>context</span>: <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>()}
-        }
-        <span class='prelude-val'>Some</span>(<span class='ident'>callback</span>) <span class='op'>=&gt;</span> {
-            <span class='ident'>WrappedMatchEventHandler</span>{ <span class='ident'>handler</span>: <span class='prelude-ty'>Option</span>::<span class='prelude-val'>Some</span>(<span class='ident'>match_event_callback</span>), <span class='ident'>context</span>: <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='kw-2'>&amp;</span><span class='ident'>callback</span>)}
-        }
-    })
-}
-
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Scannable</span>, <span class='ident'>S</span>: <span class='ident'>Scratch</span><span class='op'>&gt;</span> <span class='ident'>BlockScanner</span><span class='op'>&lt;</span><span class='ident'>T</span>, <span class='ident'>S</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>BlockDatabase</span> {
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>scan</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>,
-            <span class='ident'>data</span>: <span class='ident'>T</span>,
-            <span class='ident'>flags</span>: <span class='ident'>ScanFlags</span>,
-            <span class='ident'>scratch</span>: <span class='kw-2'>&amp;</span><span class='ident'>S</span>,
-            <span class='ident'>handler</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>MatchEventCallback</span><span class='op'>&gt;</span>)
-            <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='kw'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>scan</span><span class='op'>&lt;</span><span class='ident'>D</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>,
+               <span class='ident'>data</span>: <span class='ident'>T</span>,
+               <span class='ident'>flags</span>: <span class='ident'>ScanFlags</span>,
+               <span class='ident'>scratch</span>: <span class='kw-2'>&amp;</span><span class='ident'>S</span>,
+               <span class='ident'>callback</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>MatchEventCallback</span><span class='op'>&lt;</span><span class='ident'>D</span><span class='op'>&gt;&gt;</span>,
+               <span class='ident'>context</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>D</span><span class='op'>&gt;</span>)
+               <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='self'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
         <span class='kw'>unsafe</span> {
-            <span class='kw'>let</span> <span class='ident'>w</span> <span class='op'>=</span> <span class='macro'>wrap_match_event_handler</span><span class='macro'>!</span>(<span class='ident'>handler</span>);
             <span class='kw'>let</span> <span class='ident'>bytes</span> <span class='op'>=</span> <span class='ident'>data</span>.<span class='ident'>as_bytes</span>();
 
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_scan</span>(<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>,
@@ -606,8 +616,13 @@
                                     <span class='ident'>bytes</span>.<span class='ident'>len</span>() <span class='kw'>as</span> <span class='ident'>u32</span>,
                                     <span class='ident'>flags</span> <span class='kw'>as</span> <span class='ident'>u32</span>,
                                     <span class='op'>*</span><span class='op'>*</span><span class='ident'>scratch</span>,
-                                    <span class='ident'>w</span>.<span class='ident'>handler</span>,
-                                    <span class='ident'>w</span>.<span class='ident'>context</span>));
+                                    <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>callback</span>),
+                                    <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>context</span>)));
+
+            <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;block scan {} bytes with {} database at {:p}&quot;</span>,
+                   <span class='ident'>bytes</span>.<span class='ident'>len</span>(),
+                   <span class='self'>self</span>.<span class='ident'>database_name</span>(),
+                   <span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>)
         }
 
         <span class='prelude-val'>Ok</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>)
@@ -616,12 +631,13 @@
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Scannable</span>, <span class='ident'>S</span>: <span class='ident'>Scratch</span><span class='op'>&gt;</span> <span class='ident'>VectoredScanner</span><span class='op'>&lt;</span><span class='ident'>T</span>, <span class='ident'>S</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>VectoredDatabase</span> {
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>scan</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>,
-            <span class='ident'>data</span>: <span class='kw-2'>&amp;</span><span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>,
-            <span class='ident'>flags</span>: <span class='ident'>ScanFlags</span>,
-            <span class='ident'>scratch</span>: <span class='kw-2'>&amp;</span><span class='ident'>S</span>,
-            <span class='ident'>handler</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>MatchEventCallback</span><span class='op'>&gt;</span>)
-            <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='kw'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>scan</span><span class='op'>&lt;</span><span class='ident'>D</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>,
+               <span class='ident'>data</span>: <span class='kw-2'>&amp;</span><span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>,
+               <span class='ident'>flags</span>: <span class='ident'>ScanFlags</span>,
+               <span class='ident'>scratch</span>: <span class='kw-2'>&amp;</span><span class='ident'>S</span>,
+               <span class='ident'>callback</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>MatchEventCallback</span><span class='op'>&lt;</span><span class='ident'>D</span><span class='op'>&gt;&gt;</span>,
+               <span class='ident'>context</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>D</span><span class='op'>&gt;</span>)
+               <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='self'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
 
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>ptrs</span> <span class='op'>=</span> <span class='ident'>Vec</span>::<span class='ident'>with_capacity</span>(<span class='ident'>data</span>.<span class='ident'>len</span>());
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>lens</span> <span class='op'>=</span> <span class='ident'>Vec</span>::<span class='ident'>with_capacity</span>(<span class='ident'>data</span>.<span class='ident'>len</span>());
@@ -633,17 +649,21 @@
         }
 
         <span class='kw'>unsafe</span> {
-            <span class='kw'>let</span> <span class='ident'>w</span> <span class='op'>=</span> <span class='macro'>wrap_match_event_handler</span><span class='macro'>!</span>(<span class='ident'>handler</span>);
-
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_scan_vector</span>(<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>,
                                            <span class='ident'>ptrs</span>.<span class='ident'>as_slice</span>().<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw'>const</span> <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>i8</span>,
                                            <span class='ident'>lens</span>.<span class='ident'>as_slice</span>().<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>uint32_t</span>,
                                            <span class='ident'>data</span>.<span class='ident'>len</span>() <span class='kw'>as</span> <span class='ident'>u32</span>,
                                            <span class='ident'>flags</span> <span class='kw'>as</span> <span class='ident'>u32</span>,
                                            <span class='op'>*</span><span class='op'>*</span><span class='ident'>scratch</span>,
-                                           <span class='ident'>w</span>.<span class='ident'>handler</span>,
-                                           <span class='ident'>w</span>.<span class='ident'>context</span>));
+                                           <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>callback</span>),
+                                           <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>context</span>)));
         }
+
+        <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;vectored scan {} bytes in {} parts with {} database at {:p}&quot;</span>,
+               <span class='ident'>lens</span>.<span class='ident'>iter</span>().<span class='ident'>fold</span>(<span class='number'>0</span>, <span class='op'>|</span><span class='ident'>sum</span>, <span class='ident'>len</span><span class='op'>|</span> <span class='ident'>sum</span> <span class='op'>+</span> <span class='ident'>len</span>),
+               <span class='ident'>lens</span>.<span class='ident'>len</span>(),
+               <span class='self'>self</span>.<span class='ident'>database_name</span>(),
+               <span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>);
 
         <span class='prelude-val'>Ok</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>)
     }
@@ -656,6 +676,11 @@
         <span class='kw'>unsafe</span> {
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_open_stream</span>(<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>, <span class='ident'>flags</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>id</span>));
         }
+
+        <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;stream opened at {:p} for {} database at {:p}&quot;</span>,
+               <span class='ident'>id</span>,
+               <span class='self'>self</span>.<span class='ident'>database_name</span>(),
+               <span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>);
 
         <span class='prelude-val'>Ok</span>(<span class='ident'>RawStream</span>(<span class='ident'>id</span>))
     }
@@ -674,51 +699,65 @@
     <span class='kw'>type</span> <span class='ident'>Target</span> <span class='op'>=</span> <span class='ident'>RawStreamPtr</span>;
 
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>deref</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='ident'>Self</span>::<span class='ident'>Target</span> {
+    <span class='kw'>fn</span> <span class='ident'>deref</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='self'>Self</span>::<span class='ident'>Target</span> {
         <span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='number'>0</span>
     }
 }
 
 <span class='kw'>impl</span> <span class='ident'>DerefMut</span> <span class='kw'>for</span> <span class='ident'>RawStream</span> {
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>deref_mut</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Self</span>::<span class='ident'>Target</span> {
+    <span class='kw'>fn</span> <span class='ident'>deref_mut</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>Self</span>::<span class='ident'>Target</span> {
         <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>.<span class='number'>0</span>
     }
 }
 
 <span class='kw'>impl</span> <span class='ident'>Clone</span> <span class='kw'>for</span> <span class='ident'>RawStream</span> {
-    <span class='kw'>fn</span> <span class='ident'>clone</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw'>Self</span> {
+    <span class='kw'>fn</span> <span class='ident'>clone</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='self'>Self</span> {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>id</span>: <span class='ident'>RawStreamPtr</span> <span class='op'>=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>();
 
         <span class='kw'>unsafe</span> {
             <span class='macro'>assert_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_copy_stream</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>id</span>, <span class='self'>self</span>.<span class='number'>0</span>));
         }
 
+        <span class='macro'>debug</span><span class='macro'>!</span>(<span class='string'>&quot;stream cloned from {:p} to {:p}&quot;</span>, <span class='self'>self</span>.<span class='number'>0</span>, <span class='ident'>id</span>);
+
         <span class='ident'>RawStream</span>(<span class='ident'>id</span>)
     }
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>S</span>: <span class='ident'>Scratch</span><span class='op'>&gt;</span> <span class='ident'>Stream</span><span class='op'>&lt;</span><span class='ident'>S</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>RawStream</span> {
-    <span class='kw'>fn</span> <span class='ident'>close</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>scratch</span>: <span class='kw-2'>&amp;</span><span class='ident'>S</span>, <span class='ident'>handler</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>MatchEventCallback</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='kw'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>close</span><span class='op'>&lt;</span><span class='ident'>D</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>,
+                <span class='ident'>scratch</span>: <span class='kw-2'>&amp;</span><span class='ident'>S</span>,
+                <span class='ident'>callback</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>MatchEventCallback</span><span class='op'>&lt;</span><span class='ident'>D</span><span class='op'>&gt;&gt;</span>,
+                <span class='ident'>context</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>D</span><span class='op'>&gt;</span>)
+                <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='self'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
         <span class='kw'>unsafe</span> {
-            <span class='kw'>let</span> <span class='ident'>w</span> <span class='op'>=</span> <span class='macro'>wrap_match_event_handler</span><span class='macro'>!</span>(<span class='ident'>handler</span>);
-
-            <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_close_stream</span>(<span class='self'>self</span>.<span class='number'>0</span>, <span class='op'>*</span><span class='op'>*</span><span class='ident'>scratch</span>, <span class='ident'>w</span>.<span class='ident'>handler</span>, <span class='ident'>w</span>.<span class='ident'>context</span>));
+            <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_close_stream</span>(<span class='self'>self</span>.<span class='number'>0</span>,
+                                            <span class='op'>*</span><span class='op'>*</span><span class='ident'>scratch</span>,
+                                            <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>callback</span>),
+                                            <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>context</span>)));
         }
+
+        <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;stream closed at {:p}&quot;</span>, <span class='self'>self</span>.<span class='number'>0</span>);
 
         <span class='prelude-val'>Ok</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>)
     }
 
-    <span class='kw'>fn</span> <span class='ident'>reset</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>,
-             <span class='ident'>flags</span>: <span class='ident'>StreamFlags</span>,
-             <span class='ident'>scratch</span>: <span class='kw-2'>&amp;</span><span class='ident'>S</span>,
-             <span class='ident'>handler</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>MatchEventCallback</span><span class='op'>&gt;</span>)
-             <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='kw'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>reset</span><span class='op'>&lt;</span><span class='ident'>D</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>,
+                <span class='ident'>flags</span>: <span class='ident'>StreamFlags</span>,
+                <span class='ident'>scratch</span>: <span class='kw-2'>&amp;</span><span class='ident'>S</span>,
+                <span class='ident'>callback</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>MatchEventCallback</span><span class='op'>&lt;</span><span class='ident'>D</span><span class='op'>&gt;&gt;</span>,
+                <span class='ident'>context</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>D</span><span class='op'>&gt;</span>)
+                <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='self'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
         <span class='kw'>unsafe</span> {
-            <span class='kw'>let</span> <span class='ident'>w</span> <span class='op'>=</span> <span class='macro'>wrap_match_event_handler</span><span class='macro'>!</span>(<span class='ident'>handler</span>);
-
-            <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_reset_stream</span>(<span class='self'>self</span>.<span class='number'>0</span>, <span class='ident'>flags</span>, <span class='op'>*</span><span class='op'>*</span><span class='ident'>scratch</span>, <span class='ident'>w</span>.<span class='ident'>handler</span>, <span class='ident'>w</span>.<span class='ident'>context</span>));
+            <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_reset_stream</span>(<span class='self'>self</span>.<span class='number'>0</span>,
+                                            <span class='ident'>flags</span>,
+                                            <span class='op'>*</span><span class='op'>*</span><span class='ident'>scratch</span>,
+                                            <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>callback</span>),
+                                            <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>context</span>)));
         }
+
+        <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;stream reset at {:p}&quot;</span>, <span class='self'>self</span>.<span class='number'>0</span>);
 
         <span class='prelude-val'>Ok</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>)
     }
@@ -726,24 +765,29 @@
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Scannable</span>, <span class='ident'>S</span>: <span class='ident'>Scratch</span><span class='op'>&gt;</span> <span class='ident'>BlockScanner</span><span class='op'>&lt;</span><span class='ident'>T</span>, <span class='ident'>S</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>RawStream</span> {
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>scan</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>,
-            <span class='ident'>data</span>: <span class='ident'>T</span>,
-            <span class='ident'>flags</span>: <span class='ident'>ScanFlags</span>,
-            <span class='ident'>scratch</span>: <span class='kw-2'>&amp;</span><span class='ident'>S</span>,
-            <span class='ident'>handler</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>MatchEventCallback</span><span class='op'>&gt;</span>)
-            <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='kw'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
-        <span class='kw'>unsafe</span> {
-            <span class='kw'>let</span> <span class='ident'>w</span> <span class='op'>=</span> <span class='macro'>wrap_match_event_handler</span><span class='macro'>!</span>(<span class='ident'>handler</span>);
-            <span class='kw'>let</span> <span class='ident'>bytes</span> <span class='op'>=</span> <span class='ident'>data</span>.<span class='ident'>as_bytes</span>();
+    <span class='kw'>fn</span> <span class='ident'>scan</span><span class='op'>&lt;</span><span class='ident'>D</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>,
+               <span class='ident'>data</span>: <span class='ident'>T</span>,
+               <span class='ident'>flags</span>: <span class='ident'>ScanFlags</span>,
+               <span class='ident'>scratch</span>: <span class='kw-2'>&amp;</span><span class='ident'>S</span>,
+               <span class='ident'>callback</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>MatchEventCallback</span><span class='op'>&lt;</span><span class='ident'>D</span><span class='op'>&gt;&gt;</span>,
+               <span class='ident'>context</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>D</span><span class='op'>&gt;</span>)
+               <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='self'>Self</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
 
+        <span class='kw'>let</span> <span class='ident'>bytes</span> <span class='op'>=</span> <span class='ident'>data</span>.<span class='ident'>as_bytes</span>();
+
+        <span class='kw'>unsafe</span> {
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_scan_stream</span>(<span class='self'>self</span>.<span class='number'>0</span>,
                                            <span class='ident'>bytes</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>i8</span>,
                                            <span class='ident'>bytes</span>.<span class='ident'>len</span>() <span class='kw'>as</span> <span class='ident'>u32</span>,
                                            <span class='ident'>flags</span> <span class='kw'>as</span> <span class='ident'>u32</span>,
                                            <span class='op'>*</span><span class='op'>*</span><span class='ident'>scratch</span>,
-                                           <span class='ident'>w</span>.<span class='ident'>handler</span>,
-                                           <span class='ident'>w</span>.<span class='ident'>context</span>));
+                                           <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>callback</span>),
+                                           <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>context</span>)));
         }
+
+        <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;stream scan {} bytes with stream at {:p}&quot;</span>,
+               <span class='ident'>bytes</span>.<span class='ident'>len</span>(),
+               <span class='self'>self</span>.<span class='number'>0</span>);
 
         <span class='prelude-val'>Ok</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>)
     }
@@ -751,12 +795,18 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>tests</span> {
+    <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>env_logger</span>;
+
     <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ptr</span>;
 
-    <span class='kw'>use</span> <span class='ident'>super</span>::<span class='ident'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw'>super</span>::<span class='op'>*</span>;
+
+    <span class='kw'>const</span> <span class='ident'>SCRATCH_SIZE</span>: <span class='ident'>usize</span> <span class='op'>=</span> <span class='number'>2639</span>;
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_scratch</span>() {
+        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>env_logger</span>::<span class='ident'>init</span>();
+
         <span class='kw'>let</span> <span class='ident'>db</span>: <span class='ident'>BlockDatabase</span> <span class='op'>=</span> <span class='macro'>pattern</span><span class='macro'>!</span>{<span class='string'>&quot;test&quot;</span>}.<span class='ident'>build</span>().<span class='ident'>unwrap</span>();
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='op'>*</span><span class='ident'>db</span> <span class='op'>!=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>());
@@ -765,13 +815,13 @@
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='op'>*</span><span class='ident'>s</span> <span class='op'>!=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>());
 
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>s</span>.<span class='ident'>size</span>().<span class='ident'>unwrap</span>(), <span class='number'>2385</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>s</span>.<span class='ident'>size</span>().<span class='ident'>unwrap</span>(), <span class='ident'>SCRATCH_SIZE</span>);
 
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>s2</span> <span class='op'>=</span> <span class='ident'>s</span>.<span class='ident'>clone</span>();
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='op'>*</span><span class='ident'>s2</span> <span class='op'>!=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>());
 
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>s2</span>.<span class='ident'>size</span>().<span class='ident'>unwrap</span>(), <span class='number'>2385</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>s2</span>.<span class='ident'>size</span>().<span class='ident'>unwrap</span>(), <span class='ident'>SCRATCH_SIZE</span>);
 
         <span class='kw'>let</span> <span class='ident'>db2</span>: <span class='ident'>VectoredDatabase</span> <span class='op'>=</span> <span class='macro'>pattern</span><span class='macro'>!</span>{<span class='string'>&quot;foobar&quot;</span>}.<span class='ident'>build</span>().<span class='ident'>unwrap</span>();
 
@@ -780,80 +830,85 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_block_scan</span>() {
+        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>env_logger</span>::<span class='ident'>init</span>();
+
         <span class='kw'>let</span> <span class='ident'>db</span>: <span class='ident'>BlockDatabase</span> <span class='op'>=</span> <span class='macro'>pattern</span><span class='macro'>!</span>{<span class='string'>&quot;test&quot;</span>, <span class='ident'>flags</span> <span class='op'>=&gt;</span> <span class='ident'>HS_FLAG_CASELESS</span><span class='op'>|</span><span class='ident'>HS_FLAG_SOM_LEFTMOST</span>}
-                                    .<span class='ident'>build</span>()
-                                    .<span class='ident'>unwrap</span>();
+            .<span class='ident'>build</span>()
+            .<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>RawScratch</span>::<span class='ident'>alloc</span>(<span class='kw-2'>&amp;</span><span class='ident'>db</span>).<span class='ident'>unwrap</span>();
 
-        <span class='ident'>db</span>.<span class='ident'>scan</span>(<span class='string'>&quot;foo test bar&quot;</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-ty'>Option</span>::<span class='prelude-val'>None</span>).<span class='ident'>unwrap</span>();
+        <span class='ident'>db</span>.<span class='ident'>scan</span>::<span class='op'>&lt;</span><span class='ident'>BlockDatabase</span><span class='op'>&gt;</span>(<span class='string'>&quot;foo test bar&quot;</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>).<span class='ident'>unwrap</span>();
 
-        <span class='kw'>let</span> <span class='ident'>callback</span> <span class='op'>=</span> <span class='op'>|</span><span class='ident'>id</span>: <span class='ident'>u32</span>, <span class='ident'>from</span>: <span class='ident'>u64</span>, <span class='ident'>to</span>: <span class='ident'>u64</span>, <span class='ident'>flags</span>: <span class='ident'>u32</span><span class='op'>|</span> {
+        <span class='kw'>fn</span> <span class='ident'>callback</span>(<span class='ident'>id</span>: <span class='ident'>u32</span>, <span class='ident'>from</span>: <span class='ident'>u64</span>, <span class='ident'>to</span>: <span class='ident'>u64</span>, <span class='ident'>flags</span>: <span class='ident'>u32</span>, _: <span class='kw-2'>&amp;</span><span class='ident'>BlockDatabase</span>) <span class='op'>-&gt;</span> <span class='ident'>u32</span> {
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>id</span>, <span class='number'>0</span>);
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>from</span>, <span class='number'>4</span>);
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>to</span>, <span class='number'>8</span>);
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>flags</span>, <span class='number'>0</span>);
 
-            <span class='boolval'>true</span>
+            <span class='number'>1</span>
         };
 
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>db</span>.<span class='ident'>scan</span>(<span class='string'>&quot;foo test bar&quot;</span>.<span class='ident'>as_bytes</span>(), <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-ty'>Option</span>::<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>callback</span>))
-                     .<span class='ident'>err</span>(),
-                   <span class='prelude-val'>Some</span>(<span class='ident'>Error</span>::<span class='ident'>ScanTerminated</span>));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>db</span>.<span class='ident'>scan</span>(<span class='string'>&quot;foo test bar&quot;</span>.<span class='ident'>as_bytes</span>(), <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-val'>Some</span>(<span class='ident'>callback</span>), <span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>db</span>))
+                       .<span class='ident'>err</span>()
+                       .<span class='ident'>unwrap</span>(),
+                   <span class='ident'>Error</span>::<span class='ident'>ScanTerminated</span>);
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_vectored_scan</span>() {
+        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>env_logger</span>::<span class='ident'>init</span>();
+
         <span class='kw'>let</span> <span class='ident'>db</span>: <span class='ident'>VectoredDatabase</span> <span class='op'>=</span> <span class='macro'>pattern</span><span class='macro'>!</span>{<span class='string'>&quot;test&quot;</span>, <span class='ident'>flags</span> <span class='op'>=&gt;</span> <span class='ident'>HS_FLAG_CASELESS</span><span class='op'>|</span><span class='ident'>HS_FLAG_SOM_LEFTMOST</span>}
-                                       .<span class='ident'>build</span>()
-                                       .<span class='ident'>unwrap</span>();
+            .<span class='ident'>build</span>()
+            .<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>RawScratch</span>::<span class='ident'>alloc</span>(<span class='kw-2'>&amp;</span><span class='ident'>db</span>).<span class='ident'>unwrap</span>();
 
         <span class='kw'>let</span> <span class='ident'>data</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='string'>&quot;foo&quot;</span>, <span class='string'>&quot;test&quot;</span>, <span class='string'>&quot;bar&quot;</span>];
 
-        <span class='ident'>db</span>.<span class='ident'>scan</span>(<span class='kw-2'>&amp;</span><span class='ident'>data</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-ty'>Option</span>::<span class='prelude-val'>None</span>).<span class='ident'>unwrap</span>();
+        <span class='ident'>db</span>.<span class='ident'>scan</span>::<span class='op'>&lt;</span><span class='ident'>VectoredDatabase</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='ident'>data</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>).<span class='ident'>unwrap</span>();
 
-        <span class='kw'>let</span> <span class='ident'>callback</span> <span class='op'>=</span> <span class='op'>|</span><span class='ident'>id</span>: <span class='ident'>u32</span>, <span class='ident'>from</span>: <span class='ident'>u64</span>, <span class='ident'>to</span>: <span class='ident'>u64</span>, <span class='ident'>flags</span>: <span class='ident'>u32</span><span class='op'>|</span> {
+        <span class='kw'>fn</span> <span class='ident'>callback</span>(<span class='ident'>id</span>: <span class='ident'>u32</span>, <span class='ident'>from</span>: <span class='ident'>u64</span>, <span class='ident'>to</span>: <span class='ident'>u64</span>, <span class='ident'>flags</span>: <span class='ident'>u32</span>, _: <span class='kw-2'>&amp;</span><span class='ident'>VectoredDatabase</span>) <span class='op'>-&gt;</span> <span class='ident'>u32</span> {
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>id</span>, <span class='number'>0</span>);
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>from</span>, <span class='number'>3</span>);
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>to</span>, <span class='number'>7</span>);
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>flags</span>, <span class='number'>0</span>);
 
-            <span class='boolval'>true</span>
+            <span class='number'>1</span>
         };
 
         <span class='kw'>let</span> <span class='ident'>data</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='string'>&quot;foo&quot;</span>.<span class='ident'>as_bytes</span>(), <span class='string'>&quot;test&quot;</span>.<span class='ident'>as_bytes</span>(), <span class='string'>&quot;bar&quot;</span>.<span class='ident'>as_bytes</span>()];
 
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>db</span>.<span class='ident'>scan</span>(<span class='kw-2'>&amp;</span><span class='ident'>data</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-ty'>Option</span>::<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>callback</span>))
-                     .<span class='ident'>err</span>(),
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>db</span>.<span class='ident'>scan</span>(<span class='kw-2'>&amp;</span><span class='ident'>data</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-val'>Some</span>(<span class='ident'>callback</span>), <span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>db</span>)).<span class='ident'>err</span>(),
                    <span class='prelude-val'>Some</span>(<span class='ident'>Error</span>::<span class='ident'>ScanTerminated</span>));
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_streaming_scan</span>() {
+        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>env_logger</span>::<span class='ident'>init</span>();
+
         <span class='kw'>let</span> <span class='ident'>db</span>: <span class='ident'>StreamingDatabase</span> <span class='op'>=</span> <span class='macro'>pattern</span><span class='macro'>!</span>{<span class='string'>&quot;test&quot;</span>, <span class='ident'>flags</span> <span class='op'>=&gt;</span> <span class='ident'>HS_FLAG_CASELESS</span>}
-                                        .<span class='ident'>build</span>()
-                                        .<span class='ident'>unwrap</span>();
+            .<span class='ident'>build</span>()
+            .<span class='ident'>unwrap</span>();
 
         <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>RawScratch</span>::<span class='ident'>alloc</span>(<span class='kw-2'>&amp;</span><span class='ident'>db</span>).<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='ident'>st</span> <span class='op'>=</span> <span class='ident'>db</span>.<span class='ident'>open_stream</span>(<span class='number'>0</span>).<span class='ident'>unwrap</span>();
 
         <span class='kw'>let</span> <span class='ident'>data</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='string'>&quot;foo&quot;</span>, <span class='string'>&quot;test&quot;</span>, <span class='string'>&quot;bar&quot;</span>];
-        <span class='kw'>let</span> <span class='ident'>callback</span> <span class='op'>=</span> <span class='op'>|</span><span class='ident'>id</span>: <span class='ident'>u32</span>, <span class='ident'>from</span>: <span class='ident'>u64</span>, <span class='ident'>to</span>: <span class='ident'>u64</span>, <span class='ident'>flags</span>: <span class='ident'>u32</span><span class='op'>|</span> {
+
+        <span class='kw'>fn</span> <span class='ident'>callback</span>(<span class='ident'>id</span>: <span class='ident'>u32</span>, <span class='ident'>from</span>: <span class='ident'>u64</span>, <span class='ident'>to</span>: <span class='ident'>u64</span>, <span class='ident'>flags</span>: <span class='ident'>u32</span>, _: <span class='kw-2'>&amp;</span><span class='ident'>StreamingDatabase</span>) <span class='op'>-&gt;</span> <span class='ident'>u32</span> {
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>id</span>, <span class='number'>0</span>);
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>from</span>, <span class='number'>0</span>);
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>to</span>, <span class='number'>7</span>);
             <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>flags</span>, <span class='number'>0</span>);
 
-            <span class='boolval'>false</span>
-        };
-
-        <span class='kw'>for</span> <span class='ident'>d</span> <span class='kw'>in</span> <span class='ident'>data</span> {
-            <span class='ident'>st</span>.<span class='ident'>scan</span>(<span class='ident'>d</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-ty'>Option</span>::<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>callback</span>))
-              .<span class='ident'>unwrap</span>();
+            <span class='number'>0</span>
         }
 
-        <span class='ident'>st</span>.<span class='ident'>close</span>(<span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-ty'>Option</span>::<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>callback</span>))
-          .<span class='ident'>unwrap</span>();
+        <span class='kw'>for</span> <span class='ident'>d</span> <span class='kw'>in</span> <span class='ident'>data</span> {
+            <span class='ident'>st</span>.<span class='ident'>scan</span>(<span class='ident'>d</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-val'>Some</span>(<span class='ident'>callback</span>), <span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>db</span>)).<span class='ident'>unwrap</span>();
+        }
+
+        <span class='ident'>st</span>.<span class='ident'>close</span>(<span class='kw-2'>&amp;</span><span class='ident'>s</span>, <span class='prelude-val'>Some</span>(<span class='ident'>callback</span>), <span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>db</span>)).<span class='ident'>unwrap</span>();
     }
 }
 </pre>
@@ -880,6 +935,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -900,7 +957,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>
@@ -909,13 +966,13 @@
     
 
     <script>
-        window.rootPath = "../../";
+        window.rootPath = "../../../";
         window.currentCrate = "hyperscan";
         window.playgroundUrl = "";
     </script>
-    <script src="../../jquery.js"></script>
-    <script src="../../main.js"></script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
     
-    <script defer src="../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

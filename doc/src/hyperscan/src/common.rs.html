@@ -9,8 +9,9 @@
 
     <title>common.rs.html -- source</title>
 
-    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
-    <link rel="stylesheet" type="text/css" href="../../main.css">
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
 
     
     
@@ -337,6 +338,45 @@
 <span id="294">294</span>
 <span id="295">295</span>
 <span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ptr</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fmt</span>;
@@ -375,6 +415,8 @@
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Type</span><span class='op'>&gt;</span> <span class='ident'>RawDatabase</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Constructs a compiled pattern database from a raw pointer.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>from_raw</span>(<span class='ident'>db</span>: <span class='ident'>RawDatabasePtr</span>) <span class='op'>-&gt;</span> <span class='ident'>RawDatabase</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+        <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;construct {} database {:p}&quot;</span>, <span class='ident'>T</span>::<span class='ident'>name</span>(), <span class='ident'>db</span>);
+
         <span class='ident'>RawDatabase</span> {
             <span class='ident'>db</span>: <span class='ident'>db</span>,
             <span class='ident'>_marker</span>: <span class='ident'>PhantomData</span>,
@@ -385,6 +427,8 @@
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>free</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
         <span class='kw'>unsafe</span> {
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_free_database</span>(<span class='self'>self</span>.<span class='ident'>db</span>));
+
+            <span class='macro'>trace</span><span class='macro'>!</span>(<span class='string'>&quot;free {} database {:p}&quot;</span>, <span class='ident'>T</span>::<span class='ident'>name</span>(), <span class='self'>self</span>.<span class='ident'>db</span>);
 
             <span class='self'>self</span>.<span class='ident'>db</span> <span class='op'>=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>();
 
@@ -397,7 +441,7 @@
     <span class='kw'>type</span> <span class='ident'>Target</span> <span class='op'>=</span> <span class='ident'>RawDatabasePtr</span>;
 
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>deref</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='ident'>Self</span>::<span class='ident'>Target</span> {
+    <span class='kw'>fn</span> <span class='ident'>deref</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='self'>Self</span>::<span class='ident'>Target</span> {
         <span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='ident'>db</span>
     }
 }
@@ -407,12 +451,21 @@
         <span class='ident'>T</span>::<span class='ident'>mode</span>()
     }
 
+    <span class='kw'>fn</span> <span class='ident'>database_name</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> {
+        <span class='ident'>T</span>::<span class='ident'>name</span>()
+    }
+
     <span class='kw'>fn</span> <span class='ident'>database_size</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>usize</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>size</span>: <span class='ident'>size_t</span> <span class='op'>=</span> <span class='number'>0</span>;
 
         <span class='kw'>unsafe</span> {
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_database_size</span>(<span class='self'>self</span>.<span class='ident'>db</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>size</span>));
         }
+
+        <span class='macro'>debug</span><span class='macro'>!</span>(<span class='string'>&quot;database size of {} database {:p}: {}&quot;</span>,
+               <span class='ident'>T</span>::<span class='ident'>name</span>(),
+               <span class='self'>self</span>.<span class='ident'>db</span>,
+               <span class='ident'>size</span>);
 
         <span class='prelude-val'>Ok</span>(<span class='ident'>size</span> <span class='kw'>as</span> <span class='ident'>usize</span>)
     }
@@ -421,16 +474,17 @@
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>p</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_char</span> <span class='op'>=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>();
 
         <span class='kw'>unsafe</span> {
-            <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;db = {:p}&quot;</span>, <span class='self'>self</span>.<span class='ident'>db</span>);
-
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_database_info</span>(<span class='self'>self</span>.<span class='ident'>db</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>p</span>));
-
-            <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;p = {:p}&quot;</span>, <span class='ident'>p</span>);
 
             <span class='kw'>let</span> <span class='ident'>result</span> <span class='op'>=</span> <span class='kw'>match</span> <span class='ident'>CStr</span>::<span class='ident'>from_ptr</span>(<span class='ident'>p</span>).<span class='ident'>to_str</span>() {
                 <span class='prelude-val'>Ok</span>(<span class='ident'>info</span>) <span class='op'>=&gt;</span> <span class='prelude-val'>Ok</span>(<span class='ident'>info</span>.<span class='ident'>to_string</span>()),
                 <span class='prelude-val'>Err</span>(_) <span class='op'>=&gt;</span> <span class='prelude-val'>Err</span>(<span class='ident'>Error</span>::<span class='ident'>Invalid</span>),
             };
+
+            <span class='macro'>debug</span><span class='macro'>!</span>(<span class='string'>&quot;database info of {} database {:p}: {:?}&quot;</span>,
+                   <span class='ident'>T</span>::<span class='ident'>name</span>(),
+                   <span class='self'>self</span>.<span class='ident'>db</span>,
+                   <span class='ident'>result</span>);
 
             <span class='ident'>libc</span>::<span class='ident'>free</span>(<span class='ident'>p</span> <span class='kw'>as</span> <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>libc</span>::<span class='ident'>c_void</span>);
 
@@ -447,6 +501,11 @@
         <span class='kw'>unsafe</span> {
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_serialize_database</span>(<span class='self'>self</span>.<span class='ident'>db</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>bytes</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>size</span>));
 
+            <span class='macro'>debug</span><span class='macro'>!</span>(<span class='string'>&quot;serialized {} database {:p} to {} bytes&quot;</span>,
+                   <span class='ident'>T</span>::<span class='ident'>name</span>(),
+                   <span class='self'>self</span>.<span class='ident'>db</span>,
+                   <span class='ident'>size</span>);
+
             <span class='prelude-val'>Ok</span>(<span class='ident'>RawSerializedDatabase</span>::<span class='ident'>from_raw_parts</span>(<span class='ident'>bytes</span> <span class='kw'>as</span> <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>u8</span>, <span class='ident'>size</span> <span class='kw'>as</span> <span class='ident'>usize</span>))
         }
     }
@@ -458,9 +517,14 @@
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_deserialize_database</span>(<span class='ident'>bytes</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>i8</span>,
                                                     <span class='ident'>bytes</span>.<span class='ident'>len</span>() <span class='kw'>as</span> <span class='ident'>size_t</span>,
                                                     <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>db</span>));
+
+            <span class='macro'>debug</span><span class='macro'>!</span>(<span class='string'>&quot;deserialized {} database to {:p} from {} bytes&quot;</span>,
+                   <span class='ident'>T</span>::<span class='ident'>name</span>(),
+                   <span class='ident'>db</span>,
+                   <span class='ident'>bytes</span>.<span class='ident'>len</span>());
         }
 
-        <span class='prelude-val'>Ok</span>(<span class='ident'>Self</span>::<span class='ident'>from_raw</span>(<span class='ident'>db</span>))
+        <span class='prelude-val'>Ok</span>(<span class='self'>Self</span>::<span class='ident'>from_raw</span>(<span class='ident'>db</span>))
     }
 
     <span class='kw'>fn</span> <span class='ident'>deserialize_at</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>bytes</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>]) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>RawDatabase</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
@@ -468,6 +532,12 @@
             <span class='macro'>check_hs_error</span><span class='macro'>!</span>(<span class='ident'>hs_deserialize_database_at</span>(<span class='ident'>bytes</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>i8</span>,
                                                        <span class='ident'>bytes</span>.<span class='ident'>len</span>() <span class='kw'>as</span> <span class='ident'>size_t</span>,
                                                        <span class='self'>self</span>.<span class='ident'>db</span>));
+
+            <span class='macro'>debug</span><span class='macro'>!</span>(<span class='string'>&quot;deserialized {} database at {:p} from {} bytes&quot;</span>,
+                   <span class='ident'>T</span>::<span class='ident'>name</span>(),
+                   <span class='self'>self</span>.<span class='ident'>db</span>,
+                   <span class='ident'>bytes</span>.<span class='ident'>len</span>());
+
             <span class='prelude-val'>Ok</span>(<span class='self'>self</span>)
         }
     }
@@ -484,7 +554,6 @@
 }
 
 <span class='kw'>impl</span> <span class='ident'>RawDatabase</span><span class='op'>&lt;</span><span class='ident'>Streaming</span><span class='op'>&gt;</span> {
-    <span class='doccomment'>/// Provides the size of the stream state allocated by a single stream opened against the given database.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>stream_size</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>usize</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>size</span>: <span class='ident'>size_t</span> <span class='op'>=</span> <span class='number'>0</span>;
 
@@ -543,29 +612,31 @@
     <span class='kw'>type</span> <span class='ident'>Target</span> <span class='op'>=</span> <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>u8</span>;
 
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>deref</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='ident'>Self</span>::<span class='ident'>Target</span> {
+    <span class='kw'>fn</span> <span class='ident'>deref</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='self'>Self</span>::<span class='ident'>Target</span> {
         <span class='kw-2'>&amp;</span><span class='op'>*</span><span class='self'>self</span>.<span class='ident'>p</span>
     }
 }
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>tests</span> {
+    <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>env_logger</span>;
+
     <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ptr</span>;
 
     <span class='kw'>use</span> <span class='ident'>regex</span>::<span class='ident'>Regex</span>;
 
-    <span class='kw'>use</span> <span class='ident'>super</span>::<span class='ident'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw'>super</span>::<span class='op'>*</span>;
 
-    <span class='kw'>const</span> <span class='ident'>DATABASE_SIZE</span>: <span class='ident'>usize</span> <span class='op'>=</span> <span class='number'>1000</span>;
+    <span class='kw'>const</span> <span class='ident'>DATABASE_SIZE</span>: <span class='ident'>usize</span> <span class='op'>=</span> <span class='number'>872</span>;
 
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>validate_database_info</span>(<span class='ident'>info</span>: <span class='kw-2'>&amp;</span><span class='ident'>String</span>) {
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>Regex</span>::<span class='ident'>new</span>(<span class='string'>r&quot;^Version: (\d\.\d\.\d) Features:\s+(\w+) Mode: (\w+)$&quot;</span>)
-                    .<span class='ident'>unwrap</span>()
-                    .<span class='ident'>is_match</span>(<span class='kw-2'>&amp;</span><span class='ident'>info</span>));
+            .<span class='ident'>unwrap</span>()
+            .<span class='ident'>is_match</span>(<span class='kw-2'>&amp;</span><span class='ident'>info</span>));
     }
 
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>validate_database_with_size</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Database</span><span class='op'>&gt;</span>(<span class='ident'>db</span>: <span class='kw-2'>&amp;</span><span class='ident'>T</span>, <span class='ident'>size</span>: <span class='ident'>usize</span>) {
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>db</span>.<span class='ident'>database_size</span>().<span class='ident'>unwrap</span>() <span class='op'>&gt;=</span> <span class='ident'>size</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>db</span>.<span class='ident'>database_size</span>().<span class='ident'>unwrap</span>(), <span class='ident'>size</span>);
 
         <span class='kw'>let</span> <span class='ident'>db_info</span> <span class='op'>=</span> <span class='ident'>db</span>.<span class='ident'>database_info</span>().<span class='ident'>unwrap</span>();
 
@@ -587,6 +658,8 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_database</span>() {
+        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>env_logger</span>::<span class='ident'>init</span>();
+
         <span class='kw'>let</span> <span class='ident'>db</span> <span class='op'>=</span> <span class='ident'>BlockDatabase</span>::<span class='ident'>compile</span>(<span class='string'>&quot;test&quot;</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>PlatformInfo</span>::<span class='ident'>null</span>()).<span class='ident'>unwrap</span>();
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='op'>*</span><span class='ident'>db</span> <span class='op'>!=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>());
@@ -594,12 +667,14 @@
         <span class='ident'>validate_database</span>(<span class='kw-2'>&amp;</span><span class='ident'>db</span>);
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>Regex</span>::<span class='ident'>new</span>(<span class='string'>r&quot;RawDatabase&lt;Block&gt;\{db: \w+\}&quot;</span>)
-                    .<span class='ident'>unwrap</span>()
-                    .<span class='ident'>is_match</span>(<span class='kw-2'>&amp;</span><span class='macro'>format</span><span class='macro'>!</span>(<span class='string'>&quot;{:?}&quot;</span>, <span class='ident'>db</span>)));
+            .<span class='ident'>unwrap</span>()
+            .<span class='ident'>is_match</span>(<span class='kw-2'>&amp;</span><span class='macro'>format</span><span class='macro'>!</span>(<span class='string'>&quot;{:?}&quot;</span>, <span class='ident'>db</span>)));
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_database_serialize</span>() {
+        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>env_logger</span>::<span class='ident'>init</span>();
+
         <span class='kw'>let</span> <span class='ident'>db</span> <span class='op'>=</span> <span class='ident'>StreamingDatabase</span>::<span class='ident'>compile</span>(<span class='string'>&quot;test&quot;</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>PlatformInfo</span>::<span class='ident'>null</span>()).<span class='ident'>unwrap</span>();
 
         <span class='kw'>let</span> <span class='ident'>data</span> <span class='op'>=</span> <span class='ident'>db</span>.<span class='ident'>serialize</span>().<span class='ident'>unwrap</span>();
@@ -610,12 +685,14 @@
         <span class='ident'>validate_serialized_database</span>(<span class='ident'>data</span>.<span class='ident'>as_slice</span>());
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>Regex</span>::<span class='ident'>new</span>(<span class='string'>r&quot;RawSerializedDatabase\{p: \w+, len: \d+\}&quot;</span>)
-                    .<span class='ident'>unwrap</span>()
-                    .<span class='ident'>is_match</span>(<span class='kw-2'>&amp;</span><span class='macro'>format</span><span class='macro'>!</span>(<span class='string'>&quot;{:?}&quot;</span>, <span class='ident'>data</span>)));
+            .<span class='ident'>unwrap</span>()
+            .<span class='ident'>is_match</span>(<span class='kw-2'>&amp;</span><span class='macro'>format</span><span class='macro'>!</span>(<span class='string'>&quot;{:?}&quot;</span>, <span class='ident'>data</span>)));
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_database_deserialize</span>() {
+        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>env_logger</span>::<span class='ident'>init</span>();
+
         <span class='kw'>let</span> <span class='ident'>db</span> <span class='op'>=</span> <span class='ident'>VectoredDatabase</span>::<span class='ident'>compile</span>(<span class='string'>&quot;test&quot;</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>PlatformInfo</span>::<span class='ident'>null</span>()).<span class='ident'>unwrap</span>();
 
         <span class='kw'>let</span> <span class='ident'>data</span> <span class='op'>=</span> <span class='ident'>db</span>.<span class='ident'>serialize</span>().<span class='ident'>unwrap</span>();
@@ -627,6 +704,8 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_database_deserialize_at</span>() {
+        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>env_logger</span>::<span class='ident'>init</span>();
+
         <span class='kw'>let</span> <span class='ident'>db</span> <span class='op'>=</span> <span class='ident'>BlockDatabase</span>::<span class='ident'>compile</span>(<span class='string'>&quot;test&quot;</span>, <span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='ident'>PlatformInfo</span>::<span class='ident'>null</span>()).<span class='ident'>unwrap</span>();
 
         <span class='kw'>let</span> <span class='ident'>data</span> <span class='op'>=</span> <span class='ident'>db</span>.<span class='ident'>serialize</span>().<span class='ident'>unwrap</span>();
@@ -658,6 +737,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -678,7 +759,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>
@@ -687,13 +768,13 @@
     
 
     <script>
-        window.rootPath = "../../";
+        window.rootPath = "../../../";
         window.currentCrate = "hyperscan";
         window.playgroundUrl = "";
     </script>
-    <script src="../../jquery.js"></script>
-    <script src="../../main.js"></script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
     
-    <script defer src="../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

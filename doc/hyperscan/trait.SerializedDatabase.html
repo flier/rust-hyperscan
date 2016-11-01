@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,17 +44,17 @@
 
     <section id='main' class="content trait">
 <h1 class='fqn'><span class='in-band'>Trait <a href='index.html'>hyperscan</a>::<wbr><a class='trait' href=''>SerializedDatabase</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1844' class='srclink' href='../src/hyperscan/api.rs.html#95-136' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-2580' class='srclink' href='../src/hyperscan/src/api.rs.html#102-143' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait SerializedDatabase {
     fn <a href='#tymethod.len' class='fnname'>len</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>;
     fn <a href='#tymethod.as_slice' class='fnname'>as_slice</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>;
 
-    fn <a href='#method.deserialize' class='fnname'>deserialize</a>&lt;T: <a class='trait' href='../hyperscan/trait.SerializableDatabase.html' title='hyperscan::SerializableDatabase'>SerializableDatabase</a>&lt;D, S&gt;, D: <a class='trait' href='../hyperscan/trait.Database.html' title='hyperscan::Database'>Database</a>, S: <a class='trait' href='../hyperscan/trait.SerializedDatabase.html' title='hyperscan::SerializedDatabase'>SerializedDatabase</a>&gt;(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;D, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt; { ... }
-    fn <a href='#method.database_size' class='fnname'>database_size</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt; { ... }
-    fn <a href='#method.database_info' class='fnname'>database_info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt; { ... }
+    fn <a href='#method.deserialize' class='fnname'>deserialize</a>&lt;T:&nbsp;<a class='trait' href='../hyperscan/trait.SerializableDatabase.html' title='hyperscan::SerializableDatabase'>SerializableDatabase</a>&lt;D,&nbsp;S&gt;,&nbsp;D:&nbsp;<a class='trait' href='../hyperscan/trait.Database.html' title='hyperscan::Database'>Database</a>,&nbsp;S:&nbsp;<a class='trait' href='../hyperscan/trait.SerializedDatabase.html' title='hyperscan::SerializedDatabase'>SerializedDatabase</a>&gt;(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;D,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt; { ... }
+    fn <a href='#method.database_size' class='fnname'>database_size</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt; { ... }
+    fn <a href='#method.database_info' class='fnname'>database_info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt; { ... }
 }</pre><div class='docblock'><p>A pattern database was serialized to a stream of bytes.</p>
 </div>
             <h2 id='required-methods'>Required Methods</h2>
@@ -61,13 +62,13 @@
         <h3 id='tymethod.len' class='method stab '><code>fn <a href='#tymethod.len' class='fnname'>len</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h3><h3 id='tymethod.as_slice' class='method stab '><code>fn <a href='#tymethod.as_slice' class='fnname'>as_slice</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h3></div>
             <h2 id='provided-methods'>Provided Methods</h2>
             <div class='methods'>
-        <h3 id='method.deserialize' class='method stab '><code>fn <a href='#method.deserialize' class='fnname'>deserialize</a>&lt;T: <a class='trait' href='../hyperscan/trait.SerializableDatabase.html' title='hyperscan::SerializableDatabase'>SerializableDatabase</a>&lt;D, S&gt;, D: <a class='trait' href='../hyperscan/trait.Database.html' title='hyperscan::Database'>Database</a>, S: <a class='trait' href='../hyperscan/trait.SerializedDatabase.html' title='hyperscan::SerializedDatabase'>SerializedDatabase</a>&gt;(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;D, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><h3 id='method.database_size' class='method stab '><code>fn <a href='#method.database_size' class='fnname'>database_size</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><h3 id='method.database_info' class='method stab '><code>fn <a href='#method.database_info' class='fnname'>database_info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3></div>
+        <h3 id='method.deserialize' class='method stab '><code>fn <a href='#method.deserialize' class='fnname'>deserialize</a>&lt;T:&nbsp;<a class='trait' href='../hyperscan/trait.SerializableDatabase.html' title='hyperscan::SerializableDatabase'>SerializableDatabase</a>&lt;D,&nbsp;S&gt;,&nbsp;D:&nbsp;<a class='trait' href='../hyperscan/trait.Database.html' title='hyperscan::Database'>Database</a>,&nbsp;S:&nbsp;<a class='trait' href='../hyperscan/trait.SerializedDatabase.html' title='hyperscan::SerializedDatabase'>SerializedDatabase</a>&gt;(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;D,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><h3 id='method.database_size' class='method stab '><code>fn <a href='#method.database_size' class='fnname'>database_size</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><h3 id='method.database_info' class='method stab '><code>fn <a href='#method.database_info' class='fnname'>database_info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl <a class='trait' href='../hyperscan/trait.SerializedDatabase.html' title='hyperscan::SerializedDatabase'>SerializedDatabase</a> for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>]</a></code></li>
+    <li><code>impl SerializedDatabase for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></li>
 </ul><script type="text/javascript" async
-                              src="../implementors/hyperscan/trait.SerializedDatabase.js">
-                      </script></section>
+                         src="../implementors/hyperscan/trait.SerializedDatabase.js">
+                 </script></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -90,6 +91,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -110,7 +113,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,16 +44,21 @@
 
     <section id='main' class="content struct">
 <h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>hyperscan</a>::<wbr><a class='struct' href=''>PlatformInfo</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1862' class='srclink' href='../src/hyperscan/api.rs.html#138' title='goto source code'>[src]</a></span></h1>
-<pre class='rust struct'>pub struct PlatformInfo(_);</pre><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../hyperscan/struct.PlatformInfo.html' title='hyperscan::PlatformInfo'>PlatformInfo</a></code></h3><div class='impl-items'><h4 id='method.null' class='method'><code>fn <a href='#method.null' class='fnname'>null</a>() -&gt; <a class='struct' href='../hyperscan/struct.PlatformInfo.html' title='hyperscan::PlatformInfo'>PlatformInfo</a></code></h4>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-2598' class='srclink' href='../src/hyperscan/src/api.rs.html#147' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct PlatformInfo(_);</pre><div class='docblock'><p>A type containing information on the target platform
+which may optionally be provided to the compile calls</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><span class='in-band'><code>impl <a class='struct' href='../hyperscan/struct.PlatformInfo.html' title='hyperscan::PlatformInfo'>PlatformInfo</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-2608' class='srclink' href='../src/hyperscan/src/api.rs.html#158-188' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.null' class='method'><code>fn <a href='#method.null' class='fnname'>null</a>() -&gt; <a class='struct' href='../hyperscan/struct.PlatformInfo.html' title='hyperscan::PlatformInfo'>PlatformInfo</a></code></h4>
 <h4 id='method.host' class='method'><code>fn <a href='#method.host' class='fnname'>host</a>() -&gt; <a class='struct' href='../hyperscan/struct.PlatformInfo.html' title='hyperscan::PlatformInfo'>PlatformInfo</a></code></h4>
 <h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(tune: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>, cpu_features: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>) -&gt; <a class='struct' href='../hyperscan/struct.PlatformInfo.html' title='hyperscan::PlatformInfo'>PlatformInfo</a></code></h4>
 <h4 id='method.as_ptr' class='method'><code>fn <a href='#method.as_ptr' class='fnname'>as_ptr</a>(&amp;self) -&gt; <a class='type' href='../hyperscan/type.RawPlatformInfoPtr.html' title='hyperscan::RawPlatformInfoPtr'>RawPlatformInfoPtr</a></code></h4>
-</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../hyperscan/struct.PlatformInfo.html' title='hyperscan::PlatformInfo'>PlatformInfo</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
-</div></section>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../hyperscan/struct.PlatformInfo.html' title='hyperscan::PlatformInfo'>PlatformInfo</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-2602' class='srclink' href='../src/hyperscan/src/api.rs.html#152-156' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+<div class='docblock'><p>Formats the value using the given formatter.</p>
+</div></div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -75,6 +81,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -95,7 +103,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

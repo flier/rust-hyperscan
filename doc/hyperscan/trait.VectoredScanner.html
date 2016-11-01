@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,24 +44,25 @@
 
     <section id='main' class="content trait">
 <h1 class='fqn'><span class='in-band'>Trait <a href='index.html'>hyperscan</a>::<wbr><a class='trait' href=''>VectoredScanner</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1962' class='srclink' href='../src/hyperscan/api.rs.html#302-310' title='goto source code'>[src]</a></span></h1>
-<pre class='rust trait'>pub trait VectoredScanner&lt;T: <a class='trait' href='../hyperscan/trait.Scannable.html' title='hyperscan::Scannable'>Scannable</a>, S: <a class='trait' href='../hyperscan/trait.Scratch.html' title='hyperscan::Scratch'>Scratch</a>&gt; {
-    fn <a href='#tymethod.scan' class='fnname'>scan</a>(&amp;self, data: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;, flags: <a class='type' href='../hyperscan/type.ScanFlags.html' title='hyperscan::ScanFlags'>ScanFlags</a>, scratch: &amp;S, handler: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-2729' class='srclink' href='../src/hyperscan/src/api.rs.html#340-350' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait VectoredScanner&lt;T:&nbsp;<a class='trait' href='../hyperscan/trait.Scannable.html' title='hyperscan::Scannable'>Scannable</a>,&nbsp;S:&nbsp;<a class='trait' href='../hyperscan/trait.Scratch.html' title='hyperscan::Scratch'>Scratch</a>&gt; {
+    fn <a href='#tymethod.scan' class='fnname'>scan</a>&lt;D&gt;(&amp;self, data: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;, flags: <a class='type' href='../hyperscan/type.ScanFlags.html' title='hyperscan::ScanFlags'>ScanFlags</a>, scratch: &amp;S, callback: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&lt;D&gt;&gt;, context: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;D&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
 }</pre><div class='docblock'><p>The vectored regular expression scanner.</p>
 </div>
             <h2 id='required-methods'>Required Methods</h2>
             <div class='methods'>
-        <h3 id='tymethod.scan' class='method stab '><code>fn <a href='#tymethod.scan' class='fnname'>scan</a>(&amp;self, data: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;, flags: <a class='type' href='../hyperscan/type.ScanFlags.html' title='hyperscan::ScanFlags'>ScanFlags</a>, scratch: &amp;S, handler: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>This is the function call in which the actual pattern matching takes place for vectoring-mode pattern databases.</p>
+        <h3 id='tymethod.scan' class='method stab '><code>fn <a href='#tymethod.scan' class='fnname'>scan</a>&lt;D&gt;(&amp;self, data: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;, flags: <a class='type' href='../hyperscan/type.ScanFlags.html' title='hyperscan::ScanFlags'>ScanFlags</a>, scratch: &amp;S, callback: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../hyperscan/type.MatchEventCallback.html' title='hyperscan::MatchEventCallback'>MatchEventCallback</a>&lt;D&gt;&gt;, context: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;D&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>This is the function call in which the actual pattern matching
+takes place for vectoring-mode pattern databases.</p>
 </div></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl&lt;T: <a class='trait' href='../hyperscan/trait.Scannable.html' title='hyperscan::Scannable'>Scannable</a>, S: <a class='trait' href='../hyperscan/trait.Scratch.html' title='hyperscan::Scratch'>Scratch</a>&gt; <a class='trait' href='../hyperscan/trait.VectoredScanner.html' title='hyperscan::VectoredScanner'>VectoredScanner</a>&lt;T, S&gt; for <a class='type' href='../hyperscan/type.VectoredDatabase.html' title='hyperscan::VectoredDatabase'>VectoredDatabase</a></code></li>
+    <li><code>impl&lt;T:&nbsp;<a class='trait' href='../hyperscan/trait.Scannable.html' title='hyperscan::Scannable'>Scannable</a>,&nbsp;S:&nbsp;<a class='trait' href='../hyperscan/trait.Scratch.html' title='hyperscan::Scratch'>Scratch</a>&gt; VectoredScanner&lt;T,&nbsp;S&gt; for <a class='type' href='../hyperscan/type.VectoredDatabase.html' title='hyperscan::VectoredDatabase'>VectoredDatabase</a></code></li>
 </ul><script type="text/javascript" async
-                              src="../implementors/hyperscan/trait.VectoredScanner.js">
-                      </script></section>
+                         src="../implementors/hyperscan/trait.VectoredScanner.js">
+                 </script></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -83,6 +85,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -103,7 +107,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,25 +44,26 @@
 
     <section id='main' class="content trait">
 <h1 class='fqn'><span class='in-band'>Trait <a href='index.html'>hyperscan</a>::<wbr><a class='trait' href=''>ScratchAllocator</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1929' class='srclink' href='../src/hyperscan/api.rs.html#232-238' title='goto source code'>[src]</a></span></h1>
-<pre class='rust trait'>pub trait ScratchAllocator&lt;S: <a class='trait' href='../hyperscan/trait.Scratch.html' title='hyperscan::Scratch'>Scratch</a>&gt; {
-    fn <a href='#tymethod.alloc' class='fnname'>alloc</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;S, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
-    fn <a href='#tymethod.realloc' class='fnname'>realloc</a>(&amp;self, s: &amp;mut S) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
-}</pre>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-2665' class='srclink' href='../src/hyperscan/src/api.rs.html#246-252' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait ScratchAllocator&lt;S:&nbsp;<a class='trait' href='../hyperscan/trait.Scratch.html' title='hyperscan::Scratch'>Scratch</a>&gt; {
+    fn <a href='#tymethod.alloc' class='fnname'>alloc</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;S,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
+    fn <a href='#tymethod.realloc' class='fnname'>realloc</a>(&amp;self, s: &amp;mut S) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
+}</pre><div class='docblock'><p><code>Scratch</code> allocator</p>
+</div>
             <h2 id='required-methods'>Required Methods</h2>
             <div class='methods'>
-        <h3 id='tymethod.alloc' class='method stab '><code>fn <a href='#tymethod.alloc' class='fnname'>alloc</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;S, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Allocate a &quot;scratch&quot; space for use by Hyperscan.</p>
-</div><h3 id='tymethod.realloc' class='method stab '><code>fn <a href='#tymethod.realloc' class='fnname'>realloc</a>(&amp;self, s: &amp;mut S) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Reallocate a &quot;scratch&quot; space for use by Hyperscan.</p>
+        <h3 id='tymethod.alloc' class='method stab '><code>fn <a href='#tymethod.alloc' class='fnname'>alloc</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;S,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Allocate a &quot;scratch&quot; space for use by Hyperscan.</p>
+</div><h3 id='tymethod.realloc' class='method stab '><code>fn <a href='#tymethod.realloc' class='fnname'>realloc</a>(&amp;self, s: &amp;mut S) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;Self,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Reallocate a &quot;scratch&quot; space for use by Hyperscan.</p>
 </div></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl&lt;T: <a class='trait' href='../hyperscan/trait.Type.html' title='hyperscan::Type'>Type</a>&gt; <a class='trait' href='../hyperscan/trait.ScratchAllocator.html' title='hyperscan::ScratchAllocator'>ScratchAllocator</a>&lt;<a class='struct' href='../hyperscan/struct.RawScratch.html' title='hyperscan::RawScratch'>RawScratch</a>&gt; for <a class='struct' href='../hyperscan/struct.RawDatabase.html' title='hyperscan::RawDatabase'>RawDatabase</a>&lt;T&gt;</code></li>
+    <li><code>impl&lt;T:&nbsp;<a class='trait' href='../hyperscan/trait.Type.html' title='hyperscan::Type'>Type</a>&gt; ScratchAllocator&lt;<a class='struct' href='../hyperscan/struct.RawScratch.html' title='hyperscan::RawScratch'>RawScratch</a>&gt; for <a class='struct' href='../hyperscan/struct.RawDatabase.html' title='hyperscan::RawDatabase'>RawDatabase</a>&lt;T&gt;</code></li>
 </ul><script type="text/javascript" async
-                              src="../implementors/hyperscan/trait.ScratchAllocator.js">
-                      </script></section>
+                         src="../implementors/hyperscan/trait.ScratchAllocator.js">
+                 </script></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -84,6 +86,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -104,7 +108,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

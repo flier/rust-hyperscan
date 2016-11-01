@@ -9,8 +9,9 @@
 
     <title>lib.rs.html -- source</title>
 
-    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
-    <link rel="stylesheet" type="text/css" href="../../main.css">
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
 
     
     
@@ -70,7 +71,69 @@
 <span id="27">27</span>
 <span id="28">28</span>
 <span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
 </pre><pre class='rust '>
+<span class='doccomment'>//! Hyperscan is a high-performance regular expression matching library.</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! # Examples</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! ```</span>
+<span class='doccomment'>//! #[macro_use]</span>
+<span class='doccomment'>//! extern crate hyperscan;</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! use hyperscan::*;</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! fn callback(id: u32, from: u64, to: u64, flags: u32, _: &amp;BlockDatabase) -&gt; u32 {</span>
+<span class='doccomment'>//!     assert_eq!(id, 0);</span>
+<span class='doccomment'>//!     assert_eq!(from, 5);</span>
+<span class='doccomment'>//!     assert_eq!(to, 9);</span>
+<span class='doccomment'>//!     assert_eq!(flags, 0);</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!     println!(&quot;found pattern #{} @ [{}, {})&quot;, id, from, to);</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!     0</span>
+<span class='doccomment'>//! }</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! fn main() {</span>
+<span class='doccomment'>//!     let pattern = &amp;pattern!{&quot;test&quot;, flags =&gt; HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST};</span>
+<span class='doccomment'>//!     let db: BlockDatabase = pattern.build().unwrap();</span>
+<span class='doccomment'>//!     let scratch = db.alloc().unwrap();</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!     db.scan::&lt;BlockDatabase&gt;(&quot;some test data&quot;, 0, &amp;scratch, Some(callback), Some(&amp;db)).unwrap();</span>
+<span class='doccomment'>//! }</span>
+<span class='doccomment'>//! ```</span>
+
+<span class='attribute'>#[<span class='ident'>macro_use</span>]</span>
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>log</span>;
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>libc</span>;
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>regex_syntax</span>;
@@ -124,6 +187,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -144,7 +209,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>
@@ -153,13 +218,13 @@
     
 
     <script>
-        window.rootPath = "../../";
+        window.rootPath = "../../../";
         window.currentCrate = "hyperscan";
         window.playgroundUrl = "";
     </script>
-    <script src="../../jquery.js"></script>
-    <script src="../../main.js"></script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
     
-    <script defer src="../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

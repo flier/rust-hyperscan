@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,26 +44,27 @@
 
     <section id='main' class="content trait">
 <h1 class='fqn'><span class='in-band'>Trait <a href='index.html'>hyperscan</a>::<wbr><a class='trait' href=''>Expression</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1918' class='srclink' href='../src/hyperscan/api.rs.html#211-218' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-2654' class='srclink' href='../src/hyperscan/src/api.rs.html#222-230' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait Expression {
-    fn <a href='#tymethod.info' class='fnname'>info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../hyperscan/struct.ExpressionInfo.html' title='hyperscan::ExpressionInfo'>ExpressionInfo</a>, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
+    fn <a href='#tymethod.info' class='fnname'>info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../hyperscan/struct.ExpressionInfo.html' title='hyperscan::ExpressionInfo'>ExpressionInfo</a>,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
 }</pre><div class='docblock'><p>Providing expression information.</p>
 </div>
             <h2 id='required-methods'>Required Methods</h2>
             <div class='methods'>
-        <h3 id='tymethod.info' class='method stab '><code>fn <a href='#tymethod.info' class='fnname'>info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../hyperscan/struct.ExpressionInfo.html' title='hyperscan::ExpressionInfo'>ExpressionInfo</a>, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Utility function providing information about a regular expression.</p>
+        <h3 id='tymethod.info' class='method stab '><code>fn <a href='#tymethod.info' class='fnname'>info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../hyperscan/struct.ExpressionInfo.html' title='hyperscan::ExpressionInfo'>ExpressionInfo</a>,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Utility function providing information about a regular expression.</p>
 
-<p>The information provided in ExpressionInfo includes the minimum and maximum width of a pattern match.</p>
+<p>The information provided in ExpressionInfo
+includes the minimum and maximum width of a pattern match.</p>
 </div></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl <a class='trait' href='../hyperscan/trait.Expression.html' title='hyperscan::Expression'>Expression</a> for <a class='struct' href='../hyperscan/struct.Pattern.html' title='hyperscan::Pattern'>Pattern</a></code></li>
+    <li><code>impl Expression for <a class='struct' href='../hyperscan/struct.Pattern.html' title='hyperscan::Pattern'>Pattern</a></code></li>
 </ul><script type="text/javascript" async
-                              src="../implementors/hyperscan/trait.Expression.js">
-                      </script></section>
+                         src="../implementors/hyperscan/trait.Expression.js">
+                 </script></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -85,6 +87,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -105,7 +109,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

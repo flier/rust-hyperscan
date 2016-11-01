@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,28 +44,30 @@
 
     <section id='main' class="content trait">
 <h1 class='fqn'><span class='in-band'>Trait <a href='index.html'>hyperscan</a>::<wbr><a class='trait' href=''>Database</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1827' class='srclink' href='../src/hyperscan/api.rs.html#71-80' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-2561' class='srclink' href='../src/hyperscan/src/api.rs.html#73-85' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait Database: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a class='type' href='../hyperscan/type.RawDatabasePtr.html' title='hyperscan::RawDatabasePtr'>RawDatabasePtr</a>&gt; {
     fn <a href='#tymethod.database_mode' class='fnname'>database_mode</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>;
-    fn <a href='#tymethod.database_size' class='fnname'>database_size</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
-    fn <a href='#tymethod.database_info' class='fnname'>database_info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
+    fn <a href='#tymethod.database_name' class='fnname'>database_name</a>(&amp;self) -&gt; &amp;'static <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>;
+    fn <a href='#tymethod.database_size' class='fnname'>database_size</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
+    fn <a href='#tymethod.database_info' class='fnname'>database_info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;;
 }</pre><div class='docblock'><p>A Hyperscan pattern database.</p>
 </div>
             <h2 id='required-methods'>Required Methods</h2>
             <div class='methods'>
-        <h3 id='tymethod.database_mode' class='method stab '><code>fn <a href='#tymethod.database_mode' class='fnname'>database_mode</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a></code></h3><div class='docblock'><p>Provides the compiled mode of the given database.</p>
-</div><h3 id='tymethod.database_size' class='method stab '><code>fn <a href='#tymethod.database_size' class='fnname'>database_size</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Provides the size of the given database in bytes.</p>
-</div><h3 id='tymethod.database_info' class='method stab '><code>fn <a href='#tymethod.database_info' class='fnname'>database_info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Utility function providing information about a database.</p>
+        <h3 id='tymethod.database_mode' class='method stab '><code>fn <a href='#tymethod.database_mode' class='fnname'>database_mode</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a></code></h3><div class='docblock'><p>Provides the id of compiled mode of the given database.</p>
+</div><h3 id='tymethod.database_name' class='method stab '><code>fn <a href='#tymethod.database_name' class='fnname'>database_name</a>(&amp;self) -&gt; &amp;'static <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a></code></h3><div class='docblock'><p>Provides the name of compiled mode of the given database.</p>
+</div><h3 id='tymethod.database_size' class='method stab '><code>fn <a href='#tymethod.database_size' class='fnname'>database_size</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Provides the size of the given database in bytes.</p>
+</div><h3 id='tymethod.database_info' class='method stab '><code>fn <a href='#tymethod.database_info' class='fnname'>database_info</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>,&nbsp;<a class='enum' href='../hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>&gt;</code></h3><div class='docblock'><p>Utility function providing information about a database.</p>
 </div></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl&lt;T: <a class='trait' href='../hyperscan/trait.Type.html' title='hyperscan::Type'>Type</a>&gt; <a class='trait' href='../hyperscan/trait.Database.html' title='hyperscan::Database'>Database</a> for <a class='struct' href='../hyperscan/struct.RawDatabase.html' title='hyperscan::RawDatabase'>RawDatabase</a>&lt;T&gt;</code></li>
+    <li><code>impl&lt;T:&nbsp;<a class='trait' href='../hyperscan/trait.Type.html' title='hyperscan::Type'>Type</a>&gt; Database for <a class='struct' href='../hyperscan/struct.RawDatabase.html' title='hyperscan::RawDatabase'>RawDatabase</a>&lt;T&gt;</code></li>
 </ul><script type="text/javascript" async
-                              src="../implementors/hyperscan/trait.Database.js">
-                      </script></section>
+                         src="../implementors/hyperscan/trait.Database.js">
+                 </script></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -87,6 +90,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -107,7 +112,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

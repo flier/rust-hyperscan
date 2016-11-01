@@ -1,5 +1,5 @@
 (function() {var implementors = {};
-implementors['hyperscan'] = [];
+implementors["hyperscan"] = [];
 
             if (window.register_implementors) {
                 window.register_implementors(implementors);

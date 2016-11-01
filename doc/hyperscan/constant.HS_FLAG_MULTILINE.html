@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,10 +44,10 @@
 
     <section id='main' class="content constant">
 <h1 class='fqn'><span class='in-band'><a href='index.html'>hyperscan</a>::<wbr><a class='constant' href=''>HS_FLAG_MULTILINE</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1600' class='srclink' href='../src/hyperscan/constants.rs.html#143' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-2316' class='srclink' href='../src/hyperscan/src/constants.rs.html#143' title='goto source code'>[src]</a></span></h1>
 <pre class='rust const'>pub const HS_FLAG_MULTILINE: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a><code> = </code><code>4</code></pre><div class='docblock'><p>Compile flag: Set multi-line anchoring.</p>
 
 <p>This flag instructs the expression to make the <code>^</code> and <code>$</code> tokens match
@@ -77,6 +78,8 @@ the guidelines of the PCRE specification.</p>
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -97,7 +100,7 @@ the guidelines of the PCRE specification.</p>
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

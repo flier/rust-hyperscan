@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["CompileFlags",""],["Pattern",""]],"type":[["Patterns",""]]});

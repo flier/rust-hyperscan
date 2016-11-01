@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
@@ -43,14 +44,17 @@
 
     <section id='main' class="content enum">
 <h1 class='fqn'><span class='in-band'>Enum <a href='index.html'>hyperscan</a>::<wbr><a class='enum' href=''>Block</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1802' class='srclink' href='../src/hyperscan/api.rs.html#23' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-2540' class='srclink' href='../src/hyperscan/src/api.rs.html#24' title='goto source code'>[src]</a></span></h1>
 <pre class='rust enum'>pub enum Block {}</pre><div class='docblock'><p>Block scan (non-streaming) database.</p>
-</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='../hyperscan/trait.Type.html' title='hyperscan::Type'>Type</a> for <a class='enum' href='../hyperscan/enum.Block.html' title='hyperscan::Block'>Block</a></code></h3><div class='impl-items'><h4 id='method.mode' class='method'><code>fn <a href='../hyperscan/trait.Type.html#method.mode' class='fnname'>mode</a>() -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a></code></h4>
-<h4 id='method.name' class='method'><code>fn <a href='../hyperscan/trait.Type.html#method.name' class='fnname'>name</a>() -&gt; &amp;'static <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a></code></h4>
-</div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../hyperscan/enum.Block.html' title='hyperscan::Block'>Block</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../hyperscan/enum.Block.html' title='hyperscan::Block'>Block</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-2536' class='srclink' href='../src/hyperscan/src/api.rs.html#23' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+<div class='docblock'><p>Formats the value using the given formatter.</p>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='../hyperscan/trait.Type.html' title='hyperscan::Type'>Type</a> for <a class='enum' href='../hyperscan/enum.Block.html' title='hyperscan::Block'>Block</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-2551' class='srclink' href='../src/hyperscan/src/api.rs.html#34-44' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.mode' class='method'><code>fn <a href='../hyperscan/trait.Type.html#tymethod.mode' class='fnname'>mode</a>() -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a></code></h4>
+<h4 id='method.name' class='method'><code>fn <a href='../hyperscan/trait.Type.html#tymethod.name' class='fnname'>name</a>() -&gt; &amp;'static <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a></code></h4>
 </div></section>
     <section id='search' class="content hidden"></section>
 
@@ -74,6 +78,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -94,7 +100,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>
