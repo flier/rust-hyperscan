@@ -16,7 +16,7 @@ fn macos_sdk_path() -> String {
     String::from_utf8(output.stdout).expect("fail to decode utf8")
 }
 
-fn generate_raw_wrapper(base_dir: &str, out_file:&str) {
+fn generate_raw_wrapper(base_dir: &str, out_file: &str) {
     let mut builder = bindgen::Builder::new(format!("{}/include/hs/hs.h", base_dir));
 
     info!("generating raw Hyperscan wrapper {} ...", out_file);
@@ -56,6 +56,8 @@ fn main() {
     }
 
     println!("cargo:rerun-if-changed={}/include/hs/hs.h", root_dir);
-    println!("cargo:rustc-link-lib=dylib=c++");
+    if cfg!(target_os = "macos") {
+        println!("cargo:rustc-link-lib=dylib=c++");
+    }
     println!("cargo:rustc-link-search=native={}/lib", root_dir);
 }

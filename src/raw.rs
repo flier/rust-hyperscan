@@ -1285,7 +1285,6 @@ impl ::std::default::Default for __va_list_tag {
         unsafe { ::std::mem::zeroed() }
     }
 }
-#[link(name = "hs", kind = "static")]
 extern "C" {
     pub static mut __mb_cur_max: ::std::os::raw::c_int;
     pub static mut suboptarg: *mut ::std::os::raw::c_char;
