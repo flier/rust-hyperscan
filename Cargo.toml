@@ -27,7 +27,7 @@ regex = "0.1"
 getopts = "0.2"
 pcap = "0.5"
 pnet = "0.14"
-byteorder = "*"
+byteorder = "0.5"
 
 [lib]
 name = "hyperscan"
