@@ -26,18 +26,21 @@ pub enum Error {
     /// The given database was built for a different platform (i.e., CPU type).
     DbPlatformError,
     /// The given database was built for a different mode of operation.
-    /// This error is returned when streaming calls are used with a block or vectored database and vice versa.
+    /// This error is returned when streaming calls are used
+    /// with a block or vectored database and vice versa.
     DbModeError,
     /// A parameter passed to this function was not correctly aligned.
     BadAlign,
     /// The memory allocator (either malloc() or the allocator set with hs_set_allocator())
-    /// did not correctly return memory suitably aligned for the largest representable data type on this platform.
+    /// did not correctly return memory suitably aligned
+    /// for the largest representable data type on this platform.
     BadAlloc,
     /// Unknown error code
     Failed(i32),
     /// An error which can be returned when parsing an integer.
     ParseError(::std::num::ParseIntError),
-    /// An error returned from CString::new to indicate that a nul byte was found in the vector provided.
+    /// An error returned from CString::new to indicate
+    /// that a nul byte was found in the vector provided.
     NulError(::std::ffi::NulError),
 }
 
@@ -107,21 +110,19 @@ impl error::Error for Error {
     }
 }
 
-#[macro_export]
 macro_rules! check_hs_error {
     ($expr:expr) => (if $expr != $crate::HS_SUCCESS {
         return ::std::result::Result::Err(::std::convert::From::from($expr));
     })
 }
 
-#[macro_export]
 macro_rules! assert_hs_error {
     ($expr:expr) => (if $expr != $crate::HS_SUCCESS {
         panic!("panic, err={}", $expr);
     })
 }
 
-pub trait CompileError : ToString {
+pub trait CompileError: ToString {
     fn expression(&self) -> usize;
 }
 
@@ -161,7 +162,6 @@ impl Drop for RawCompileError {
     }
 }
 
-#[macro_export]
 macro_rules! check_compile_error {
     ($expr:expr, $err:ident) => {
         if $crate::HS_SUCCESS != $expr {
@@ -169,10 +169,10 @@ macro_rules! check_compile_error {
                 $crate::HS_COMPILER_ERROR => {
                     let msg = $crate::errors::RawCompileError($err);
 
-                    ::std::result::Result::Err($crate::errors::Error::CompilerError(msg.to_string()))
+                    Err($crate::errors::Error::CompilerError(msg.to_string()))
                 },
                 _ =>
-                    ::std::result::Result::Err(::std::convert::From::from($expr)),
+                    Err(::std::convert::From::from($expr)),
             }
         }
     }

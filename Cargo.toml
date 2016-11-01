@@ -32,7 +32,6 @@ stopwatch = "*"
 
 [lib]
 name = "hyperscan"
-doctest = false
 
 [[example]]
 name = "simplegrep"

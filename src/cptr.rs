@@ -97,8 +97,8 @@ pub mod tests {
             assert_eq!((*p.0).bar, 32);
 
             assert!(Regex::new(r"CPtr\(\w+\)")
-                        .unwrap()
-                        .is_match(&format!("{:?}", p)));
+                .unwrap()
+                .is_match(&format!("{:?}", p)));
         }
     }
 }

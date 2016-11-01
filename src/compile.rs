@@ -13,6 +13,7 @@ use cptr::CPtr;
 use common::RawDatabase;
 use errors::{Error, RawCompileErrorPtr};
 
+/// Flags which modify the behaviour of the expression.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct CompileFlags(pub u32);
 
@@ -97,10 +98,14 @@ impl FromStr for CompileFlags {
     }
 }
 
+/// Pattern that has matched.
 #[derive(Debug, Clone)]
 pub struct Pattern {
+    /// The NULL-terminated expression to parse.
     pub expression: String,
+    /// Flags which modify the behaviour of the expression.
     pub flags: CompileFlags,
+    /// ID number to be associated with the corresponding pattern in the expressions array.
     pub id: usize,
 }
 
@@ -187,8 +192,10 @@ impl Expression for Pattern {
     }
 }
 
+/// Vec of `Pattern`
 pub type Patterns = Vec<Pattern>;
 
+/// Define `Pattern` with flags
 #[macro_export]
 macro_rules! pattern {
     ( $expr:expr ) => {{
@@ -206,6 +213,7 @@ macro_rules! pattern {
     }}
 }
 
+/// Define multi `Pattern` with flags and ID
 #[macro_export]
 macro_rules! patterns {
     ( [ $( $expr:expr ), * ] ) => {{
