@@ -2,6 +2,20 @@
 
 [Hyperscan](https://github.com/01org/hyperscan) is a high-performance regular expression matching library.
 
+## Usage
+
+To use, add the following line to Cargo.toml under [dependencies]:
+
+```toml
+hyperscan = "0.1"
+```
+or alternatively,
+```
+hyperscan = { git = "https://github.com/flier/rust-hyperscan.git" }
+```
+
+## Example
+
 ```rust
 #[macro_use]
 extern crate hyperscan;
@@ -27,4 +41,7 @@ fn main() {
     db.scan::<BlockDatabase>("some test data", 0, &scratch, Some(callback), Some(&db)).unwrap();
 }
 ```
-[Document](http://flier.github.io/rust-hyperscan/doc/hyperscan)
+
+## Document
+
+[API Reference](http://flier.github.io/rust-hyperscan/doc/hyperscan)
