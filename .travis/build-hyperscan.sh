@@ -1,10 +1,10 @@
 #/bin/sh -f
 set -e
 
-if [ ! -f "$HOME/hyperscan/lib/libhs.a" ]; then
-	wget https://github.com/01org/hyperscan/archive/v4.3.1.tar.gz -O /tmp/hyperscan.tar.gz
+if [ ! -f "$HYPERSCAN_ROOT/lib/libhs.a" ]; then
+	wget https://github.com/01org/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz -O /tmp/hyperscan.tar.gz
 	tar -xzf /tmp/hyperscan.tar.gz
-	cd hyperscan-4.3.1
+	cd hyperscan-$HYPERSCAN_VERSION
 	if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 		cmake . -DBOOST_ROOT=$BOOST_ROOT \
 				-DCMAKE_POSITION_INDEPENDENT_CODE=on \
@@ -19,5 +19,5 @@ if [ ! -f "$HOME/hyperscan/lib/libhs.a" ]; then
 	make
 	make install
 else
-	echo 'Using cached hyperscan directory.';
+	echo 'Using cached hyperscan v$HYPERSCAN_VERSION @ $HYPERSCAN_ROOT.';
 fi

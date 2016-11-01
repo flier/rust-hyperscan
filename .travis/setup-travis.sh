@@ -17,13 +17,13 @@ else
 
     export PATH=$HOME/bin:$PATH
 
-	if [ ! -f "$HOME/boost/include/boost/config.hpp" ]; then
-		wget http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz -O /tmp/boost.tar.gz
+	if [ ! -f "$BOOST_ROOT/lib/libboost_graph.a" ]; then
+		wget http://downloads.sourceforge.net/project/boost/boost/1.$BOOST_VERSION_MINOR.0/boost_1_$BOOST_VERSION_MINOR_0.tar.gz -O /tmp/boost.tar.gz
 		tar -xzf /tmp/boost.tar.gz
-		cd boost_1_61_0
+		cd boost_1_$BOOST_VERSION_MINOR_0
 		./bootstrap.sh
-		./b2 -q -d=0 install -j 2 --prefix=$HOME/boost link=static
+		./b2 -q -d=0 install -j 2 --prefix=$BOOST_ROOT link=static
 	else
-  		echo 'Using cached boost directory.';
+  		echo 'Using cached boost v1.$BOOST_VERSION_MINOR_0 @ $BOOST_ROOT.';
   	fi
 fi

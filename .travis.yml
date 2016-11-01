@@ -34,13 +34,11 @@ addons:
 
 cache:
   directories:
-    - $HOME/boost
-    - $HOME/hyperscan
+    - $BOOST_ROOT
+    - $HYPERSCAN_ROOT
 
 before_install:
   - .travis/setup-travis.sh
-  - export BOOST_ROOT=$HOME/boost
-  - export HYPERSCAN_ROOT=$HOME/hyperscan
 
 before_script:
   - .travis/build-hyperscan.sh
@@ -50,3 +48,7 @@ after_failure:
 env:
   global:
     - RUST_BACKTRACE=1
+    - BOOST_VERSION_MINOR=61
+    - BOOST_ROOT=$HOME/boost-1.$BOOST_VERSION_MINOR
+    - HYPERSCAN_VERSION=4.3.1
+    - HYPERSCAN_ROOT=$HOME/hyperscan-$HYPERSCAN_VERSION
