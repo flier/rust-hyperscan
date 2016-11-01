@@ -6,11 +6,13 @@ if [ ! -f "$HYPERSCAN_ROOT/lib/libhs.a" ]; then
 	tar -xzf /tmp/hyperscan.tar.gz
 	cd hyperscan-$HYPERSCAN_VERSION
 	if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
-		cmake . -DBOOST_ROOT=$BOOST_ROOT \
+		cmake . -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+				-DBOOST_ROOT=$BOOST_ROOT \
 				-DCMAKE_POSITION_INDEPENDENT_CODE=on \
 				-DCMAKE_INSTALL_PREFIX=$HYPERSCAN_ROOT
 	else
-		cmake . -DBOOST_ROOT=$BOOST_ROOT \
+		cmake . -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+				-DBOOST_ROOT=$BOOST_ROOT \
 				-DCMAKE_POSITION_INDEPENDENT_CODE=on \
 				-DCMAKE_INSTALL_PREFIX=$HYPERSCAN_ROOT \
 				-DCMAKE_C_COMPILER=/usr/bin/gcc-4.8 \
