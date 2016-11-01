@@ -18,9 +18,9 @@ else
     export PATH=$HOME/bin:$PATH
 
 	if [ ! -f "$HOME/boost/include/boost/config.hpp" ]; then
-		wget http://downloads.sourceforge.net/project/boost/boost/1.62.0/boost_1_62_0.tar.gz -O /tmp/boost.tar.gz
+		wget http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz -O /tmp/boost.tar.gz
 		tar -xzf /tmp/boost.tar.gz
-		cd boost_1_62_0
+		cd boost_1_61_0
 		./bootstrap.sh
 		./b2 -q -d=0 install -j 2 --prefix=$HOME/boost link=static
 	else
