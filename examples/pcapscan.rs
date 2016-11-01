@@ -23,8 +23,6 @@ extern crate getopts;
 extern crate pcap;
 extern crate pnet;
 extern crate byteorder;
-extern crate time;
-extern crate stopwatch;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
@@ -33,6 +31,7 @@ extern crate hyperscan;
 
 use std::fmt;
 use std::env;
+use std::time::{Duration, Instant};
 use std::error;
 use std::process::exit;
 use std::path::Path;
@@ -51,7 +50,6 @@ use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::udp::UdpPacket;
 use byteorder::{BigEndian, ReadBytesExt};
-use stopwatch::Stopwatch;
 
 use hyperscan::{Pattern, Patterns, Database, DatabaseBuilder, StreamingDatabase, BlockDatabase,
                 RawScratch, Scratch, ScratchAllocator, BlockScanner, StreamingScanner, Stream,
@@ -90,15 +88,29 @@ impl error::Error for Error {
     }
 }
 
+const NANOS_PER_MILLI: u32 = 1_000_000;
+const MILLIS_PER_SEC: u64 = 1_000;
+
+trait Milliseconds {
+    fn ms(&self) -> usize;
+}
+
+impl Milliseconds for Duration {
+    fn ms(&self) -> usize {
+        (self.as_secs() * MILLIS_PER_SEC) as usize +
+        (self.subsec_nanos() / NANOS_PER_MILLI) as usize
+    }
+}
+
 macro_rules! build_database {
     ($builder:expr, $mode:expr) => ({
-        let sw = Stopwatch::start_new();
+        let now = Instant::now();
 
         let db = try!($builder.build());
 
-        println!("Hyperscan {} mode database compiled in {}.",
+        println!("Hyperscan {} mode database compiled in {}ms",
              $mode,
-             sw.elapsed());
+             now.elapsed().ms());
 
         db
     })
@@ -116,27 +128,26 @@ fn databases_from_file(filename: &str) -> Result<(StreamingDatabase, BlockDataba
     println!("Compiling Hyperscan databases with {} patterns.",
              patterns.len());
 
-    Ok((build_database!(patterns, "streaming"),
-        build_database!(patterns, "block")))
+    Ok((build_database!(patterns, "streaming"), build_database!(patterns, "block")))
 }
 
 fn parse_file(filename: &str) -> Result<Patterns, io::Error> {
     let f = try!(File::open(filename));
     let patterns = io::BufReader::new(f)
-                       .lines()
-                       .filter_map(|line: Result<String, io::Error>| -> Option<Pattern> {
-                           if let Ok(line) = line {
-                               let line = line.trim();
+        .lines()
+        .filter_map(|line: Result<String, io::Error>| -> Option<Pattern> {
+            if let Ok(line) = line {
+                let line = line.trim();
 
-                               if line.len() > 0 && !line.starts_with('#') {
-                                   if let Ok(pattern) = Pattern::parse(line) {
-                                       return Some(pattern);
-                                   }
-                               }
-                           }
+                if line.len() > 0 && !line.starts_with('#') {
+                    if let Ok(pattern) = Pattern::parse(line) {
+                        return Some(pattern);
+                    }
+                }
+            }
 
-                           None
-                       });
+            None
+        });
 
     Ok(patterns.collect())
 }
@@ -296,17 +307,16 @@ impl Benchmark {
     // Open a Hyperscan stream for each stream in stream_ids
     fn open_streams(&mut self) {
         self.streams = self.stream_map
-                           .iter()
-                           .map(|_| self.db_streaming.open_stream(0).unwrap())
-                           .collect()
+            .iter()
+            .map(|_| self.db_streaming.open_stream(0).unwrap())
+            .collect()
     }
 
     // Close all open Hyperscan streams (potentially generating any end-anchored matches)
     fn close_streams(&mut self) {
         for ref stream in &self.streams {
-            if let Err(err) = stream.close(&self.scratch,
-                                           Some(Self::on_match),
-                                           Some(&self.match_count)) {
+            if let Err(err) =
+                   stream.close(&self.scratch, Some(Self::on_match), Some(&self.match_count)) {
                 println!("ERROR: Unable to close stream. Exiting. {}", err);
             }
         }
@@ -323,7 +333,8 @@ impl Benchmark {
         }
     }
 
-    // Scan each packet (in the ordering given in the PCAP file) through Hyperscan using the streaming interface.
+    // Scan each packet (in the ordering given in the PCAP file)
+    // through Hyperscan using the streaming interface.
     fn scan_streams(&mut self) {
         for (i, ref packet) in self.packets.iter().enumerate() {
             let ref stream = self.streams[self.stream_ids[i]];
@@ -338,15 +349,16 @@ impl Benchmark {
         }
     }
 
-    // Scan each packet (in the ordering given in the PCAP file) through Hyperscan using the block-mode interface.
+    // Scan each packet (in the ordering given in the PCAP file)
+    // through Hyperscan using the block-mode interface.
     fn scan_block(&mut self) {
         for ref packet in &self.packets {
             if let Err(err) = self.db_block
-                                  .scan(packet.as_ref().as_slice(),
-                                        0,
-                                        &self.scratch,
-                                        Some(Self::on_match),
-                                        Some(&self.match_count)) {
+                .scan(packet.as_ref().as_slice(),
+                      0,
+                      &self.scratch,
+                      Some(Self::on_match),
+                      Some(&self.match_count)) {
                 println!("ERROR: Unable to scan packet. Exiting. {}", err)
             }
         }
@@ -362,8 +374,10 @@ impl Benchmark {
                  num_packets,
                  num_streams,
                  num_bytes);
-        println!("Average packet length: {} bytes.", num_bytes / num_packets);
-        println!("Average stream length: {} bytes.", num_bytes / num_streams);
+        println!("Average packet length: {} bytes.",
+                 num_bytes / if num_packets > 0 { num_packets } else { 1 });
+        println!("Average stream length: {} bytes.",
+                 num_bytes / if num_streams > 0 { num_streams } else { 1 });
         println!("");
 
         match self.db_streaming.database_size() {
@@ -477,58 +491,56 @@ fn main() {
 
     bench.display_stats();
 
-    let mut sw = Stopwatch::start_new();
-
     // Streaming mode scans.
-    let mut streaming_scan = time::Duration::zero();
-    let mut streaming_open_close = time::Duration::zero();
+    let mut streaming_scan = Duration::from_secs(0);
+    let mut streaming_open_close = Duration::from_secs(0);
 
     for i in 0..repeat_count {
         if i == 0 {
             // Open streams.
-            sw.restart();
+            let now = Instant::now();
             bench.open_streams();
-            streaming_open_close = streaming_open_close + sw.elapsed();
+            streaming_open_close = streaming_open_close + now.elapsed();
         } else {
             // Reset streams.
-            sw.restart();
+            let now = Instant::now();
             bench.reset_streams();
-            streaming_open_close = streaming_open_close + sw.elapsed();
+            streaming_open_close = streaming_open_close + now.elapsed();
         }
 
         // Scan all our packets in streaming mode.
-        sw.restart();
+        let now = Instant::now();
         bench.scan_streams();
-        streaming_scan = streaming_scan + sw.elapsed();
+        streaming_scan = streaming_scan + now.elapsed();
     }
 
     // Close streams.
-    sw.restart();
+    let now = Instant::now();
     bench.close_streams();
-    streaming_open_close = streaming_open_close + sw.elapsed();
+    streaming_open_close = streaming_open_close + now.elapsed();
 
     // Collect data from streaming mode scans.
     let bytes = bench.bytes();
     let total_bytes = (bytes * 8 * repeat_count) as f64;
-    let tput_stream_scanning = total_bytes * 1000.0 / streaming_scan.num_milliseconds() as f64;
+    let tput_stream_scanning = total_bytes * 1000.0 / streaming_scan.ms() as f64;
     let tput_stream_overhead = total_bytes * 1000.0 /
-                               (streaming_scan + streaming_open_close).num_milliseconds() as f64;
+                               (streaming_scan + streaming_open_close).ms() as f64;
     let matches_stream = bench.matches();
-    let match_rate_stream = (matches_stream as f64) / ((bytes * repeat_count) as f64 / 1024.0); // matches per kilobyte
+    let match_rate_stream = (matches_stream as f64) / ((bytes * repeat_count) as f64 / 1024.0);
 
 
     // Scan all our packets in block mode.
     bench.clear_matches();
-    sw.restart();
+    let now = Instant::now();
     for _ in 0..repeat_count {
         bench.scan_block();
     }
-    let scan_block = sw.elapsed();
+    let scan_block = now.elapsed();
 
     // Collect data from block mode scans.
-    let tput_block_scanning = total_bytes * 1000.0 / scan_block.num_milliseconds() as f64;
+    let tput_block_scanning = total_bytes * 1000.0 / scan_block.ms() as f64;
     let matches_block = bench.matches();
-    let match_rate_block = (matches_block as f64) / ((bytes * repeat_count) as f64 / 1024.0); // matches per kilobyte
+    let match_rate_block = (matches_block as f64) / ((bytes * repeat_count) as f64 / 1024.0);
 
     println!("\nStreaming mode:\n");
     println!("  Total matches: {}", matches_stream);

@@ -27,8 +27,6 @@ getopts = "0.2"
 pcap = "0.5"
 pnet = "0.14"
 byteorder = "*"
-time = "*"
-stopwatch = "*"
 
 [lib]
 name = "hyperscan"
