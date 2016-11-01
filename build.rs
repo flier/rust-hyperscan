@@ -58,6 +58,8 @@ fn main() {
     println!("cargo:rerun-if-changed={}/include/hs/hs.h", root_dir);
     if cfg!(target_os = "macos") {
         println!("cargo:rustc-link-lib=dylib=c++");
+    } else {
+        println!("cargo:rustc-link-lib=dylib=stdc++");
     }
     println!("cargo:rustc-link-search=native={}/lib", root_dir);
 }
