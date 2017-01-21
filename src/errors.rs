@@ -94,15 +94,11 @@ impl error::Error for Error {
             Error::NoMem => "A memory allocation failed.",
             Error::ScanTerminated => "The engine was terminated by callback.",
             Error::CompilerError(..) => "The pattern compiler failed.",
-            Error::DbVersionError => {
-                "The given database was built for a different version of Hyperscan."
-            }
+            Error::DbVersionError => "The given database was built for a different version of Hyperscan.",
             Error::DbPlatformError => "The given database was built for a different platform.",
             Error::DbModeError => "The given database was built for a different mode of operation.",
             Error::BadAlign => "A parameter passed to this function was not correctly aligned.",
-            Error::BadAlloc => {
-                "The memory allocator did not correctly return memory suitably aligned."
-            }
+            Error::BadAlloc => "The memory allocator did not correctly return memory suitably aligned.",
             Error::Failed(..) => "Internal operation failed.",
             Error::ParseError(ref err) => err.description(),
             Error::NulError(ref err) => err.description(),

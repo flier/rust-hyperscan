@@ -76,7 +76,7 @@ impl<T: Type> Database for RawDatabase<T> {
     }
 
     fn database_size(&self) -> Result<usize, Error> {
-        let mut size: size_t = 0;
+        let mut size: usize = 0;
 
         unsafe {
             check_hs_error!(hs_database_size(self.db, &mut size));
@@ -87,7 +87,7 @@ impl<T: Type> Database for RawDatabase<T> {
                self.db,
                size);
 
-        Ok(size as usize)
+        Ok(size)
     }
 
     fn database_info(&self) -> Result<String, Error> {
@@ -116,7 +116,7 @@ impl<T: Type> Database for RawDatabase<T> {
 impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for RawDatabase<T> {
     fn serialize(&self) -> Result<RawSerializedDatabase, Error> {
         let mut bytes: *mut c_char = ptr::null_mut();
-        let mut size: size_t = 0;
+        let mut size: usize = 0;
 
         unsafe {
             check_hs_error!(hs_serialize_database(self.db, &mut bytes, &mut size));
@@ -126,7 +126,7 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
                    self.db,
                    size);
 
-            Ok(RawSerializedDatabase::from_raw_parts(bytes as *mut u8, size as usize))
+            Ok(RawSerializedDatabase::from_raw_parts(bytes as *mut u8, size))
         }
     }
 
@@ -134,9 +134,7 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
         let mut db: RawDatabasePtr = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_deserialize_database(bytes.as_ptr() as *const i8,
-                                                    bytes.len() as size_t,
-                                                    &mut db));
+            check_hs_error!(hs_deserialize_database(bytes.as_ptr() as *const i8, bytes.len(), &mut db));
 
             debug!("deserialized {} database to {:p} from {} bytes",
                    T::name(),
@@ -149,9 +147,7 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
 
     fn deserialize_at(&self, bytes: &[u8]) -> Result<&RawDatabase<T>, Error> {
         unsafe {
-            check_hs_error!(hs_deserialize_database_at(bytes.as_ptr() as *const i8,
-                                                       bytes.len() as size_t,
-                                                       self.db));
+            check_hs_error!(hs_deserialize_database_at(bytes.as_ptr() as *const i8, bytes.len(), self.db));
 
             debug!("deserialized {} database at {:p} from {} bytes",
                    T::name(),
@@ -175,13 +171,13 @@ impl<T: Type> Drop for RawDatabase<T> {
 
 impl RawDatabase<Streaming> {
     pub fn stream_size(&self) -> Result<usize, Error> {
-        let mut size: size_t = 0;
+        let mut size: usize = 0;
 
         unsafe {
             check_hs_error!(hs_stream_size(self.db, &mut size));
         }
 
-        Ok(size as usize)
+        Ok(size)
     }
 }
 
@@ -274,6 +270,11 @@ pub mod tests {
         let db_info = data.database_info().unwrap();
 
         validate_database_info(&db_info);
+    }
+
+    #[test]
+    pub fn test_platform() {
+        assert!(PlatformInfo::is_valid())
     }
 
     #[test]

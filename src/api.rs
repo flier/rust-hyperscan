@@ -104,31 +104,25 @@ pub trait SerializedDatabase {
 
     fn as_slice(&self) -> &[u8];
 
-    fn deserialize<T: SerializableDatabase<D, S>, D: Database, S: SerializedDatabase>
-        (&self)
-         -> Result<D, Error> {
+    fn deserialize<T: SerializableDatabase<D, S>, D: Database, S: SerializedDatabase>(&self) -> Result<D, Error> {
         T::deserialize(self.as_slice())
     }
 
     fn database_size(&self) -> Result<usize, Error> {
-        let mut size: size_t = 0;
+        let mut size: usize = 0;
 
         unsafe {
-            check_hs_error!(hs_serialized_database_size(self.as_slice().as_ptr() as *const i8,
-                                                        self.len() as size_t,
-                                                        &mut size));
+            check_hs_error!(hs_serialized_database_size(self.as_slice().as_ptr() as *const i8, self.len(), &mut size));
         }
 
-        Ok(size as usize)
+        Ok(size)
     }
 
     fn database_info(&self) -> Result<String, Error> {
         let mut p: *mut c_char = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_serialized_database_info(self.as_slice().as_ptr() as *const i8,
-                                                        self.len() as size_t,
-                                                        &mut p));
+            check_hs_error!(hs_serialized_database_info(self.as_slice().as_ptr() as *const i8, self.len(), &mut p));
 
             let result = match CStr::from_ptr(p).to_str() {
                 Ok(info) => Ok(info.to_string()),
@@ -156,12 +150,16 @@ impl fmt::Debug for PlatformInfo {
 }
 
 impl PlatformInfo {
+    pub fn is_valid() -> bool {
+        unsafe { hs_valid_platform() == HS_SUCCESS }
+    }
+
     pub fn null() -> PlatformInfo {
         PlatformInfo(None)
     }
 
     pub fn host() -> PlatformInfo {
-        let mut platform = hs_platform_info_t::default();
+        let mut platform = unsafe { mem::zeroed() };
 
         unsafe {
             assert_hs_error!(hs_populate_platform(&mut platform));
@@ -329,9 +327,7 @@ pub trait BlockScanner<T: Scannable, S: Scratch> {
         self.scan(data,
                   flags,
                   scratch,
-                  callback.map(|f| unsafe {
-                      mem::transmute::<MatchEventCallbackMut<D>, MatchEventCallback<D>>(f)
-                  }),
+                  callback.map(|f| unsafe { mem::transmute::<MatchEventCallbackMut<D>, MatchEventCallback<D>>(f) }),
                   context.map(|v| &*v))
     }
 }

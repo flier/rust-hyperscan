@@ -1,6 +1,6 @@
 [package]
 name = "hyperscan"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Flier Lu <flier.lu@nexusguard.com>"]
 build = "build.rs"
 description = "Hyperscan bindings for Rust with Multiple Pattern and Streaming Scan"
@@ -17,7 +17,7 @@ log = "0.3"
 regex-syntax = "0.3"
 
 [build-dependencies]
-bindgen = "0.19"
+libbindgen = "0.1"
 log = "0.3"
 env_logger = "0.3"
 
@@ -26,20 +26,8 @@ env_logger = "0.3"
 regex = "0.1"
 getopts = "0.2"
 pcap = "0.5"
-pnet = "0.14"
+pnet = "0.16"
 byteorder = "0.5"
 
 [lib]
 name = "hyperscan"
-
-[[example]]
-name = "simplegrep"
-path = "examples/simplegrep.rs"
-test = false
-bench = false
-
-[[example]]
-name = "pcapscan"
-path = "examples/pcapscan.rs"
-test = false
-bench = false

@@ -1,5 +1,6 @@
 use std::ptr;
 use std::fmt;
+use std::os::raw::c_uint;
 use std::str::FromStr;
 use std::ffi::CString;
 use std::iter::FromIterator;
@@ -113,9 +114,7 @@ impl Pattern {
     pub fn parse(s: &str) -> Result<Pattern, Error> {
         unsafe {
             let (id, expr) = match s.find(':') {
-                Some(off) => {
-                    (try!(s.slice_unchecked(0, off).parse()), s.slice_unchecked(off + 1, s.len()))
-                }
+                Some(off) => (try!(s.slice_unchecked(0, off).parse()), s.slice_unchecked(off + 1, s.len())),
                 None => (0, s),
             };
 
@@ -236,10 +235,7 @@ impl<T: Type> RawDatabase<T> {
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
-    pub fn compile(expression: &str,
-                   flags: u32,
-                   platform: &PlatformInfo)
-                   -> Result<RawDatabase<T>, Error> {
+    pub fn compile(expression: &str, flags: u32, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
         let expr = try!(CString::new(expression));
         let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
@@ -295,8 +291,8 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
             let expr = try!(CString::new(pattern.expression.as_str()));
 
             expressions.push(expr);
-            flags.push(pattern.flags.0 as uint32_t);
-            ids.push(pattern.id as uint32_t);
+            flags.push(pattern.flags.0 as c_uint);
+            ids.push(pattern.id as c_uint);
         }
 
         for expr in &expressions {
@@ -463,10 +459,9 @@ pub mod tests {
     fn test_patterns_build_with_flags() {
         let _ = env_logger::init();
 
-        let db: BlockDatabase =
-            patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS|HS_FLAG_DOTALL)
-                .build()
-                .unwrap();
+        let db: BlockDatabase = patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS|HS_FLAG_DOTALL)
+            .build()
+            .unwrap();
 
         validate_database_with_size(&db, DATABASE_SIZE);
     }
