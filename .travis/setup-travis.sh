@@ -43,7 +43,7 @@ else
 	    echo 'Downloading llvm ${LLVM_VERSION} ...'
 
 	    wget http://llvm.org/releases/${LLVM_VERSION_TRIPLE}/${LLVM}.tar.xz
-	    mkdir llvm
+	    mkdir llvm-$LLVM_VERSION
 	    tar -xf ${LLVM}.tar.xz -C llvm-$LLVM_VERSION --strip-components=1
 
 	    export LLVM_CONFIG_PATH=`pwd`/llvm-$LLVM_VERSION/bin/llvm-config
