@@ -52,10 +52,14 @@ before_install:
 before_script:
   - .travis/build-hyperscan.sh
 
+script:
+  - cargo build --verbose
+  - cargo test --verbose
+
 after_failure:
-  - pwd
+  - echo `pwd`
   - tree -h
-  - $LLVM_CONFIG_PATH --cxxflags --ldflags
+  - $LLVM_ROOT/bin/llvm-config --cxxflags --ldflags
 
 cache:
   directories:
