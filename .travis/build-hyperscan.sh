@@ -5,6 +5,7 @@ if [ ! -f "$HYPERSCAN_ROOT/lib/libhs.a" ]; then
 	wget https://github.com/01org/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz -O /tmp/hyperscan.tar.gz
 	tar -xzf /tmp/hyperscan.tar.gz
 	cd hyperscan-$HYPERSCAN_VERSION
+	rm -rf tools
 	if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 		cmake . -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 				-DBOOST_ROOT=$BOOST_ROOT \
