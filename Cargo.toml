@@ -31,3 +31,4 @@ byteorder = "0.5"
 
 [lib]
 name = "hyperscan"
+doctest = false
