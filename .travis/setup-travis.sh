@@ -7,7 +7,10 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 	brew update
 	brew outdated cmake || brew upgrade cmake
 	# brew outdated boost || brew upgrade boost
-	brew install boost ragel tree llvm
+	brew install boost 
+	brew install ragel
+	brew install tree
+	brew install llvm
 else
 	mkdir $HOME/bin
 
@@ -39,13 +42,16 @@ else
 	    export LLVM_VERSION_TRIPLE=`llvm_version_triple ${LLVM_VERSION}`
 	    export LLVM=clang+llvm-${LLVM_VERSION_TRIPLE}-x86_64-$1
 
-	    echo 'Downloading llvm ${LLVM_VERSION} ...'
+	    echo 'Downloading LLVM ${LLVM_VERSION} ...'
 
 	    wget http://llvm.org/releases/${LLVM_VERSION_TRIPLE}/${LLVM}.tar.xz
 	    mkdir llvm-$LLVM_VERSION
 	    tar -xf ${LLVM}.tar.xz -C llvm-$LLVM_VERSION --strip-components=1
 
 	    export LLVM_CONFIG_PATH=`pwd`/llvm-$LLVM_VERSION/bin/llvm-config
+	    export LLVM_LIB_PATH=`$LLVM_CONFIG_PATH --libdir`
+
+	    echo 'LLVM installed ${LLVM_LIB_PATH}'
 	}
 
 	llvm_download linux-gnu-ubuntu-14.04
