@@ -17,16 +17,19 @@ fn main() {
     debug!("building with Hyperscan @ {}", hyperscan_root);
 
     let out_dir = env::var("OUT_DIR").unwrap();
+    let out_file = Path::new(&out_dir).join("raw.rs");
 
-    info!("generating raw Hyperscan wrapper {} ...", out_dir);
+    info!("generating raw Hyperscan wrapper @ {}", out_file.display());
 
     libbindgen::builder()
         .header(format!("{}/include/hs/hs.h", hyperscan_root))
+        .clang_arg("-xc++")
+        .clang_arg("-std=c++11")
         .no_unstable_rust()
         .whitelisted_function("^hs_.*")
         .generate()
         .expect("Fail to generate bindings")
-        .write_to_file(Path::new(&out_dir).join("raw.rs"))
+        .write_to_file(out_file)
         .expect("Fail to write raw wrapper");
 
     println!("cargo:rerun-if-changed={}/include/hs/hs.h", hyperscan_root);

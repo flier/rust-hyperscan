@@ -27,7 +27,7 @@ else
 		./bootstrap.sh
 		./b2 -q -d=0 install -j 2 --prefix=$BOOST_ROOT link=static
 	else
-  		echo 'Using cached boost v1.$BOOST_VERSION_MINOR_0 @ $BOOST_ROOT.';
+  		echo "Using cached boost v1.${BOOST_VERSION_MINOR}_0 @ ${BOOST_ROOT}.";
   	fi
 
 	function llvm_version_triple() {
@@ -42,7 +42,7 @@ else
 	    export LLVM_VERSION_TRIPLE=`llvm_version_triple ${LLVM_VERSION}`
 	    export LLVM=clang+llvm-${LLVM_VERSION_TRIPLE}-x86_64-$1
 
-	    echo 'Downloading LLVM ${LLVM_VERSION} ...'
+	    echo "Downloading LLVM ${LLVM_VERSION} ..."
 
 	    wget http://llvm.org/releases/${LLVM_VERSION_TRIPLE}/${LLVM}.tar.xz
 	    mkdir llvm-$LLVM_VERSION
@@ -51,7 +51,7 @@ else
 	    export LLVM_CONFIG_PATH=`pwd`/llvm-$LLVM_VERSION/bin/llvm-config
 	    export LLVM_LIB_PATH=`$LLVM_CONFIG_PATH --libdir`
 
-	    echo 'LLVM installed ${LLVM_LIB_PATH}'
+	    echo "LLVM installed ${LLVM_LIB_PATH}"
 	}
 
 	llvm_download linux-gnu-ubuntu-14.04

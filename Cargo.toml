@@ -17,9 +17,12 @@ log = "0.3"
 regex-syntax = "0.3"
 
 [build-dependencies]
-libbindgen = "0.1"
 log = "0.3"
 env_logger = "0.3"
+
+[build-dependencies.libbindgen]
+version = "0.1"
+features = ["llvm_stable"]
 
 [dev-dependencies]
 env_logger = "0.3"
