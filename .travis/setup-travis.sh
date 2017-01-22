@@ -45,13 +45,16 @@ else
 
 	    wget http://llvm.org/releases/${LLVM_VERSION_TRIPLE}/${LLVM}.tar.xz
 	    mkdir llvm-$LLVM_VERSION
-	    tar -xf ${LLVM}.tar.xz -C llvm-$LLVM_VERSION --strip-components=1
+	    tar -xf ${LLVM}.tar.xz -C $LLVM_ROOT --strip-components=1
 
-	    export LLVM_CONFIG_PATH=`pwd`/llvm-$LLVM_VERSION/bin/llvm-config
-	    export LLVM_LIB_PATH=`$LLVM_CONFIG_PATH --libdir`
-
-	    echo "LLVM installed ${LLVM_LIB_PATH}"
+	    echo "LLVM downloaded @ ${LLVM_ROOT}";
 	}
 
-	llvm_download linux-gnu-ubuntu-14.04
+	export LLVM_CONFIG_PATH=$LLVM_ROOT/bin/llvm-config
+
+	if [ ! -f "$LLVM_CONFIG_PATH" ]; then
+		llvm_download linux-gnu-ubuntu-14.04
+	else
+		echo "Using cached LLVM ${LLVM_VERSION} @ ${LLVM_ROOT}.";
+	fi
 fi
