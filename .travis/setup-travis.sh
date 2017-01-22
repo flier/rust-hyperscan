@@ -8,8 +8,7 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 	brew outdated cmake || brew upgrade cmake
 	# brew outdated boost || brew upgrade boost
 	brew tap homebrew/versions
-	brew install boost160
-	brew install ragel tree
+	brew install boost160 ragel tree llvm
 else
 	mkdir $HOME/bin
 
@@ -28,4 +27,27 @@ else
 	else
   		echo 'Using cached boost v1.$BOOST_VERSION_MINOR_0 @ $BOOST_ROOT.';
   	fi
+
+	function llvm_version_triple() {
+	    if [ "$1" == "3.8" ]; then
+	        echo "3.8.0"
+	    elif [ "$1" == "3.9" ]; then
+	        echo "3.9.0"
+	    fi
+	}
+
+	function llvm_download() {
+	    export LLVM_VERSION_TRIPLE=`llvm_version_triple ${LLVM_VERSION}`
+	    export LLVM=clang+llvm-${LLVM_VERSION_TRIPLE}-x86_64-$1
+
+	    echo 'Downloading llvm ${LLVM_VERSION} ...'
+
+	    wget http://llvm.org/releases/${LLVM_VERSION_TRIPLE}/${LLVM}.tar.xz
+	    mkdir llvm
+	    tar -xf ${LLVM}.tar.xz -C llvm-$LLVM_VERSION --strip-components=1
+
+	    export LLVM_CONFIG_PATH=`pwd`/llvm-$LLVM_VERSION/bin/llvm-config
+	}
+
+	llvm_download linux-gnu-ubuntu-14.04
 fi
