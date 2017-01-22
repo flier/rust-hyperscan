@@ -41,8 +41,6 @@ else
 	    export LLVM_VERSION_TRIPLE=`llvm_version_triple ${LLVM_VERSION}`
 	    export LLVM=clang+llvm-${LLVM_VERSION_TRIPLE}-x86_64-$1
 
-	    echo "Downloading LLVM ${LLVM_VERSION} ..."
-
 	    wget http://llvm.org/releases/${LLVM_VERSION_TRIPLE}/${LLVM}.tar.xz
 	    mkdir llvm-$LLVM_VERSION
 	    tar -xf ${LLVM}.tar.xz -C $LLVM_ROOT --strip-components=1
@@ -52,7 +50,9 @@ else
 
 	export LLVM_CONFIG_PATH=$LLVM_ROOT/bin/llvm-config
 
-	if [ ! -f "$LLVM_CONFIG_PATH" ]; then
+	if [ ! -f "$LLVM_ROOT/bin/llvm-config" ]; then
+		echo "Downloading LLVM ${LLVM_VERSION} ...";
+
 		llvm_download linux-gnu-ubuntu-14.04
 	else
 		echo "Using cached LLVM ${LLVM_VERSION} @ ${LLVM_ROOT}.";
