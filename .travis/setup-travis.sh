@@ -48,8 +48,6 @@ else
 	    echo "LLVM downloaded @ ${LLVM_ROOT}";
 	}
 
-	export LLVM_CONFIG_PATH=$LLVM_ROOT/bin/llvm-config
-
 	if [ ! -f "$LLVM_ROOT/bin/llvm-config" ]; then
 		echo "Downloading LLVM ${LLVM_VERSION} ...";
 

@@ -44,6 +44,7 @@ env:
     - HYPERSCAN_ROOT=$HOME/hyperscan-$HYPERSCAN_VERSION
     - LLVM_VERSION=3.9
     - LLVM_ROOT=$HOME/llvm-$LLVM_VERSION
+    - LLVM_CONFIG_PATH=$LLVM_ROOT/bin/llvm-config
 
 before_install:
   - .travis/setup-travis.sh
@@ -52,7 +53,9 @@ before_script:
   - .travis/build-hyperscan.sh
 
 after_failure:
+  - pwd
   - tree -h
+  - $LLVM_CONFIG_PATH --cxxflags --ldflags
 
 cache:
   directories:
