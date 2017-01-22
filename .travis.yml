@@ -26,6 +26,7 @@ addons:
       - g++
       - gcc-4.8
       - g++-4.8
+      - pkg-config
       - ragel
       - libbz2-dev
       - libpcap-dev
