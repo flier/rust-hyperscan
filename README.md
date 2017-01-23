@@ -1,4 +1,4 @@
-# rust-hyperscan [![travis](https://travis-ci.org/flier/rust-hyperscan.svg?branch=master)](https://travis-ci.org/flier/rust-hyperscan) [![crate](https://img.shields.io/crates/v/hyperscan.svg)](https://crates.io/crates/hyperscan) [![docs](https://docs.rs/hyperscan/badge.svg)](https://docs.rs/hyperscan)
+# rust-hyperscan [![travis](https://api.travis-ci.org/flier/rust-hyperscan.svg)](https://travis-ci.org/flier/rust-hyperscan) [![crate](https://img.shields.io/crates/v/hyperscan.svg)](https://crates.io/crates/hyperscan) [![docs](https://docs.rs/hyperscan/badge.svg)](https://docs.rs/hyperscan)
 
 [Hyperscan](https://github.com/01org/hyperscan) is a high-performance regular expression matching library.
 
@@ -41,7 +41,3 @@ fn main() {
     db.scan::<BlockDatabase>("some test data", 0, &scratch, Some(callback), Some(&db)).unwrap();
 }
 ```
-
-## Document
-
-[API Reference](http://flier.github.io/rust-hyperscan/doc/hyperscan)
