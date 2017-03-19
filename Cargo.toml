@@ -1,7 +1,7 @@
 [package]
 name = "hyperscan"
-version = "0.1.3"
-authors = ["Flier Lu <flier.lu@nexusguard.com>"]
+version = "0.1.4"
+authors = ["Flier Lu <flier.lu@gmail.com>"]
 build = "build.rs"
 description = "Hyperscan bindings for Rust with Multiple Pattern and Streaming Scan"
 homepage = "http://flier.github.io/rust-hyperscan/"
@@ -12,29 +12,29 @@ readme = "README.md"
 keywords = ["regex", "hyperscan", "streaming"]
 
 [features]
-bindgen = ["libbindgen"]
+gen = ["bindgen"]
 
 [dependencies]
 libc = "0.2"
 log = "0.3"
-regex-syntax = "0.3"
+regex-syntax = "0.4"
 
 [build-dependencies]
 log = "0.3"
-env_logger = "0.3"
+env_logger = "0.4"
+pkg-config = "0.3"
 
-[build-dependencies.libbindgen]
-version = "0.1"
-features = ["llvm_stable", "static"]
+[build-dependencies.bindgen]
+version = "0.22"
 optional = true
 
 [dev-dependencies]
-env_logger = "0.3"
-regex = "0.1"
+env_logger = "0.4"
+regex = "0.2"
 getopts = "0.2"
 pcap = "0.5"
 pnet = "0.16"
-byteorder = "0.5"
+byteorder = "1.0"
 
 [lib]
 name = "hyperscan"

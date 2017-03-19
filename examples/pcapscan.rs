@@ -23,10 +23,8 @@ extern crate getopts;
 extern crate pcap;
 extern crate pnet;
 extern crate byteorder;
-#[macro_use]
 extern crate log;
 extern crate env_logger;
-#[macro_use]
 extern crate hyperscan;
 
 use std::fmt;
@@ -51,9 +49,8 @@ use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::udp::UdpPacket;
 use byteorder::{BigEndian, ReadBytesExt};
 
-use hyperscan::{Pattern, Patterns, Database, DatabaseBuilder, StreamingDatabase, BlockDatabase,
-                RawScratch, Scratch, ScratchAllocator, BlockScanner, StreamingScanner, Stream,
-                RawStream};
+use hyperscan::{Pattern, Patterns, Database, DatabaseBuilder, StreamingDatabase, BlockDatabase, RawScratch, Scratch,
+                ScratchAllocator, BlockScanner, StreamingScanner, Stream, RawStream};
 
 #[derive(Debug)]
 enum Error {
@@ -97,8 +94,7 @@ trait Milliseconds {
 
 impl Milliseconds for Duration {
     fn ms(&self) -> usize {
-        (self.as_secs() * MILLIS_PER_SEC) as usize +
-        (self.subsec_nanos() / NANOS_PER_MILLI) as usize
+        (self.as_secs() * MILLIS_PER_SEC) as usize + (self.subsec_nanos() / NANOS_PER_MILLI) as usize
     }
 }
 
@@ -204,9 +200,7 @@ struct Benchmark {
 }
 
 impl Benchmark {
-    fn new(db_streaming: StreamingDatabase,
-           db_block: BlockDatabase)
-           -> Result<Benchmark, hyperscan::Error> {
+    fn new(db_streaming: StreamingDatabase, db_block: BlockDatabase) -> Result<Benchmark, hyperscan::Error> {
         let mut s = try!(db_streaming.alloc());
 
         try!(s.realloc(&db_block));
@@ -315,8 +309,7 @@ impl Benchmark {
     // Close all open Hyperscan streams (potentially generating any end-anchored matches)
     fn close_streams(&mut self) {
         for ref stream in &self.streams {
-            if let Err(err) =
-                   stream.close(&self.scratch, Some(Self::on_match), Some(&self.match_count)) {
+            if let Err(err) = stream.close(&self.scratch, Some(Self::on_match), Some(&self.match_count)) {
                 println!("ERROR: Unable to close stream. Exiting. {}", err);
             }
         }
@@ -523,8 +516,7 @@ fn main() {
     let bytes = bench.bytes();
     let total_bytes = (bytes * 8 * repeat_count) as f64;
     let tput_stream_scanning = total_bytes * 1000.0 / streaming_scan.ms() as f64;
-    let tput_stream_overhead = total_bytes * 1000.0 /
-                               (streaming_scan + streaming_open_close).ms() as f64;
+    let tput_stream_overhead = total_bytes * 1000.0 / (streaming_scan + streaming_open_close).ms() as f64;
     let matches_stream = bench.matches();
     let match_rate_stream = (matches_stream as f64) / ((bytes * repeat_count) as f64 / 1024.0);
 

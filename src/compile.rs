@@ -149,7 +149,7 @@ impl fmt::Display for Pattern {
         write!(f,
                "{}:/{}/{}",
                self.id,
-               regex_syntax::quote(self.expression.as_str()),
+               regex_syntax::escape(self.expression.as_str()),
                self.flags)
     }
 }
