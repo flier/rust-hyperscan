@@ -245,10 +245,24 @@ pub mod tests {
 
     const DATABASE_SIZE: usize = 872;
 
-    pub fn validate_database_info(info: &String) {
-        assert!(Regex::new(r"^Version: (\d\.\d\.\d) Features:\s+(\w+) Mode: (\w+)$")
-            .unwrap()
-            .is_match(&info));
+    pub fn validate_database_info(info: &str) -> (Vec<u8>, Option<String>, Option<String>) {
+        if let Some(captures) = Regex::new(r"^Version:\s(\d\.\d\.\d)\sFeatures:\s+(\w+)?\sMode:\s(\w+)$")
+               .unwrap()
+               .captures(info) {
+            let version = captures
+                .get(1)
+                .unwrap()
+                .as_str()
+                .split('.')
+                .flat_map(|s| s.parse())
+                .collect();
+            let features = captures.get(2).map(|m| m.as_str().to_owned());
+            let mode = captures.get(3).map(|m| m.as_str().to_owned());
+
+            (version, features, mode)
+        } else {
+            panic!("fail to parse database info: {}", info);
+        }
     }
 
     pub fn validate_database_with_size<T: Database>(db: &T, size: usize) {
@@ -288,8 +302,8 @@ pub mod tests {
         validate_database(&db);
 
         assert!(Regex::new(r"RawDatabase<Block>\{db: \w+\}")
-            .unwrap()
-            .is_match(&format!("{:?}", db)));
+                    .unwrap()
+                    .is_match(&format!("{:?}", db)));
     }
 
     #[test]
@@ -306,8 +320,8 @@ pub mod tests {
         validate_serialized_database(data.as_slice());
 
         assert!(Regex::new(r"RawSerializedDatabase\{p: \w+, len: \d+\}")
-            .unwrap()
-            .is_match(&format!("{:?}", data)));
+                    .unwrap()
+                    .is_match(&format!("{:?}", data)));
     }
 
     #[test]
