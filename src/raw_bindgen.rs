@@ -3,7 +3,9 @@
 pub type __darwin_size_t = ::std::os::raw::c_ulong;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct hs_database([u8; 0]);
+pub struct hs_database {
+    _unused: [u8; 0],
+}
 /**
  * A Hyperscan pattern database.
  *
@@ -613,12 +615,22 @@ pub type hs_platform_info_t = hs_platform_info;
 pub struct hs_expr_info {
     /**
      * The minimum length in bytes of a match for the pattern.
+     *
+     * Note: in some cases when using advanced features to suppress matches
+     * (such as extended parameters or the @ref HS_FLAG_SINGLEMATCH flag) this
+     * may represent a conservative lower bound for the true minimum length of
+     * a match.
      */
     pub min_width: ::std::os::raw::c_uint,
     /**
      * The maximum length in bytes of a match for the pattern. If the pattern
-     * has an unbounded maximum width, this will be set to the maximum value of
-     * an unsigned int (UINT_MAX).
+     * has an unbounded maximum length, this will be set to the maximum value
+     * of an unsigned int (UINT_MAX).
+     *
+     * Note: in some cases when using advanced features to suppress matches
+     * (such as extended parameters or the @ref HS_FLAG_SINGLEMATCH flag) this
+     * may represent a conservative upper bound for the true maximum length of
+     * a match.
      */
     pub max_width: ::std::os::raw::c_uint,
     /**
@@ -715,10 +727,16 @@ pub struct hs_expr_ext {
      * @ref HS_EXT_FLAG_MIN_LENGTH flag in the hs_expr_ext::flags field.
      */
     pub min_length: ::std::os::raw::c_ulonglong,
+    /**
+     * Allow patterns to approximately match within this edit distance. To use
+     * this parameter, set the @ref HS_EXT_FLAG_EDIT_DISTANCE flag in the
+     * hs_expr_ext::flags field.
+     */
+    pub edit_distance: ::std::os::raw::c_uint,
 }
 #[test]
 fn bindgen_test_layout_hs_expr_ext() {
-    assert_eq!(::std::mem::size_of::<hs_expr_ext>() , 32usize , concat ! (
+    assert_eq!(::std::mem::size_of::<hs_expr_ext>() , 40usize , concat ! (
                "Size of: " , stringify ! ( hs_expr_ext ) ));
     assert_eq! (::std::mem::align_of::<hs_expr_ext>() , 8usize , concat ! (
                 "Alignment of " , stringify ! ( hs_expr_ext ) ));
@@ -742,6 +760,11 @@ fn bindgen_test_layout_hs_expr_ext() {
                 as usize } , 24usize , concat ! (
                 "Alignment of field: " , stringify ! ( hs_expr_ext ) , "::" ,
                 stringify ! ( min_length ) ));
+    assert_eq! (unsafe {
+                & ( * ( 0 as * const hs_expr_ext ) ) . edit_distance as *
+                const _ as usize } , 32usize , concat ! (
+                "Alignment of field: " , stringify ! ( hs_expr_ext ) , "::" ,
+                stringify ! ( edit_distance ) ));
 }
 impl Clone for hs_expr_ext {
     fn clone(&self) -> Self { *self }
@@ -1013,6 +1036,17 @@ extern "C" {
  * information provided in @ref hs_expr_info_t includes the minimum and maximum
  * width of a pattern match.
  *
+ * Note: successful analysis of an expression with this function does not imply
+ * that compilation of the same expression (via @ref hs_compile(), @ref
+ * hs_compile_multi() or @ref hs_compile_ext_multi()) would succeed. This
+ * function may return @ref HS_SUCCESS for regular expressions that Hyperscan
+ * cannot compile.
+ *
+ * Note: some per-pattern flags (such as @ref HS_FLAG_ALLOWEMPTY, @ref
+ * HS_FLAG_SOM_LEFTMOST) are accepted by this call, but as they do not affect
+ * the properties returned in the @ref hs_expr_info_t structure, they will not
+ * affect the outcome of this function.
+ *
  * @param expression
  *      The NULL-terminated expression to parse. Note that this string must
  *      represent ONLY the pattern to be matched, with no delimiters or flags;
@@ -1065,6 +1099,17 @@ extern "C" {
  * Utility function providing information about a regular expression, with
  * extended parameter support. The information provided in @ref hs_expr_info_t
  * includes the minimum and maximum width of a pattern match.
+ *
+ * Note: successful analysis of an expression with this function does not imply
+ * that compilation of the same expression (via @ref hs_compile(), @ref
+ * hs_compile_multi() or @ref hs_compile_ext_multi()) would succeed. This
+ * function may return @ref HS_SUCCESS for regular expressions that Hyperscan
+ * cannot compile.
+ *
+ * Note: some per-pattern flags (such as @ref HS_FLAG_ALLOWEMPTY, @ref
+ * HS_FLAG_SOM_LEFTMOST) are accepted by this call, but as they do not affect
+ * the properties returned in the @ref hs_expr_info_t structure, they will not
+ * affect the outcome of this function.
  *
  * @param expression
  *      The NULL-terminated expression to parse. Note that this string must
@@ -1135,14 +1180,18 @@ extern "C" {
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct hs_stream([u8; 0]);
+pub struct hs_stream {
+    _unused: [u8; 0],
+}
 /**
  * The stream identifier returned by @ref hs_open_stream().
  */
 pub type hs_stream_t = hs_stream;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct hs_scratch([u8; 0]);
+pub struct hs_scratch {
+    _unused: [u8; 0],
+}
 /**
  * A Hyperscan scratch space.
  */
