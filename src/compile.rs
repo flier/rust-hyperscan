@@ -315,9 +315,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
         }
 
         debug!("patterns [{}] compiled to {} database {:p}",
-               Vec::from_iter(self.iter()
-                       .map(|p| format!("`{}`", p)))
-                   .join(", "),
+               Vec::from_iter(self.iter().map(|p| format!("`{}`", p))).join(", "),
                T::name(),
                db);
 
@@ -334,7 +332,7 @@ pub mod tests {
     use super::super::*;
     use super::super::common::tests::*;
 
-    const DATABASE_SIZE: usize = 2792;
+    const DATABASE_SIZE: usize = 2664;
 
     #[test]
     fn test_compile_flags() {
