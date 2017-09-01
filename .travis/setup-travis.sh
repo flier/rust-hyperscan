@@ -11,7 +11,7 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 	brew install tree
 	brew install llvm
 else
-	mkdir $HOME/bin
+	mkdir -p $HOME/bin
 
 	ln -s /usr/bin/g++-4.8 $HOME/bin/g++
 	ln -s /usr/bin/gcc-4.8 $HOME/bin/gcc
@@ -42,7 +42,7 @@ else
 	    export LLVM=clang+llvm-${LLVM_VERSION_TRIPLE}-x86_64-$1
 
 	    wget http://llvm.org/releases/${LLVM_VERSION_TRIPLE}/${LLVM}.tar.xz
-	    mkdir llvm-$LLVM_VERSION
+	    mkdir -p llvm-$LLVM_VERSION
 	    tar -xf ${LLVM}.tar.xz -C $LLVM_ROOT --strip-components=1
 
 	    echo "LLVM downloaded @ ${LLVM_ROOT}";
