@@ -11,7 +11,6 @@ use regex_syntax;
 use raw::*;
 use constants::*;
 use api::*;
-use cptr::CPtr;
 use common::RawDatabase;
 use errors::{Error, RawCompileErrorPtr, Result};
 
@@ -131,7 +130,7 @@ impl FromStr for Pattern {
 impl Expression for Pattern {
     fn info(&self) -> Result<ExpressionInfo> {
         let expr = CString::new(self.expression.as_str())?;
-        let mut info: CPtr<hs_expr_info_t> = CPtr::null();
+        let mut info: RawExpressionInfo = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
@@ -139,19 +138,13 @@ impl Expression for Pattern {
                 hs_expression_info(
                     expr.as_bytes_with_nul().as_ptr() as *const i8,
                     self.flags.bits(),
-                    &mut *info,
+                    &mut info,
                     &mut err
                 ),
                 err
             );
 
-            let info = ExpressionInfo {
-                min_width: info.as_ref().min_width as usize,
-                max_width: info.as_ref().max_width as usize,
-                unordered_matches: info.as_ref().unordered_matches != 0,
-                matches_at_eod: info.as_ref().matches_at_eod != 0,
-                matches_only_at_eod: info.as_ref().matches_only_at_eod != 0,
-            };
+            let info = info.into();
 
             debug!("expression `{}` info: {:?}", self, info);
 
@@ -403,11 +396,11 @@ pub mod tests {
 
         let info = p.info().unwrap();
 
-        assert_eq!(info.min_width, 4);
-        assert_eq!(info.max_width, 4);
-        assert!(!info.unordered_matches);
-        assert!(!info.matches_at_eod);
-        assert!(!info.matches_only_at_eod);
+        assert_eq!(info.min_width(), 4);
+        assert_eq!(info.max_width(), 4);
+        assert!(!info.unordered_matches());
+        assert!(!info.matches_at_eod());
+        assert!(!info.matches_only_at_eod());
 
         let db: BlockDatabase = p.build().unwrap();
 

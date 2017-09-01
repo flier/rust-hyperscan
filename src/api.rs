@@ -202,24 +202,50 @@ pub trait DatabaseBuilder<D: Database> {
     fn build_for_platform(&self, platform: &PlatformInfo) -> Result<D>;
 }
 
+pub type RawExpressionInfo = *mut hs_expr_info_t;
+
 /// A type containing information related to an expression
-#[derive(Debug, Copy, Clone)]
-pub struct ExpressionInfo {
+#[derive(Debug)]
+pub struct ExpressionInfo(RawExpressionInfo);
+
+impl Drop for ExpressionInfo {
+    fn drop(&mut self) {
+        unsafe { libc::free(self.0 as *mut libc::c_void) }
+    }
+}
+
+impl From<RawExpressionInfo> for ExpressionInfo {
+    fn from(info: RawExpressionInfo) -> Self {
+        ExpressionInfo(info)
+    }
+}
+
+impl ExpressionInfo {
     /// The minimum length in bytes of a match for the pattern.
-    pub min_width: usize,
+    pub fn min_width(&self) -> usize {
+        unsafe { (*self.0).min_width as usize }
+    }
 
     /// The maximum length in bytes of a match for the pattern.
-    pub max_width: usize,
+    pub fn max_width(&self) -> usize {
+        unsafe { (*self.0).max_width as usize }
+    }
 
     /// Whether this expression can produce matches that are not returned in order,
     /// such as those produced by assertions.
-    pub unordered_matches: bool,
+    pub fn unordered_matches(&self) -> bool {
+        unsafe { (*self.0).unordered_matches != 0 }
+    }
 
     /// Whether this expression can produce matches at end of data (EOD).
-    pub matches_at_eod: bool,
+    pub fn matches_at_eod(&self) -> bool {
+        unsafe { (*self.0).matches_at_eod != 0 }
+    }
 
     /// Whether this expression can *only* produce matches at end of data (EOD).
-    pub matches_only_at_eod: bool,
+    pub fn matches_only_at_eod(&self) -> bool {
+        unsafe { (*self.0).matches_only_at_eod != 0 }
+    }
 }
 
 /// Providing expression information.

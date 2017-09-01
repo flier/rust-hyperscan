@@ -39,7 +39,6 @@ extern crate regex_syntax;
 
 mod raw;
 mod constants;
-mod cptr;
 #[macro_use]
 pub mod errors;
 mod api;
