@@ -130,7 +130,7 @@ impl FromStr for Pattern {
 impl Expression for Pattern {
     fn info(&self) -> Result<ExpressionInfo> {
         let expr = CString::new(self.expression.as_str())?;
-        let mut info: RawExpressionInfo = ptr::null_mut();
+        let mut info: RawExpressionInfoPtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {

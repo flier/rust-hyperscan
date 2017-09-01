@@ -187,11 +187,11 @@ pub trait DatabaseBuilder<D: Database> {
     fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<D>;
 }
 
-pub type RawExpressionInfo = *mut hs_expr_info_t;
+pub type RawExpressionInfoPtr = *mut hs_expr_info_t;
 
 /// A type containing information related to an expression
 #[derive(Debug)]
-pub struct ExpressionInfo(RawExpressionInfo);
+pub struct ExpressionInfo(RawExpressionInfoPtr);
 
 impl Drop for ExpressionInfo {
     fn drop(&mut self) {
@@ -199,8 +199,8 @@ impl Drop for ExpressionInfo {
     }
 }
 
-impl From<RawExpressionInfo> for ExpressionInfo {
-    fn from(info: RawExpressionInfo) -> Self {
+impl From<RawExpressionInfoPtr> for ExpressionInfo {
+    fn from(info: RawExpressionInfoPtr) -> Self {
         ExpressionInfo(info)
     }
 }
