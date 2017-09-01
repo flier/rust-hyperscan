@@ -40,10 +40,10 @@ use hyperscan::*;
  * length with its length. Returns NULL on failure.
  */
 fn read_input_data(input_filename: &str) -> Result<String, io::Error> {
-    let mut f = try!(File::open(input_filename));
+    let mut f = File::open(input_filename)?;
     let mut buf = String::new();
 
-    try!(f.read_to_string(&mut buf));
+    f.read_to_string(&mut buf)?;
 
     Ok(buf)
 }
@@ -53,9 +53,15 @@ fn main() {
     let mut args = env::args();
 
     if args.len() != 3 {
-        write!(io::stderr(),
-               "Usage: {} <pattern> <input file>\n",
-               Path::new(&args.next().unwrap()).file_name().unwrap().to_str().unwrap());
+        write!(
+            io::stderr(),
+            "Usage: {} <pattern> <input file>\n",
+            Path::new(&args.next().unwrap())
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+        );
         exit(-1);
     }
 
@@ -72,10 +78,12 @@ fn main() {
     let database: BlockDatabase = match pattern.build() {
         Ok(db) => db,
         Err(err) => {
-            write!(io::stderr(),
-                   "ERROR: Unable to compile pattern `{}`: {}\n",
-                   pattern,
-                   err);
+            write!(
+                io::stderr(),
+                "ERROR: Unable to compile pattern `{}`: {}\n",
+                pattern,
+                err
+            );
             exit(-1);
         }
     };
@@ -84,10 +92,12 @@ fn main() {
     let input_data = match read_input_data(&input_filename) {
         Ok(buf) => buf,
         Err(err) => {
-            write!(io::stderr(),
-                   "ERROR: Unable to read file `{}`: {}\n",
-                   input_filename,
-                   err);
+            write!(
+                io::stderr(),
+                "ERROR: Unable to read file `{}`: {}\n",
+                input_filename,
+                err
+            );
             exit(-1);
         }
     };
@@ -112,9 +122,11 @@ fn main() {
     let scratch = match database.alloc() {
         Ok(s) => s,
         Err(err) => {
-            write!(io::stderr(),
-                   "ERROR: Unable to allocate scratch space. {}\n",
-                   err);
+            write!(
+                io::stderr(),
+                "ERROR: Unable to allocate scratch space. {}\n",
+                err
+            );
             exit(-1);
         }
     };
@@ -128,14 +140,18 @@ fn main() {
         0
     };
 
-    if let Err(err) = database.scan(input_data.as_str(),
-                                    0,
-                                    &scratch,
-                                    Some(event_handler),
-                                    Some(&pattern)) {
-        write!(io::stderr(),
-               "ERROR: Unable to scan input buffer. Exiting. {}\n",
-               err);
+    if let Err(err) = database.scan(
+        input_data.as_str(),
+        0,
+        &scratch,
+        Some(event_handler),
+        Some(&pattern),
+    ) {
+        write!(
+            io::stderr(),
+            "ERROR: Unable to scan input buffer. Exiting. {}\n",
+            err
+        );
         exit(-1);
     }
 }

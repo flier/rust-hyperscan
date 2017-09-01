@@ -11,7 +11,8 @@ use libc;
 
 use raw::*;
 use api::*;
-use errors::Error;
+use constants::CompileMode;
+use errors::Result;
 use cptr::CPtr;
 
 /// Utility function for identifying this release version.
@@ -19,19 +20,19 @@ pub fn version<'a>() -> Cow<'a, str> {
     unsafe { CStr::from_ptr(hs_version()) }.to_string_lossy()
 }
 
-pub fn valid_platform() -> Result<(), Error> {
+pub fn valid_platform() -> Result<()> {
     check_hs_error!(unsafe { hs_valid_platform() });
 
     Ok(())
 }
 
 /// A compiled pattern database that can then be used to scan data.
-pub struct RawDatabase<T: Type> {
+pub struct RawDatabase<T: DatabaseType> {
     db: RawDatabasePtr,
     _marker: PhantomData<T>,
 }
 
-impl<T: Type> fmt::Debug for RawDatabase<T> {
+impl<T: DatabaseType> fmt::Debug for RawDatabase<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "RawDatabase<{}>{{db: {:p}}}", T::name(), self.db)
     }
@@ -44,7 +45,7 @@ pub type StreamingDatabase = RawDatabase<Streaming>;
 /// Vectored scanning database.
 pub type VectoredDatabase = RawDatabase<Vectored>;
 
-impl<T: Type> RawDatabase<T> {
+impl<T: DatabaseType> RawDatabase<T> {
     /// Constructs a compiled pattern database from a raw pointer.
     pub fn from_raw(db: RawDatabasePtr) -> RawDatabase<T> {
         trace!("construct {} database {:p}", T::name(), db);
@@ -56,7 +57,7 @@ impl<T: Type> RawDatabase<T> {
     }
 
     /// Free a compiled pattern database.
-    pub fn free(&mut self) -> Result<(), Error> {
+    pub fn free(&mut self) -> Result<()> {
         unsafe {
             check_hs_error!(hs_free_database(self.db));
 
@@ -69,7 +70,7 @@ impl<T: Type> RawDatabase<T> {
     }
 }
 
-impl<T: Type> Deref for RawDatabase<T> {
+impl<T: DatabaseType> Deref for RawDatabase<T> {
     type Target = RawDatabasePtr;
 
     #[inline]
@@ -78,8 +79,8 @@ impl<T: Type> Deref for RawDatabase<T> {
     }
 }
 
-impl<T: Type> Database for RawDatabase<T> {
-    fn database_mode(&self) -> u32 {
+impl<T: DatabaseType> Database for RawDatabase<T> {
+    fn database_mode(&self) -> CompileMode {
         T::mode()
     }
 
@@ -87,7 +88,7 @@ impl<T: Type> Database for RawDatabase<T> {
         T::name()
     }
 
-    fn database_size(&self) -> Result<usize, Error> {
+    fn database_size(&self) -> Result<usize> {
         let mut size: usize = 0;
 
         unsafe {
@@ -104,7 +105,7 @@ impl<T: Type> Database for RawDatabase<T> {
         Ok(size)
     }
 
-    fn database_info(&self) -> Result<String, Error> {
+    fn database_info(&self) -> Result<String> {
         let mut p: *mut c_char = ptr::null_mut();
 
         unsafe {
@@ -112,7 +113,7 @@ impl<T: Type> Database for RawDatabase<T> {
 
             let result = match CStr::from_ptr(p).to_str() {
                 Ok(info) => Ok(info.to_string()),
-                Err(_) => Err(Error::Invalid),
+                Err(_) => bail!(hs_error!(Invalid)),
             };
 
             debug!(
@@ -129,8 +130,8 @@ impl<T: Type> Database for RawDatabase<T> {
     }
 }
 
-impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for RawDatabase<T> {
-    fn serialize(&self) -> Result<RawSerializedDatabase, Error> {
+impl<T: DatabaseType> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for RawDatabase<T> {
+    fn serialize(&self) -> Result<RawSerializedDatabase> {
         let mut bytes: *mut c_char = ptr::null_mut();
         let mut size: usize = 0;
 
@@ -151,7 +152,7 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
         }
     }
 
-    fn deserialize(bytes: &[u8]) -> Result<RawDatabase<T>, Error> {
+    fn deserialize(bytes: &[u8]) -> Result<RawDatabase<T>> {
         let mut db: RawDatabasePtr = ptr::null_mut();
 
         unsafe {
@@ -172,7 +173,7 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
         Ok(Self::from_raw(db))
     }
 
-    fn deserialize_at(&self, bytes: &[u8]) -> Result<&RawDatabase<T>, Error> {
+    fn deserialize_at(&self, bytes: &[u8]) -> Result<&RawDatabase<T>> {
         unsafe {
             check_hs_error!(hs_deserialize_database_at(
                 bytes.as_ptr() as *const i8,
@@ -192,10 +193,10 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
     }
 }
 
-unsafe impl<T: Type> Send for RawDatabase<T> {}
-unsafe impl<T: Type> Sync for RawDatabase<T> {}
+unsafe impl<T: DatabaseType> Send for RawDatabase<T> {}
+unsafe impl<T: DatabaseType> Sync for RawDatabase<T> {}
 
-impl<T: Type> Drop for RawDatabase<T> {
+impl<T: DatabaseType> Drop for RawDatabase<T> {
     #[inline]
     fn drop(&mut self) {
         self.free().unwrap()
@@ -203,7 +204,7 @@ impl<T: Type> Drop for RawDatabase<T> {
 }
 
 impl RawDatabase<Streaming> {
-    pub fn stream_size(&self) -> Result<usize, Error> {
+    pub fn stream_size(&self) -> Result<usize> {
         let mut size: usize = 0;
 
         unsafe {

@@ -28,6 +28,10 @@
 //! }
 //! ```
 
+#[macro_use]
+extern crate bitflags;
+#[macro_use]
+extern crate error_chain;
 extern crate libc;
 #[macro_use]
 extern crate log;
@@ -37,7 +41,7 @@ mod raw;
 mod constants;
 mod cptr;
 #[macro_use]
-mod errors;
+pub mod errors;
 mod api;
 mod common;
 #[macro_use]
@@ -46,11 +50,13 @@ mod runtime;
 
 pub use constants::*;
 pub use api::*;
-pub use errors::Error;
 pub use common::{valid_platform, version, BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
 pub use compile::{CompileFlags, Pattern, Patterns};
 pub use runtime::{RawScratch, RawStream};
 
+#[cfg(test)]
+#[macro_use]
+extern crate matches;
 #[cfg(test)]
 extern crate regex;
 

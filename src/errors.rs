@@ -1,15 +1,34 @@
 use std::fmt;
 use std::ptr;
-use std::error;
 use std::string::ToString;
 use std::ffi::CStr;
 
 use constants::*;
 use raw::*;
 
-/// Error Codes
-#[derive(Debug, PartialEq, Clone)]
-pub enum Error {
+error_chain! {
+    foreign_links {
+        ParseError(::std::num::ParseIntError) #[doc="An error which can be returned when parsing an integer."];
+
+        NulError(::std::ffi::NulError);
+    }
+
+    errors {
+        HsError(err: HsError) {
+            description("hyperscan error")
+            display("hyperscan error, {}", err)
+        }
+
+        CompileError(err: CompileError) {
+            description("compile error")
+            display("compile expression #{} failed, {}", err.expression(), err.message())
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum HsError {
+    Success,
     /// A parameter passed to this function was invalid.
     Invalid,
     /// A memory allocation failed.
@@ -20,7 +39,7 @@ pub enum Error {
     /// but that the callback function requested that scanning cease after a match was located.
     ScanTerminated,
     /// The pattern compiler failed with more detail.
-    CompilerError(String),
+    CompilerError,
     /// The given database was built for a different version of Hyperscan.
     DbVersionError,
     /// The given database was built for a different platform (i.e., CPU type).
@@ -35,80 +54,75 @@ pub enum Error {
     /// did not correctly return memory suitably aligned
     /// for the largest representable data type on this platform.
     BadAlloc,
+    /// The scratch region was already in use.
+    ScratchInUse,
+    /// Unsupported CPU architecture.
+    UnsupportedArch,
     /// Unknown error code
     Failed(i32),
-    /// An error which can be returned when parsing an integer.
-    ParseError(::std::num::ParseIntError),
-    /// An error returned from CString::new to indicate
-    /// that a nul byte was found in the vector provided.
-    NulError(::std::ffi::NulError),
 }
 
-impl From<i32> for Error {
-    fn from(err: i32) -> Error {
-        match err {
-            HS_SUCCESS => unreachable!(),
-            HS_INVALID => Error::Invalid,
-            HS_NOMEM => Error::NoMem,
-            HS_SCAN_TERMINATED => Error::ScanTerminated,
-            // HS_COMPILER_ERROR => Error::CompilerError,
-            HS_DB_VERSION_ERROR => Error::DbVersionError,
-            HS_DB_PLATFORM_ERROR => Error::DbPlatformError,
-            HS_DB_MODE_ERROR => Error::DbModeError,
-            HS_BAD_ALIGN => Error::BadAlign,
-            HS_BAD_ALLOC => Error::BadAlloc,
-            _ => Error::Failed(err),
+impl From<i32> for HsError {
+    fn from(result: i32) -> Self {
+        match result {
+            HS_SUCCESS => HsError::Success,
+            HS_INVALID => HsError::Invalid,
+            HS_NOMEM => HsError::NoMem,
+            HS_SCAN_TERMINATED => HsError::ScanTerminated,
+            HS_COMPILER_ERROR => HsError::CompilerError,
+            HS_DB_VERSION_ERROR => HsError::DbVersionError,
+            HS_DB_PLATFORM_ERROR => HsError::DbPlatformError,
+            HS_DB_MODE_ERROR => HsError::DbModeError,
+            HS_BAD_ALIGN => HsError::BadAlign,
+            HS_BAD_ALLOC => HsError::BadAlloc,
+            HS_SCRATCH_IN_USE => HsError::ScratchInUse,
+            HS_ARCH_ERROR => HsError::UnsupportedArch,
+            err => HsError::Failed(err),
         }
     }
 }
 
-impl From<::std::num::ParseIntError> for Error {
-    fn from(err: ::std::num::ParseIntError) -> Error {
-        Error::ParseError(err)
-    }
-}
-impl From<::std::ffi::NulError> for Error {
-    fn from(err: ::std::ffi::NulError) -> Error {
-        Error::NulError(err)
-    }
-}
-
-impl fmt::Display for Error {
+impl fmt::Display for HsError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "{}", error::Error::description(self).to_string()));
-
         match *self {
-            Error::CompilerError(ref reason) => try!(write!(f, " {}", reason)),
-            Error::Failed(ref code) => try!(write!(f, " Code: {}", code)),
-            _ => {}
+            HsError::Success => write!(f, "the engine completed normally."),
+            HsError::Invalid => write!(f, "a parameter passed to this function was invalid."),
+            HsError::NoMem => write!(f, "a memory allocation failed."),
+            HsError::ScanTerminated => write!(f, "the engine was terminated by callback."),
+            HsError::CompilerError => write!(f, "the pattern compiler failed"),
+            HsError::DbVersionError => write!(
+                f,
+                "the given database was built for a different version of Hyperscan."
+            ),
+            HsError::DbPlatformError => write!(f, "the given database was built for a different platform."),
+            HsError::DbModeError => write!(
+                f,
+                "the given database was built for a different mode of operation."
+            ),
+            HsError::BadAlign => write!(
+                f,
+                "a parameter passed to this function was not correctly aligned."
+            ),
+            HsError::BadAlloc => write!(
+                f,
+                "the memory allocator did not correctly return memory suitably aligned."
+            ),
+            HsError::ScratchInUse => write!(f, "the scratch region was already in use."),
+            HsError::UnsupportedArch => write!(f, "unsupported CPU architecture."),
+            HsError::Failed(err) => write!(f, "internal operation failed, error code {}.", err),
         }
-
-        Ok(())
     }
 }
 
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::Invalid => "A parameter passed to this function was invalid.",
-            Error::NoMem => "A memory allocation failed.",
-            Error::ScanTerminated => "The engine was terminated by callback.",
-            Error::CompilerError(..) => "The pattern compiler failed.",
-            Error::DbVersionError => "The given database was built for a different version of Hyperscan.",
-            Error::DbPlatformError => "The given database was built for a different platform.",
-            Error::DbModeError => "The given database was built for a different mode of operation.",
-            Error::BadAlign => "A parameter passed to this function was not correctly aligned.",
-            Error::BadAlloc => "The memory allocator did not correctly return memory suitably aligned.",
-            Error::Failed(..) => "Internal operation failed.",
-            Error::ParseError(ref err) => err.description(),
-            Error::NulError(ref err) => err.description(),
-        }
+macro_rules! hs_error {
+    ($err:ident) => {
+        $crate::errors::ErrorKind::HsError($crate::errors::HsError :: $err)
     }
 }
 
 macro_rules! check_hs_error {
-    ($expr:expr) => (if $expr != $crate::HS_SUCCESS {
-        return ::std::result::Result::Err(::std::convert::From::from($expr));
+    ($result:expr) => (if $result != $crate::HS_SUCCESS {
+        bail!($crate::errors::ErrorKind::HsError($result.into()))
     })
 }
 
@@ -118,37 +132,25 @@ macro_rules! assert_hs_error {
     })
 }
 
-pub trait CompileError: ToString {
-    fn expression(&self) -> usize;
-}
-
 pub type RawCompileErrorPtr = *mut hs_compile_error_t;
 
 /// Providing details of the compile error condition.
-pub struct RawCompileError(pub RawCompileErrorPtr);
+#[derive(Debug)]
+pub struct CompileError(RawCompileErrorPtr);
 
-impl fmt::Debug for RawCompileError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RawCompileError({:p})", self.0)
-    }
-}
+unsafe impl Send for CompileError {}
 
-impl CompileError for RawCompileError {
-    #[inline]
+impl CompileError {
     fn expression(&self) -> usize {
         unsafe { (*self.0).expression as usize }
     }
-}
 
-impl ToString for RawCompileError {
-    #[inline]
-    fn to_string(&self) -> String {
+    fn message(&self) -> String {
         unsafe { String::from(CStr::from_ptr((*self.0).message).to_str().unwrap()) }
     }
 }
 
-impl Drop for RawCompileError {
-    #[inline]
+impl Drop for CompileError {
     fn drop(&mut self) {
         unsafe {
             if self.0 != ptr::null_mut() {
@@ -158,17 +160,22 @@ impl Drop for RawCompileError {
     }
 }
 
-macro_rules! check_compile_error {
-    ($expr:expr, $err:ident) => {
-        if $crate::HS_SUCCESS != $expr {
-            return match $expr {
-                $crate::HS_COMPILER_ERROR => {
-                    let msg = $crate::errors::RawCompileError($err);
+impl From<*mut hs_compile_error_t> for CompileError {
+    fn from(err: *mut hs_compile_error_t) -> Self {
+        CompileError(err)
+    }
+}
 
-                    Err($crate::errors::Error::CompilerError(msg.to_string()))
+macro_rules! check_compile_error {
+    ($result:expr, $err:ident) => {
+        if $crate::HS_SUCCESS != $result {
+            match $result {
+                $crate::HS_COMPILER_ERROR => {
+                    bail!($crate::errors::ErrorKind::CompileError($err.into()))
                 },
-                _ =>
-                    Err(::std::convert::From::from($expr)),
+                _ => {
+                    bail!($crate::errors::ErrorKind::HsError($result.into()))
+                },
             }
         }
     }

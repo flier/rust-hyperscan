@@ -4,6 +4,7 @@ use std::os::raw::c_uint;
 use std::str::FromStr;
 use std::ffi::CString;
 use std::iter::FromIterator;
+use std::result::Result as StdResult;
 
 use regex_syntax;
 
@@ -12,7 +13,7 @@ use constants::*;
 use api::*;
 use cptr::CPtr;
 use common::RawDatabase;
-use errors::{Error, RawCompileErrorPtr};
+use errors::{Error, RawCompileErrorPtr, Result};
 
 /// Flags which modify the behaviour of the expression.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
@@ -33,25 +34,25 @@ impl Into<u32> for CompileFlags {
 impl fmt::Display for CompileFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.is_set(HS_FLAG_CASELESS) {
-            try!(write!(f, "i"))
+            write!(f, "i")?;
         }
         if self.is_set(HS_FLAG_MULTILINE) {
-            try!(write!(f, "m"))
+            write!(f, "m")?;
         }
         if self.is_set(HS_FLAG_DOTALL) {
-            try!(write!(f, "s"))
+            write!(f, "s")?;
         }
         if self.is_set(HS_FLAG_SINGLEMATCH) {
-            try!(write!(f, "H"))
+            write!(f, "H")?;
         }
         if self.is_set(HS_FLAG_ALLOWEMPTY) {
-            try!(write!(f, "V"))
+            write!(f, "V")?;
         }
         if self.is_set(HS_FLAG_UTF8) {
-            try!(write!(f, "8"))
+            write!(f, "8")?;
         }
         if self.is_set(HS_FLAG_UCP) {
-            try!(write!(f, "W"))
+            write!(f, "W")?;
         }
         Ok(())
     }
@@ -70,7 +71,7 @@ impl CompileFlags {
         self
     }
 
-    pub fn parse(s: &str) -> Result<CompileFlags, Error> {
+    pub fn parse(s: &str) -> Result<CompileFlags> {
         let mut flags: u32 = 0;
 
         for c in s.chars() {
@@ -82,7 +83,7 @@ impl CompileFlags {
                 'V' => flags |= HS_FLAG_ALLOWEMPTY,
                 '8' => flags |= HS_FLAG_UTF8,
                 'W' => flags |= HS_FLAG_UCP,
-                _ => return Err(Error::CompilerError(format!("invalid compile flag: {}", c))),
+                _ => bail!("invalid compile flag: {}", c),
             }
         }
 
@@ -94,7 +95,7 @@ impl FromStr for CompileFlags {
     type Err = Error;
 
     #[inline]
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> StdResult<Self, Self::Err> {
         CompileFlags::parse(s)
     }
 }
@@ -111,29 +112,28 @@ pub struct Pattern {
 }
 
 impl Pattern {
-    pub fn parse(s: &str) -> Result<Pattern, Error> {
+    pub fn parse(s: &str) -> Result<Pattern> {
         unsafe {
             let (id, expr) = match s.find(':') {
-                Some(off) => (try!(s.slice_unchecked(0, off).parse()), s.slice_unchecked(off + 1, s.len())),
+                Some(off) => (
+                    s.slice_unchecked(0, off).parse()?,
+                    s.slice_unchecked(off + 1, s.len()),
+                ),
                 None => (0, s),
             };
 
             let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
-                (true, Some(end)) if end > 0 => {
-                    Pattern {
-                        expression: String::from(expr.slice_unchecked(1, end)),
-                        flags: try!(CompileFlags::parse(expr.slice_unchecked(end + 1, expr.len()))),
-                        id: id,
-                    }
-                }
+                (true, Some(end)) if end > 0 => Pattern {
+                    expression: String::from(expr.slice_unchecked(1, end)),
+                    flags: CompileFlags::parse(expr.slice_unchecked(end + 1, expr.len()))?,
+                    id: id,
+                },
 
-                _ => {
-                    Pattern {
-                        expression: String::from(expr),
-                        flags: CompileFlags::default(),
-                        id: id,
-                    }
-                }
+                _ => Pattern {
+                    expression: String::from(expr),
+                    flags: CompileFlags::default(),
+                    id: id,
+                },
             };
 
             debug!("pattern `{}` parsed to `{}`", s, pattern);
@@ -146,11 +146,13 @@ impl Pattern {
 impl fmt::Display for Pattern {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "{}:/{}/{}",
-               self.id,
-               regex_syntax::escape(self.expression.as_str()),
-               self.flags)
+        write!(
+            f,
+            "{}:/{}/{}",
+            self.id,
+            regex_syntax::escape(self.expression.as_str()),
+            self.flags
+        )
     }
 }
 
@@ -158,23 +160,27 @@ impl FromStr for Pattern {
     type Err = Error;
 
     #[inline]
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> StdResult<Self, Self::Err> {
         Pattern::parse(s)
     }
 }
 
 impl Expression for Pattern {
-    fn info(&self) -> Result<ExpressionInfo, Error> {
-        let expr = try!(CString::new(self.expression.as_str()));
+    fn info(&self) -> Result<ExpressionInfo> {
+        let expr = CString::new(self.expression.as_str())?;
         let mut info: CPtr<hs_expr_info_t> = CPtr::null();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(hs_expression_info(expr.as_bytes_with_nul().as_ptr() as *const i8,
-                                                    self.flags.0,
-                                                    &mut *info,
-                                                    &mut err),
-                                 err);
+            check_compile_error!(
+                hs_expression_info(
+                    expr.as_bytes_with_nul().as_ptr() as *const i8,
+                    self.flags.0,
+                    &mut *info,
+                    &mut err
+                ),
+                err
+            );
 
             let info = ExpressionInfo {
                 min_width: info.as_ref().min_width as usize,
@@ -230,49 +236,55 @@ macro_rules! patterns {
     }};
 }
 
-impl<T: Type> RawDatabase<T> {
+impl<T: DatabaseType> RawDatabase<T> {
     /// The basic regular expression compiler.
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
-    pub fn compile(expression: &str, flags: u32, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
-        let expr = try!(CString::new(expression));
+    pub fn compile(expression: &str, flags: u32, platform: &PlatformInfo) -> Result<RawDatabase<T>> {
+        let expr = CString::new(expression)?;
         let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(hs_compile(expr.as_bytes_with_nul().as_ptr() as *const i8,
-                                            flags,
-                                            T::mode(),
-                                            platform.as_ptr(),
-                                            &mut db,
-                                            &mut err),
-                                 err);
+            check_compile_error!(
+                hs_compile(
+                    expr.as_bytes_with_nul().as_ptr() as *const i8,
+                    flags,
+                    T::mode().bits(),
+                    platform.as_ptr(),
+                    &mut db,
+                    &mut err
+                ),
+                err
+            );
         }
 
-        debug!("pattern `/{}/{}` compiled to {} database {:p}",
-               expression,
-               CompileFlags(flags),
-               T::name(),
-               db);
+        debug!(
+            "pattern `/{}/{}` compiled to {} database {:p}",
+            expression,
+            CompileFlags(flags),
+            T::name(),
+            db
+        );
 
         Ok(RawDatabase::from_raw(db))
     }
 }
 
-impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Pattern {
+impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Pattern {
     ///
     /// The basic regular expression compiler.
     ///
     /// / This is the function call with which an expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
-    fn build_for_platform(&self, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
+    fn build_for_platform(&self, platform: &PlatformInfo) -> Result<RawDatabase<T>> {
         RawDatabase::compile(&self.expression, self.flags.0, platform)
     }
 }
 
-impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
+impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Patterns {
     ///
     /// The multiple regular expression compiler.
     ///
@@ -281,14 +293,14 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
     /// Each expression can be labelled with a unique integer
     // which is passed into the match callback to identify the pattern that has matched.
     ///
-    fn build_for_platform(&self, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
+    fn build_for_platform(&self, platform: &PlatformInfo) -> Result<RawDatabase<T>> {
         let mut expressions = Vec::with_capacity(self.len());
         let mut ptrs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
         let mut ids = Vec::with_capacity(self.len());
 
         for pattern in self {
-            let expr = try!(CString::new(pattern.expression.as_str()));
+            let expr = CString::new(pattern.expression.as_str())?;
 
             expressions.push(expr);
             flags.push(pattern.flags.0 as c_uint);
@@ -303,21 +315,27 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(hs_compile_multi(ptrs.as_ptr(),
-                                                  flags.as_ptr(),
-                                                  ids.as_ptr(),
-                                                  self.len() as u32,
-                                                  T::mode(),
-                                                  platform.as_ptr(),
-                                                  &mut db,
-                                                  &mut err),
-                                 err);
+            check_compile_error!(
+                hs_compile_multi(
+                    ptrs.as_ptr(),
+                    flags.as_ptr(),
+                    ids.as_ptr(),
+                    self.len() as u32,
+                    T::mode().bits(),
+                    platform.as_ptr(),
+                    &mut db,
+                    &mut err
+                ),
+                err
+            );
         }
 
-        debug!("patterns [{}] compiled to {} database {:p}",
-               Vec::from_iter(self.iter().map(|p| format!("`{}`", p))).join(", "),
-               T::name(),
-               db);
+        debug!(
+            "patterns [{}] compiled to {} database {:p}",
+            Vec::from_iter(self.iter().map(|p| format!("`{}`", p))).join(", "),
+            T::name(),
+            db
+        );
 
         Ok(RawDatabase::from_raw(db))
     }
@@ -346,8 +364,10 @@ pub mod tests {
         assert!(flags.is_set(HS_FLAG_DOTALL));
         assert_eq!(format!("{}", flags), "is");
 
-        assert_eq!(*flags.set(HS_FLAG_MULTILINE),
-                   CompileFlags(HS_FLAG_CASELESS | HS_FLAG_MULTILINE | HS_FLAG_DOTALL));
+        assert_eq!(
+            *flags.set(HS_FLAG_MULTILINE),
+            CompileFlags(HS_FLAG_CASELESS | HS_FLAG_MULTILINE | HS_FLAG_DOTALL)
+        );
 
         assert_eq!(CompileFlags::parse("ism").unwrap(), flags);
         assert!(CompileFlags::parse("test").is_err());

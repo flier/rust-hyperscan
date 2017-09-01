@@ -1,6 +1,6 @@
 [package]
 name = "hyperscan"
-version = "0.1.5"
+version = "0.2.0"
 authors = ["Flier Lu <flier.lu@gmail.com>"]
 build = "build.rs"
 description = "Hyperscan bindings for Rust with Multiple Pattern and Streaming Scan"
@@ -17,6 +17,8 @@ gen = ["bindgen"]
 [dependencies]
 libc = "0.2"
 log = "0.3"
+error-chain = "0.10"
+bitflags = "0.9"
 regex-syntax = "0.4"
 
 [build-dependencies]
@@ -28,6 +30,7 @@ bindgen = { version = "0.30", optional = true }
 
 [dev-dependencies]
 env_logger = "0.4"
+matches = "0.1"
 regex = "0.2"
 getopts = "0.2"
 pcap = "0.7"
