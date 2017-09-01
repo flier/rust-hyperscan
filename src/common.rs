@@ -333,7 +333,7 @@ pub mod tests {
     fn test_database() {
         let _ = env_logger::init();
 
-        let db = BlockDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
+        let db = BlockDatabase::compile("test", CompileFlags::default(), &PlatformInfo::null()).unwrap();
 
         assert!(*db != ptr::null_mut());
 
@@ -350,7 +350,7 @@ pub mod tests {
     fn test_database_serialize() {
         let _ = env_logger::init();
 
-        let db = StreamingDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
+        let db = StreamingDatabase::compile("test", CompileFlags::default(), &PlatformInfo::null()).unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -370,7 +370,7 @@ pub mod tests {
     fn test_database_deserialize() {
         let _ = env_logger::init();
 
-        let db = VectoredDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
+        let db = VectoredDatabase::compile("test", CompileFlags::default(), &PlatformInfo::null()).unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -383,7 +383,7 @@ pub mod tests {
     fn test_database_deserialize_at() {
         let _ = env_logger::init();
 
-        let db = BlockDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
+        let db = BlockDatabase::compile("test", CompileFlags::default(), &PlatformInfo::null()).unwrap();
 
         let data = db.serialize().unwrap();
 

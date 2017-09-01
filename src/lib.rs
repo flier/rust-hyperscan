@@ -51,7 +51,7 @@ mod runtime;
 pub use constants::*;
 pub use api::*;
 pub use common::{valid_platform, version, BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
-pub use compile::{CompileFlags, Pattern, Patterns};
+pub use compile::{Pattern, Patterns};
 pub use runtime::{RawScratch, RawStream};
 
 #[cfg(test)]

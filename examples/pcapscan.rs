@@ -120,9 +120,7 @@ fn parse_file(filename: &str) -> Result<Patterns> {
                 let line = line.trim();
 
                 if line.len() > 0 && !line.starts_with('#') {
-                    if let Ok(pattern) = Pattern::parse(line) {
-                        return Some(pattern);
-                    }
+                    return line.parse().ok();
                 }
             }
 
