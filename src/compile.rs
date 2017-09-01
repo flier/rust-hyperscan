@@ -78,19 +78,28 @@ pub struct Pattern {
     /// Flags which modify the behaviour of the expression.
     pub flags: CompileFlags,
     /// ID number to be associated with the corresponding pattern in the expressions array.
-    pub id: usize,
+    pub id: Option<usize>,
 }
 
 impl fmt::Display for Pattern {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}:/{}/{}",
-            self.id,
-            regex_syntax::escape(self.expression.as_str()),
-            self.flags
-        )
+        if let Some(id) = self.id {
+            write!(
+                f,
+                "{}:/{}/{}",
+                id,
+                regex_syntax::escape(self.expression.as_str()),
+                self.flags
+            )
+        } else {
+            write!(
+                f,
+                "/{}/{}",
+                regex_syntax::escape(self.expression.as_str()),
+                self.flags
+            )
+        }
     }
 }
 
@@ -102,9 +111,9 @@ impl FromStr for Pattern {
             Some(off) => {
                 let (id, expr) = s.split_at(off);
 
-                (id.parse()?, &expr[1..])
+                (Some(id.parse()?), &expr[1..])
             }
-            None => (0, s),
+            None => (None, s),
         };
 
         let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
@@ -160,16 +169,24 @@ pub type Patterns = Vec<Pattern>;
 #[macro_export]
 macro_rules! pattern {
     ( $expr:expr ) => {{
-        pattern!($expr, flags => CompileFlags::default(), id => 0)
+        $crate::Pattern {
+            expression: $expr.into(),
+            flags: CompileFlags::default(),
+            id: None
+        }
     }};
     ( $expr:expr, flags => $flags:expr ) => {{
-        pattern!($expr, flags => $flags, id => 0)
+        $crate::Pattern {
+            expression: $expr.into(),
+            flags: $flags.into(),
+            id: None
+        }
     }};
     ( $expr:expr, flags => $flags:expr, id => $id:expr ) => {{
         $crate::Pattern {
             expression: $expr.into(),
             flags: $flags.into(),
-            id: $id
+            id: Some($id)
         }
     }}
 }
@@ -260,7 +277,7 @@ impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Patterns {
 
             expressions.push(expr);
             flags.push(pattern.flags.bits());
-            ids.push(pattern.id as c_uint);
+            ids.push(pattern.id.unwrap_or_default() as c_uint);
         }
 
         for expr in &expressions {
@@ -355,37 +372,37 @@ pub mod tests {
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, CompileFlags::empty());
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let p: Pattern = "/test/".parse().unwrap();
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, CompileFlags::empty());
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let p: Pattern = "/test/i".parse().unwrap();
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, HS_FLAG_CASELESS);
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let p: Pattern = "3:/test/i".parse().unwrap();
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, HS_FLAG_CASELESS);
-        assert_eq!(p.id, 3);
+        assert_eq!(p.id, Some(3));
 
         let p: Pattern = "test/i".parse().unwrap();
 
         assert_eq!(p.expression, "test/i");
         assert_eq!(p.flags, CompileFlags::empty());
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let p: Pattern = "/t/e/s/t/i".parse().unwrap();
 
         assert_eq!(p.expression, "t/e/s/t");
         assert_eq!(p.flags, HS_FLAG_CASELESS);
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
     }
 
     #[test]
@@ -396,7 +413,7 @@ pub mod tests {
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, CompileFlags::empty());
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let info = p.info().unwrap();
 
@@ -419,7 +436,7 @@ pub mod tests {
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, HS_FLAG_CASELESS);
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let db: BlockDatabase = p.build().unwrap();
 
