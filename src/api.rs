@@ -176,10 +176,10 @@ impl PlatformInfo {
         PlatformInfo(Some(RefCell::new(platform)))
     }
 
-    pub fn new(tune: u32, cpu_features: u64) -> PlatformInfo {
+    pub fn new(tune: TuneFamily, cpu_features: CpuFeatures) -> PlatformInfo {
         PlatformInfo(Some(RefCell::new(hs_platform_info_t {
             tune: tune,
-            cpu_features: cpu_features,
+            cpu_features: cpu_features.bits(),
             reserved1: 0,
             reserved2: 0,
         })))

@@ -121,69 +121,68 @@ bitflags! {
     }
 }
 
-/// CPU features flag - Intel(R) Advanced Vector Extensions 2 (Intel(R) AVX2)
-///
-/// Setting this flag indicates that the target platform supports AVX2
-/// instructions.
-pub const HS_CPU_FEATURES_AVX2: u32 = 1 << 2;
+bitflags! {
+    pub struct CpuFeatures: u64 {
+        #[doc="Setting this flag indicates that the target platform supports AVX2 instructions."]
+        const HS_CPU_FEATURES_AVX2 = 1 << 2;
 
-/// CPU features flag - Intel(R) Advanced Vector Extensions 512 (Intel(R) AVX512)
-///
-/// Setting this flag indicates that the target platform supports AVX512
-/// instructions, specifically AVX-512BW. Using AVX512 implies the use of AVX2.
-pub const HS_CPU_FEATURES_AVX512: u32 = 1 << 3;
+        #[doc="Setting this flag indicates that the target platform supports AVX512 instructions, specifically AVX-512BW. Using AVX512 implies the use of AVX2."]
+        const HS_CPU_FEATURES_AVX512 = 1 << 3;
+    }
+}
 
+pub type TuneFamily = u32;
 
 /// Tuning Parameter - Generic
 ///
 /// This indicates that the compiled database should not be tuned for any
 /// particular target platform.
-pub const HS_TUNE_FAMILY_GENERIC: u32 = 0;
+pub const HS_TUNE_FAMILY_GENERIC: TuneFamily = 0;
 
 /// Tuning Parameter - Intel(R) microarchitecture code name Sandy Bridge
 ///
 /// This indicates that the compiled database should be tuned for the
 /// Sandy Bridge microarchitecture.
-pub const HS_TUNE_FAMILY_SNB: u32 = 1;
+pub const HS_TUNE_FAMILY_SNB: TuneFamily = 1;
 
 /// Tuning Parameter - Intel(R) microarchitecture code name Ivy Bridge
 ///
 /// This indicates that the compiled database should be tuned for the
 /// Ivy Bridge microarchitecture.
-pub const HS_TUNE_FAMILY_IVB: u32 = 2;
+pub const HS_TUNE_FAMILY_IVB: TuneFamily = 2;
 
 /// Tuning Parameter - Intel(R) microarchitecture code name Haswell
 ///
 /// This indicates that the compiled database should be tuned for the
 /// Haswell microarchitecture.
-pub const HS_TUNE_FAMILY_HSW: u32 = 3;
+pub const HS_TUNE_FAMILY_HSW: TuneFamily = 3;
 
 /// Tuning Parameter - Intel(R) microarchitecture code name Silvermont
 ///
 /// This indicates that the compiled database should be tuned for the
 /// Silvermont microarchitecture.
-pub const HS_TUNE_FAMILY_SLM: u32 = 4;
+pub const HS_TUNE_FAMILY_SLM: TuneFamily = 4;
 
 /// Tuning Parameter - Intel(R) microarchitecture code name Broadwell
 ///
 /// This indicates that the compiled database should be tuned for the
 /// Broadwell microarchitecture.
-pub const HS_TUNE_FAMILY_BDW: u32 = 5;
+pub const HS_TUNE_FAMILY_BDW: TuneFamily = 5;
 
 /// Tuning Parameter - Intel(R) microarchitecture code name Skylake
 ///
 /// This indicates that the compiled database should be tuned for the
 /// Skylake microarchitecture.
-pub const HS_TUNE_FAMILY_SKL: u32 = 6;
+pub const HS_TUNE_FAMILY_SKL: TuneFamily = 6;
 
 /// Tuning Parameter - Intel(R) microarchitecture code name Skylake Server
 ///
 /// This indicates that the compiled database should be tuned for the
 /// Skylake Server microarchitecture.
-pub const HS_TUNE_FAMILY_SKX: u32 = 7;
+pub const HS_TUNE_FAMILY_SKX: TuneFamily = 7;
 
 /// Tuning Parameter - Intel(R) microarchitecture code name Goldmont
 ///
 /// This indicates that the compiled database should be tuned for the
 /// Goldmont microarchitecture.
-pub const HS_TUNE_FAMILY_GLM: u32 = 8;
+pub const HS_TUNE_FAMILY_GLM: TuneFamily = 8;
