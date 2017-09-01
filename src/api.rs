@@ -1,7 +1,5 @@
 use std::ptr;
-use std::fmt;
 use std::mem;
-use std::cell::RefCell;
 use std::ops::Deref;
 use std::os::raw::c_char;
 use std::ffi::CStr;
@@ -112,7 +110,7 @@ pub trait SerializedDatabase: AsRef<[u8]> {
             check_hs_error!(hs_serialized_database_size(
                 buf.as_ptr() as *const i8,
                 buf.len(),
-                &mut size
+                &mut size,
             ));
         }
 
@@ -127,7 +125,7 @@ pub trait SerializedDatabase: AsRef<[u8]> {
             check_hs_error!(hs_serialized_database_info(
                 buf.as_ptr() as *const i8,
                 buf.len(),
-                &mut p
+                &mut p,
             ));
 
             let result = match CStr::from_ptr(p).to_str() {
@@ -144,50 +142,37 @@ pub trait SerializedDatabase: AsRef<[u8]> {
 
 /// A type containing information on the target platform
 /// which may optionally be provided to the compile calls
-pub struct PlatformInfo(Option<RefCell<hs_platform_info_t>>);
+#[derive(Debug)]
+pub struct PlatformInfo(RawPlatformInfo);
 
 /// Raw `PlatformInfo` pointer
+pub type RawPlatformInfo = hs_platform_info_t;
 pub type RawPlatformInfoPtr = *const hs_platform_info_t;
-
-impl fmt::Debug for PlatformInfo {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "PlatformInfo({:p})", self.as_ptr())
-    }
-}
 
 impl PlatformInfo {
     pub fn is_valid() -> bool {
         unsafe { hs_valid_platform() == HS_SUCCESS }
     }
 
-    pub fn null() -> PlatformInfo {
-        PlatformInfo(None)
-    }
+    pub fn populate() -> Result<PlatformInfo> {
+        let mut platform_info = unsafe { mem::zeroed() };
 
-    pub fn host() -> PlatformInfo {
-        let mut platform = unsafe { mem::zeroed() };
+        check_hs_error!(unsafe { hs_populate_platform(&mut platform_info) });
 
-        unsafe {
-            assert_hs_error!(hs_populate_platform(&mut platform));
-        }
-
-        PlatformInfo(Some(RefCell::new(platform)))
+        Ok(PlatformInfo(platform_info))
     }
 
     pub fn new(tune: TuneFamily, cpu_features: CpuFeatures) -> PlatformInfo {
-        PlatformInfo(Some(RefCell::new(hs_platform_info_t {
+        PlatformInfo(RawPlatformInfo {
             tune: tune,
             cpu_features: cpu_features.bits(),
             reserved1: 0,
             reserved2: 0,
-        })))
+        })
     }
 
-    pub fn as_ptr(&self) -> RawPlatformInfoPtr {
-        match self.0 {
-            Some(ref info) => &*info.borrow(),
-            None => ptr::null(),
-        }
+    pub fn as_raw(&self) -> RawPlatformInfoPtr {
+        &self.0
     }
 }
 
@@ -196,10 +181,10 @@ pub trait DatabaseBuilder<D: Database> {
     /// This is the function call with which an expression is compiled into
     /// a Hyperscan database which can be passed to the runtime functions
     fn build(&self) -> Result<D> {
-        self.build_for_platform(&PlatformInfo::null())
+        self.build_for_platform(PlatformInfo::populate().ok().as_ref())
     }
 
-    fn build_for_platform(&self, platform: &PlatformInfo) -> Result<D>;
+    fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<D>;
 }
 
 pub type RawExpressionInfo = *mut hs_expr_info_t;

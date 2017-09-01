@@ -155,7 +155,7 @@ impl<'a, T: DatabaseType> SerializableDatabase<RawDatabase<T>, RawSerializedData
             check_hs_error!(hs_deserialize_database(
                 bytes.as_ptr() as *const i8,
                 bytes.len(),
-                &mut db
+                &mut db,
             ));
 
             debug!(
@@ -174,7 +174,7 @@ impl<'a, T: DatabaseType> SerializableDatabase<RawDatabase<T>, RawSerializedData
             check_hs_error!(hs_deserialize_database_at(
                 bytes.as_ptr() as *const i8,
                 bytes.len(),
-                self.db
+                self.db,
             ));
 
             debug!(
@@ -279,7 +279,7 @@ pub mod tests {
     fn test_database() {
         let _ = env_logger::init();
 
-        let db = BlockDatabase::compile("test", CompileFlags::default(), &PlatformInfo::null()).unwrap();
+        let db = BlockDatabase::compile("test", CompileFlags::default(), None).unwrap();
 
         assert!(*db != ptr::null_mut());
 
@@ -290,7 +290,7 @@ pub mod tests {
     fn test_database_serialize() {
         let _ = env_logger::init();
 
-        let db = StreamingDatabase::compile("test", CompileFlags::default(), &PlatformInfo::null()).unwrap();
+        let db = StreamingDatabase::compile("test", CompileFlags::default(), None).unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -301,7 +301,7 @@ pub mod tests {
     fn test_database_deserialize() {
         let _ = env_logger::init();
 
-        let db = VectoredDatabase::compile("test", CompileFlags::default(), &PlatformInfo::null()).unwrap();
+        let db = VectoredDatabase::compile("test", CompileFlags::default(), None).unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -314,7 +314,7 @@ pub mod tests {
     fn test_database_deserialize_at() {
         let _ = env_logger::init();
 
-        let db = BlockDatabase::compile("test", CompileFlags::default(), &PlatformInfo::null()).unwrap();
+        let db = BlockDatabase::compile("test", CompileFlags::default(), None).unwrap();
 
         let data = db.serialize().unwrap();
 
