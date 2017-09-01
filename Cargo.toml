@@ -24,15 +24,15 @@ log = "0.3"
 env_logger = "0.4"
 pkg-config = "0.3"
 
-bindgen = { version = "0.25", optional = true }
+bindgen = { version = "0.30", optional = true }
 
 [dev-dependencies]
 env_logger = "0.4"
 regex = "0.2"
 getopts = "0.2"
-pcap = "0.6"
-pnet = "0.17"
-byteorder = "1.0"
+pcap = "0.7"
+pnet = "0.19"
+byteorder = "1.1"
 
 [lib]
 name = "hyperscan"
