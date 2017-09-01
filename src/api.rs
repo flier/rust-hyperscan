@@ -99,22 +99,19 @@ pub trait SerializableDatabase<T: Database, S: SerializedDatabase>: Database {
 }
 
 /// A pattern database was serialized to a stream of bytes.
-pub trait SerializedDatabase {
-    fn len(&self) -> usize;
-
-    fn as_slice(&self) -> &[u8];
-
+pub trait SerializedDatabase: AsRef<[u8]> {
     fn deserialize<T: SerializableDatabase<D, S>, D: Database, S: SerializedDatabase>(&self) -> Result<D> {
-        T::deserialize(self.as_slice())
+        T::deserialize(self.as_ref())
     }
 
     fn database_size(&self) -> Result<usize> {
+        let buf = self.as_ref();
         let mut size: usize = 0;
 
         unsafe {
             check_hs_error!(hs_serialized_database_size(
-                self.as_slice().as_ptr() as *const i8,
-                self.len(),
+                buf.as_ptr() as *const i8,
+                buf.len(),
                 &mut size
             ));
         }
@@ -123,12 +120,13 @@ pub trait SerializedDatabase {
     }
 
     fn database_info(&self) -> Result<String> {
+        let buf = self.as_ref();
         let mut p: *mut c_char = ptr::null_mut();
 
         unsafe {
             check_hs_error!(hs_serialized_database_info(
-                self.as_slice().as_ptr() as *const i8,
-                self.len(),
+                buf.as_ptr() as *const i8,
+                buf.len(),
                 &mut p
             ));
 

@@ -13,7 +13,6 @@ use raw::*;
 use api::*;
 use constants::CompileMode;
 use errors::Result;
-use cptr::CPtr;
 
 /// Utility function for identifying this release version.
 pub fn version<'a>() -> Cow<'a, str> {
@@ -130,8 +129,8 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
     }
 }
 
-impl<T: DatabaseType> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for RawDatabase<T> {
-    fn serialize(&self) -> Result<RawSerializedDatabase> {
+impl<'a, T: DatabaseType> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase<'a>> for RawDatabase<T> {
+    fn serialize(&self) -> Result<RawSerializedDatabase<'a>> {
         let mut bytes: *mut c_char = ptr::null_mut();
         let mut size: usize = 0;
 
@@ -145,10 +144,7 @@ impl<T: DatabaseType> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase
                 size
             );
 
-            Ok(RawSerializedDatabase::from_raw_parts(
-                bytes as *mut u8,
-                size,
-            ))
+            Ok(slice::from_raw_parts(bytes as *mut u8, size))
         }
     }
 
@@ -215,59 +211,9 @@ impl RawDatabase<Streaming> {
     }
 }
 
-pub struct RawSerializedDatabase {
-    p: CPtr<u8>,
-    len: usize,
-}
+pub type RawSerializedDatabase<'a> = &'a [u8];
 
-impl fmt::Debug for RawSerializedDatabase {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "RawSerializedDatabase{{p: {:p}, len: {}}}",
-            self.p,
-            self.len
-        )
-    }
-}
-
-impl RawSerializedDatabase {
-    unsafe fn from_raw_parts(bytes: *mut u8, len: usize) -> RawSerializedDatabase {
-        RawSerializedDatabase {
-            p: CPtr::from_ptr(bytes),
-            len: len,
-        }
-    }
-}
-
-impl SerializedDatabase for RawSerializedDatabase {
-    fn len(&self) -> usize {
-        self.len
-    }
-
-    fn as_slice(&self) -> &[u8] {
-        unsafe { slice::from_raw_parts(*self.p, self.len) }
-    }
-}
-
-impl SerializedDatabase for [u8] {
-    fn len(&self) -> usize {
-        self.len()
-    }
-
-    fn as_slice(&self) -> &[u8] {
-        self.as_ref()
-    }
-}
-
-impl Deref for RawSerializedDatabase {
-    type Target = *mut u8;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &*self.p
-    }
-}
+impl<'a> SerializedDatabase for RawSerializedDatabase<'a> {}
 
 #[cfg(test)]
 pub mod tests {
@@ -316,7 +262,7 @@ pub mod tests {
     }
 
     pub fn validate_serialized_database<T: SerializedDatabase + ?Sized>(data: &T) {
-        assert_eq!(data.len(), DATABASE_SIZE);
+        assert_eq!(data.as_ref().len(), DATABASE_SIZE);
         assert_eq!(data.database_size().unwrap(), DATABASE_SIZE);
 
         let db_info = data.database_info().unwrap();
@@ -338,12 +284,6 @@ pub mod tests {
         assert!(*db != ptr::null_mut());
 
         validate_database(&db);
-
-        assert!(
-            Regex::new(r"RawDatabase<Block>\{db: \w+\}")
-                .unwrap()
-                .is_match(&format!("{:?}", db))
-        );
     }
 
     #[test]
@@ -354,16 +294,7 @@ pub mod tests {
 
         let data = db.serialize().unwrap();
 
-        assert!(*data != ptr::null_mut());
-
         validate_serialized_database(&data);
-        validate_serialized_database(data.as_slice());
-
-        assert!(
-            Regex::new(r"RawSerializedDatabase\{p: \w+, len: \d+\}")
-                .unwrap()
-                .is_match(&format!("{:?}", data))
-        );
     }
 
     #[test]
@@ -374,7 +305,7 @@ pub mod tests {
 
         let data = db.serialize().unwrap();
 
-        let db = VectoredDatabase::deserialize(data.as_slice()).unwrap();
+        let db = VectoredDatabase::deserialize(data.as_ref()).unwrap();
 
         validate_database(&db);
     }
@@ -387,6 +318,6 @@ pub mod tests {
 
         let data = db.serialize().unwrap();
 
-        validate_database(db.deserialize_at(data.as_slice()).unwrap());
+        validate_database(db.deserialize_at(data.as_ref()).unwrap());
     }
 }
