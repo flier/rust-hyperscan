@@ -50,7 +50,6 @@ fn generate_binding(hyperscan_include_path: &str, out_file: &Path) {
         .header(format!("{}/hs.h", hyperscan_include_path))
         .clang_arg("-xc++")
         .clang_arg("-std=c++11")
-        .no_unstable_rust()
         .whitelisted_function("^hs_.*")
         .generate()
         .expect("Fail to generate bindings")

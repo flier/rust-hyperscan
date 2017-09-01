@@ -28,9 +28,9 @@
 //! }
 //! ```
 
+extern crate libc;
 #[macro_use]
 extern crate log;
-extern crate libc;
 extern crate regex_syntax;
 
 mod raw;
@@ -47,7 +47,7 @@ mod runtime;
 pub use constants::*;
 pub use api::*;
 pub use errors::Error;
-pub use common::{RawDatabase, BlockDatabase, StreamingDatabase, VectoredDatabase};
+pub use common::{valid_platform, version, BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
 pub use compile::{CompileFlags, Pattern, Patterns};
 pub use runtime::{RawScratch, RawStream};
 
