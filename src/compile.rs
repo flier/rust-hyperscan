@@ -82,7 +82,6 @@ pub struct Pattern {
 }
 
 impl fmt::Display for Pattern {
-    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let Some(id) = self.id {
             write!(

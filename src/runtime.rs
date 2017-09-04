@@ -44,7 +44,6 @@ impl RawScratch {
 }
 
 impl Drop for RawScratch {
-    #[inline]
     fn drop(&mut self) {
         unsafe {
             assert_hs_error!(hs_free_scratch(self.0));
@@ -57,7 +56,6 @@ impl Drop for RawScratch {
 }
 
 impl Clone for RawScratch {
-    #[inline]
     fn clone(&self) -> Self {
         let mut s: RawScratchPtr = ptr::null_mut();
 
@@ -74,14 +72,13 @@ impl Clone for RawScratch {
 impl Deref for RawScratch {
     type Target = RawScratchPtr;
 
-    #[inline]
+
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl Scratch for RawScratch {
-    #[inline]
     fn size(&self) -> Result<usize> {
         let mut size = 0;
 
@@ -94,7 +91,7 @@ impl Scratch for RawScratch {
         Ok(size)
     }
 
-    #[inline]
+
     fn realloc<T: Database>(&mut self, db: &T) -> Result<&Self> {
         unsafe {
             check_hs_error!(hs_alloc_scratch(**db, &mut self.0));
@@ -124,7 +121,6 @@ impl<T: DatabaseType> ScratchAllocator<RawScratch> for RawDatabase<T> {
 }
 
 impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
-    #[inline]
     fn scan<D>(
         &self,
         data: T,
@@ -159,7 +155,6 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
 }
 
 impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
-    #[inline]
     fn scan<D>(
         &self,
         data: &Vec<T>,
@@ -233,14 +228,13 @@ impl fmt::Debug for RawStream {
 impl Deref for RawStream {
     type Target = RawStreamPtr;
 
-    #[inline]
+
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for RawStream {
-    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -300,7 +294,6 @@ impl<S: Scratch> Stream<S> for RawStream {
 }
 
 impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
-    #[inline]
     fn scan<D>(
         &self,
         data: T,

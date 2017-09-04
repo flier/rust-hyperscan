@@ -104,7 +104,7 @@ impl<T: DatabaseType> RawDatabase<T> {
 impl<T: DatabaseType> Deref for RawDatabase<T> {
     type Target = RawDatabasePtr;
 
-    #[inline]
+
     fn deref(&self) -> &Self::Target {
         &self.db
     }
@@ -225,7 +225,6 @@ unsafe impl<T: DatabaseType> Send for RawDatabase<T> {}
 unsafe impl<T: DatabaseType> Sync for RawDatabase<T> {}
 
 impl<T: DatabaseType> Drop for RawDatabase<T> {
-    #[inline]
     fn drop(&mut self) {
         self.free().unwrap()
     }

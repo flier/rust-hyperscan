@@ -219,25 +219,21 @@ pub trait Scannable {
 }
 
 impl<'a> Scannable for &'a [u8] {
-    #[inline]
     fn as_bytes(&self) -> &[u8] {
         &self
     }
 }
 impl<'a> Scannable for &'a str {
-    #[inline]
     fn as_bytes(&self) -> &[u8] {
         str::as_bytes(self)
     }
 }
 impl<'a> Scannable for &'a String {
-    #[inline]
     fn as_bytes(&self) -> &[u8] {
         self.as_str().as_bytes()
     }
 }
 impl<'a> Scannable for &'a Vec<u8> {
-    #[inline]
     fn as_bytes(&self) -> &[u8] {
         &self
     }
