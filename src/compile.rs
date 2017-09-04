@@ -224,7 +224,7 @@ impl<T: DatabaseType> RawDatabase<T> {
                     expr.as_bytes_with_nul().as_ptr() as *const i8,
                     flags.bits(),
                     T::MODE.bits(),
-                    platform.map(|p| p.as_raw()).unwrap_or_else(ptr::null),
+                    platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
                     &mut db,
                     &mut err,
                 ),
@@ -294,7 +294,7 @@ impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Patterns {
                     ids.as_ptr(),
                     self.len() as u32,
                     T::MODE.bits(),
-                    platform.map(|p| p.as_raw()).unwrap_or_else(ptr::null),
+                    platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
                     &mut db,
                     &mut err,
                 ),
@@ -321,6 +321,7 @@ pub mod tests {
 
     use super::super::*;
     use errors::{Error, ErrorKind};
+    use raw::AsPtr;
     use common::tests::*;
 
     const DATABASE_SIZE: usize = 2664;
@@ -358,7 +359,7 @@ pub mod tests {
             PlatformInfo::populate().ok().as_ref(),
         ).unwrap();
 
-        assert!(*db != ptr::null_mut());
+        assert!(db.as_ptr() != ptr::null_mut());
 
         validate_database(&db);
     }

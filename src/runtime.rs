@@ -2,7 +2,6 @@ use std::fmt;
 use std::ptr;
 use std::mem;
 use std::os::raw::c_uint;
-use std::ops::{Deref, DerefMut};
 
 use raw::*;
 use api::*;
@@ -29,14 +28,14 @@ impl RawScratch {
         let mut s: RawScratchPtr = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_alloc_scratch(**db, &mut s));
+            check_hs_error!(hs_alloc_scratch(db.as_ptr(), &mut s));
         }
 
         trace!(
             "allocated scratch at {:p} for {} database {:p}",
             s,
             db.database_name(),
-            **db
+            db.as_ptr(),
         );
 
         Ok(RawScratch(s))
@@ -69,12 +68,17 @@ impl Clone for RawScratch {
     }
 }
 
-impl Deref for RawScratch {
-    type Target = RawScratchPtr;
+impl AsPtr for RawScratch {
+    type Type = RawScratchType;
 
+    fn as_ptr(&self) -> *const Self::Type {
+        self.0
+    }
+}
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl AsMutPtr for RawScratch {
+    fn as_mut_ptr(&mut self) -> *mut Self::Type {
+        self.0
     }
 }
 
@@ -94,14 +98,14 @@ impl Scratch for RawScratch {
 
     fn realloc<T: Database>(&mut self, db: &T) -> Result<&Self> {
         unsafe {
-            check_hs_error!(hs_alloc_scratch(**db, &mut self.0));
+            check_hs_error!(hs_alloc_scratch(db.as_ptr(), &mut self.0));
         }
 
         trace!(
             "reallocated scratch {:p} for {} database {:p}",
             self.0,
             db.database_name(),
-            **db
+            db.as_ptr(),
         );
 
         Ok(self)
@@ -125,7 +129,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for BlockDatabase {
         &self,
         data: T,
         flags: ScanFlags,
-        scratch: &S,
+        scratch: &mut S,
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self> {
@@ -133,11 +137,11 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for BlockDatabase {
             let bytes = data.as_ref();
 
             check_hs_error!(hs_scan(
-                **self,
+                self.as_ptr(),
                 bytes.as_ptr() as *const i8,
                 bytes.len() as u32,
                 flags as u32,
-                **scratch,
+                scratch.as_mut_ptr(),
                 mem::transmute(callback),
                 mem::transmute(context)
             ));
@@ -146,7 +150,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for BlockDatabase {
                 "block scan {} bytes with {} database at {:p}",
                 bytes.len(),
                 self.database_name(),
-                **self
+                self.as_ptr(),
             )
         }
 
@@ -159,7 +163,7 @@ impl<T: AsRef<[u8]>, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
         &self,
         data: &Vec<T>,
         flags: ScanFlags,
-        scratch: &S,
+        scratch: &mut S,
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self> {
@@ -174,12 +178,12 @@ impl<T: AsRef<[u8]>, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
 
         unsafe {
             check_hs_error!(hs_scan_vector(
-                **self,
+                self.as_ptr(),
                 ptrs.as_slice().as_ptr() as *const *const i8,
                 lens.as_slice().as_ptr() as *const c_uint,
                 data.len() as u32,
                 flags as u32,
-                **scratch,
+                scratch.as_mut_ptr(),
                 mem::transmute(callback),
                 mem::transmute(context)
             ));
@@ -190,7 +194,7 @@ impl<T: AsRef<[u8]>, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
             lens.iter().fold(0, |sum, len| sum + len),
             lens.len(),
             self.database_name(),
-            **self
+            self.as_ptr(),
         );
 
         Ok(&self)
@@ -202,14 +206,14 @@ impl StreamingScanner<RawStream, RawScratch> for StreamingDatabase {
         let mut id: RawStreamPtr = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_open_stream(**self, flags, &mut id));
+            check_hs_error!(hs_open_stream(self.as_ptr(), flags, &mut id));
         }
 
         trace!(
             "stream opened at {:p} for {} database at {:p}",
             id,
             self.database_name(),
-            **self
+            self.as_ptr(),
         );
 
         Ok(RawStream(id))
@@ -225,18 +229,11 @@ impl fmt::Debug for RawStream {
     }
 }
 
-impl Deref for RawStream {
-    type Target = RawStreamPtr;
+impl AsPtr for RawStream {
+    type Type = RawStreamType;
 
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for RawStream {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    fn as_ptr(&self) -> *const Self::Type {
+        self.0
     }
 }
 
@@ -255,11 +252,11 @@ impl Clone for RawStream {
 }
 
 impl<S: Scratch> Stream<S> for RawStream {
-    fn close<D>(&self, scratch: &S, callback: Option<MatchEventCallback<D>>, context: Option<&D>) -> Result<&Self> {
+    fn close<D>(&self, scratch: &mut S, callback: Option<MatchEventCallback<D>>, context: Option<&D>) -> Result<&Self> {
         unsafe {
             check_hs_error!(hs_close_stream(
                 self.0,
-                **scratch,
+                scratch.as_mut_ptr(),
                 mem::transmute(callback),
                 mem::transmute(context)
             ));
@@ -273,7 +270,7 @@ impl<S: Scratch> Stream<S> for RawStream {
     fn reset<D>(
         &self,
         flags: StreamFlags,
-        scratch: &S,
+        scratch: &mut S,
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self> {
@@ -281,7 +278,7 @@ impl<S: Scratch> Stream<S> for RawStream {
             check_hs_error!(hs_reset_stream(
                 self.0,
                 flags,
-                **scratch,
+                scratch.as_mut_ptr(),
                 mem::transmute(callback),
                 mem::transmute(context)
             ));
@@ -298,7 +295,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for RawStream {
         &self,
         data: T,
         flags: ScanFlags,
-        scratch: &S,
+        scratch: &mut S,
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self> {
@@ -310,7 +307,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for RawStream {
                 bytes.as_ptr() as *const i8,
                 bytes.len() as u32,
                 flags as u32,
-                **scratch,
+                scratch.as_mut_ptr(),
                 mem::transmute(callback),
                 mem::transmute(context)
             ));
@@ -333,6 +330,7 @@ pub mod tests {
     use std::ptr;
 
     use super::super::*;
+    use raw::AsPtr;
     use errors::{Error, ErrorKind, HsError};
 
     const SCRATCH_SIZE: usize = 2500;
@@ -343,17 +341,17 @@ pub mod tests {
 
         let db: BlockDatabase = pattern!{"test"}.build().unwrap();
 
-        assert!(*db != ptr::null_mut());
+        assert!(db.as_ptr() != ptr::null_mut());
 
         let s = db.alloc().unwrap();
 
-        assert!(*s != ptr::null_mut());
+        assert!(s.as_ptr() != ptr::null_mut());
 
         assert!(s.size().unwrap() > SCRATCH_SIZE);
 
         let mut s2 = s.clone();
 
-        assert!(*s2 != ptr::null_mut());
+        assert!(s2.as_ptr() != ptr::null_mut());
 
         assert!(s2.size().unwrap() > SCRATCH_SIZE);
 
@@ -369,9 +367,9 @@ pub mod tests {
         let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
             .build()
             .unwrap();
-        let s = RawScratch::alloc(&db).unwrap();
+        let mut s = RawScratch::alloc(&db).unwrap();
 
-        db.scan::<BlockDatabase>("foo test bar", 0, &s, None, None)
+        db.scan::<BlockDatabase>("foo test bar", 0, &mut s, None, None)
             .unwrap();
 
         fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
@@ -384,7 +382,7 @@ pub mod tests {
         };
 
         assert_matches!(
-            db.scan("foo test bar".as_bytes(), 0, &s, Some(callback), Some(&db))
+            db.scan("foo test bar".as_bytes(), 0, &mut s, Some(callback), Some(&db))
                 .err()
                 .unwrap(),
             Error(ErrorKind::HsError(HsError::ScanTerminated), _)
@@ -398,11 +396,11 @@ pub mod tests {
         let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
             .build()
             .unwrap();
-        let s = RawScratch::alloc(&db).unwrap();
+        let mut s = RawScratch::alloc(&db).unwrap();
 
         let data = vec!["foo", "test", "bar"];
 
-        db.scan::<VectoredDatabase>(&data, 0, &s, None, None)
+        db.scan::<VectoredDatabase>(&data, 0, &mut s, None, None)
             .unwrap();
 
         fn callback(id: u32, from: u64, to: u64, flags: u32, _: &VectoredDatabase) -> u32 {
@@ -417,7 +415,7 @@ pub mod tests {
         let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
 
         assert_matches!(
-            db.scan(&data, 0, &s, Some(callback), Some(&db)).err().unwrap(),
+            db.scan(&data, 0, &mut s, Some(callback), Some(&db)).err().unwrap(),
             Error(ErrorKind::HsError(HsError::ScanTerminated), _)
         );
     }
@@ -428,7 +426,7 @@ pub mod tests {
 
         let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}.build().unwrap();
 
-        let s = RawScratch::alloc(&db).unwrap();
+        let mut s = RawScratch::alloc(&db).unwrap();
         let st = db.open_stream(0).unwrap();
 
         let data = vec!["foo", "test", "bar"];
@@ -443,9 +441,9 @@ pub mod tests {
         }
 
         for d in data {
-            st.scan(d, 0, &s, Some(callback), Some(&db)).unwrap();
+            st.scan(d, 0, &mut s, Some(callback), Some(&db)).unwrap();
         }
 
-        st.close(&s, Some(callback), Some(&db)).unwrap();
+        st.close(&mut s, Some(callback), Some(&db)).unwrap();
     }
 }

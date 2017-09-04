@@ -1,7 +1,6 @@
 use std::ptr;
 use std::fmt;
 use std::slice;
-use std::ops::Deref;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::borrow::Cow;
@@ -10,7 +9,7 @@ use std::marker::PhantomData;
 use libc;
 
 use raw::*;
-use api::*;
+use api::{Database, RawDatabasePtr, RawDatabaseType, SerializableDatabase, SerializedDatabase};
 use constants::*;
 use errors::Result;
 
@@ -101,12 +100,11 @@ impl<T: DatabaseType> RawDatabase<T> {
     }
 }
 
-impl<T: DatabaseType> Deref for RawDatabase<T> {
-    type Target = RawDatabasePtr;
+impl<T: DatabaseType> AsPtr for RawDatabase<T> {
+    type Type = RawDatabaseType;
 
-
-    fn deref(&self) -> &Self::Target {
-        &self.db
+    fn as_ptr(&self) -> *const Self::Type {
+        self.db
     }
 }
 
@@ -255,6 +253,7 @@ pub mod tests {
     use regex::Regex;
 
     use super::super::*;
+    use raw::AsPtr;
 
     const DATABASE_SIZE: usize = 872;
 
@@ -312,7 +311,7 @@ pub mod tests {
 
         let db = BlockDatabase::compile("test", CompileFlags::default(), None).unwrap();
 
-        assert!(*db != ptr::null_mut());
+        assert!(db.as_ptr() != ptr::null_mut());
 
         validate_database(&db);
     }

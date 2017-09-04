@@ -119,7 +119,7 @@ fn main() {
     // match event.
     //
 
-    let scratch = match database.alloc() {
+    let mut scratch = match database.alloc() {
         Ok(s) => s,
         Err(err) => {
             write!(
@@ -143,7 +143,7 @@ fn main() {
     if let Err(err) = database.scan(
         input_data.as_str(),
         0,
-        &scratch,
+        &mut scratch,
         Some(event_handler),
         Some(&pattern),
     ) {

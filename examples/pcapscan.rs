@@ -291,7 +291,11 @@ impl Benchmark {
     // Close all open Hyperscan streams (potentially generating any end-anchored matches)
     fn close_streams(&mut self) {
         for ref stream in &self.streams {
-            if let Err(err) = stream.close(&self.scratch, Some(Self::on_match), Some(&self.match_count)) {
+            if let Err(err) = stream.close(
+                &mut self.scratch,
+                Some(Self::on_match),
+                Some(&self.match_count),
+            ) {
                 println!("ERROR: Unable to close stream. Exiting. {}", err);
             }
         }
@@ -301,7 +305,7 @@ impl Benchmark {
         for ref stream in &self.streams {
             if let Err(err) = stream.reset(
                 0,
-                &self.scratch,
+                &mut self.scratch,
                 Some(Self::on_match),
                 Some(&self.match_count),
             ) {
@@ -319,7 +323,7 @@ impl Benchmark {
             if let Err(err) = stream.scan(
                 packet.as_ref().as_slice(),
                 0,
-                &self.scratch,
+                &mut self.scratch,
                 Some(Self::on_match),
                 Some(&self.match_count),
             ) {
@@ -335,7 +339,7 @@ impl Benchmark {
             if let Err(err) = self.db_block.scan(
                 packet.as_ref().as_slice(),
                 0,
-                &self.scratch,
+                &mut self.scratch,
                 Some(Self::on_match),
                 Some(&self.match_count),
             ) {

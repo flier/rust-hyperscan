@@ -37,7 +37,7 @@ extern crate libc;
 extern crate log;
 extern crate regex_syntax;
 
-mod raw;
+pub mod raw;
 mod constants;
 #[macro_use]
 pub mod errors;

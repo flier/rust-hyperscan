@@ -1,6 +1,5 @@
 use std::ptr;
 use std::mem;
-use std::ops::Deref;
 use std::os::raw::c_char;
 use std::ffi::CStr;
 
@@ -10,11 +9,13 @@ use constants::*;
 use raw::*;
 use errors::Result;
 
+/// Raw `Database` type
+pub type RawDatabaseType = hs_database_t;
 /// Raw `Database` pointer
 pub type RawDatabasePtr = *mut hs_database_t;
 
 /// A Hyperscan pattern database.
-pub trait Database: Deref<Target = RawDatabasePtr> {
+pub trait Database: AsPtr<Type = RawDatabaseType> {
     /// Provides the id of compiled mode of the given database.
     fn database_mode(&self) -> CompileMode;
 
@@ -89,14 +90,23 @@ pub trait SerializedDatabase: AsRef<[u8]> {
     }
 }
 
+/// Raw `PlatformInfo` type
+pub type RawPlatformInfoType = hs_platform_info_t;
+/// Raw `PlatformInfo` pointer
+pub type RawPlatformInfoPtr = *const hs_platform_info_t;
+
 /// A type containing information on the target platform
 /// which may optionally be provided to the compile calls
 #[derive(Debug)]
-pub struct PlatformInfo(RawPlatformInfo);
+pub struct PlatformInfo(RawPlatformInfoType);
 
-/// Raw `PlatformInfo` pointer
-pub type RawPlatformInfo = hs_platform_info_t;
-pub type RawPlatformInfoPtr = *const hs_platform_info_t;
+impl AsPtr for PlatformInfo {
+    type Type = RawPlatformInfoType;
+
+    fn as_ptr(&self) -> *const Self::Type {
+        &self.0
+    }
+}
 
 impl PlatformInfo {
     pub fn is_valid() -> bool {
@@ -112,16 +122,12 @@ impl PlatformInfo {
     }
 
     pub fn new(tune: TuneFamily, cpu_features: CpuFeatures) -> PlatformInfo {
-        PlatformInfo(RawPlatformInfo {
+        PlatformInfo(RawPlatformInfoType {
             tune: tune,
             cpu_features: cpu_features.bits(),
             reserved1: 0,
             reserved2: 0,
         })
-    }
-
-    pub fn as_raw(&self) -> RawPlatformInfoPtr {
-        &self.0
     }
 }
 
@@ -136,6 +142,7 @@ pub trait DatabaseBuilder<D: Database> {
     fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<D>;
 }
 
+pub type RawExpressionInfoType = hs_expr_info_t;
 pub type RawExpressionInfoPtr = *mut hs_expr_info_t;
 
 /// A type containing information related to an expression
@@ -193,12 +200,14 @@ pub trait Expression {
     fn info(&self) -> Result<ExpressionInfo>;
 }
 
+/// Raw `Scratch` type
+pub type RawScratchType = hs_scratch_t;
 /// Raw `Scratch` pointer
 pub type RawScratchPtr = *mut hs_scratch_t;
 
 /// A Hyperscan scratch space.
 ///
-pub trait Scratch: Deref<Target = RawScratchPtr> {
+pub trait Scratch: AsMutPtr<Type = RawScratchType> {
     /// Provides the size of the given scratch space.
     fn size(&self) -> Result<usize>;
 
@@ -248,7 +257,7 @@ pub trait BlockScanner<T: AsRef<[u8]>, S: Scratch> {
         &self,
         data: T,
         flags: ScanFlags,
-        scratch: &S,
+        scratch: &mut S,
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self>;
@@ -257,7 +266,7 @@ pub trait BlockScanner<T: AsRef<[u8]>, S: Scratch> {
         &mut self,
         data: T,
         flags: ScanFlags,
-        scratch: &S,
+        scratch: &mut S,
         callback: Option<MatchEventCallbackMut<D>>,
         context: Option<&mut D>,
     ) -> Result<&Self> {
@@ -281,12 +290,14 @@ pub trait VectoredScanner<T: AsRef<[u8]>, S: Scratch> {
         &self,
         data: &Vec<T>,
         flags: ScanFlags,
-        scratch: &S,
+        scratch: &mut S,
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self>;
 }
 
+/// Raw `Stream` type
+pub type RawStreamType = hs_stream_t;
 /// Raw `Stream` pointer
 pub type RawStreamPtr = *mut hs_stream_t;
 
@@ -294,15 +305,15 @@ pub type RawStreamPtr = *mut hs_stream_t;
 pub type StreamFlags = u32;
 
 /// The stream returned by StreamingDatabase::open_stream
-pub trait Stream<S: Scratch>: Deref<Target = RawStreamPtr> {
+pub trait Stream<S: Scratch>: AsPtr<Type = RawStreamType> {
     /// Close a stream.
-    fn close<D>(&self, scratch: &S, callback: Option<MatchEventCallback<D>>, context: Option<&D>) -> Result<&Self>;
+    fn close<D>(&self, scratch: &mut S, callback: Option<MatchEventCallback<D>>, context: Option<&D>) -> Result<&Self>;
 
     /// Reset a stream to an initial state.
     fn reset<D>(
         &self,
         flags: StreamFlags,
-        scratch: &S,
+        scratch: &mut S,
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self>;
