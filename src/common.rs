@@ -161,7 +161,7 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
     }
 }
 
-impl<'a, T: DatabaseType> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase<'a>> for RawDatabase<T> {
+impl<'a, T: DatabaseType> SerializableDatabase<RawSerializedDatabase<'a>> for RawDatabase<T> {
     fn serialize(&self) -> Result<RawSerializedDatabase<'a>> {
         let mut bytes: *mut c_char = ptr::null_mut();
         let mut size: usize = 0;
