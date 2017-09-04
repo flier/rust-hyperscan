@@ -120,7 +120,7 @@ impl<T: DatabaseType> ScratchAllocator<RawScratch> for RawDatabase<T> {
     }
 }
 
-impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
+impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for BlockDatabase {
     fn scan<D>(
         &self,
         data: T,
@@ -130,7 +130,7 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
         context: Option<&D>,
     ) -> Result<&Self> {
         unsafe {
-            let bytes = data.as_bytes();
+            let bytes = data.as_ref();
 
             check_hs_error!(hs_scan(
                 **self,
@@ -154,7 +154,7 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for BlockDatabase {
     }
 }
 
-impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
+impl<T: AsRef<[u8]>, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
     fn scan<D>(
         &self,
         data: &Vec<T>,
@@ -167,7 +167,7 @@ impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
         let mut lens = Vec::with_capacity(data.len());
 
         for d in data.iter() {
-            let bytes = d.as_bytes();
+            let bytes = d.as_ref();
             ptrs.push(bytes.as_ptr() as *const i8);
             lens.push(bytes.len() as c_uint);
         }
@@ -293,7 +293,7 @@ impl<S: Scratch> Stream<S> for RawStream {
     }
 }
 
-impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
+impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for RawStream {
     fn scan<D>(
         &self,
         data: T,
@@ -302,7 +302,7 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self> {
-        let bytes = data.as_bytes();
+        let bytes = data.as_ref();
 
         unsafe {
             check_hs_error!(hs_scan_stream(

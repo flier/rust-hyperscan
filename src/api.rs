@@ -215,33 +215,6 @@ pub trait ScratchAllocator<S: Scratch> {
     fn realloc(&self, s: &mut S) -> Result<&Self>;
 }
 
-/// A byte stream can be matched
-///
-pub trait Scannable {
-    fn as_bytes(&self) -> &[u8];
-}
-
-impl<'a> Scannable for &'a [u8] {
-    fn as_bytes(&self) -> &[u8] {
-        &self
-    }
-}
-impl<'a> Scannable for &'a str {
-    fn as_bytes(&self) -> &[u8] {
-        str::as_bytes(self)
-    }
-}
-impl<'a> Scannable for &'a String {
-    fn as_bytes(&self) -> &[u8] {
-        self.as_str().as_bytes()
-    }
-}
-impl<'a> Scannable for &'a Vec<u8> {
-    fn as_bytes(&self) -> &[u8] {
-        &self
-    }
-}
-
 /// Flags modifying the behaviour of scan function
 pub type ScanFlags = u32;
 
@@ -268,7 +241,7 @@ pub type MatchEventCallback<D> = fn(id: u32, from: u64, to: u64, flags: u32, dat
 pub type MatchEventCallbackMut<D> = fn(id: u32, from: u64, to: u64, flags: u32, data: &mut D) -> u32;
 
 /// The block (non-streaming) regular expression scanner.
-pub trait BlockScanner<T: Scannable, S: Scratch> {
+pub trait BlockScanner<T: AsRef<[u8]>, S: Scratch> {
     /// This is the function call in which the actual pattern matching
     /// takes place for block-mode pattern databases.
     fn scan<D>(
@@ -301,7 +274,7 @@ pub trait BlockScanner<T: Scannable, S: Scratch> {
 }
 
 /// The vectored regular expression scanner.
-pub trait VectoredScanner<T: Scannable, S: Scratch> {
+pub trait VectoredScanner<T: AsRef<[u8]>, S: Scratch> {
     /// This is the function call in which the actual pattern matching
     /// takes place for vectoring-mode pattern databases.
     fn scan<D>(
