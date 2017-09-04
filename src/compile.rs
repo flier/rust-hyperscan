@@ -148,14 +148,11 @@ impl FromStr for Pattern {
     type Err = Error;
 
     fn from_str(s: &str) -> StdResult<Self, Self::Err> {
-        let (id, expr) = match s.find(':') {
-            Some(off) => {
-                let (id, expr) = s.split_at(off);
+        let (id, expr) =  s.find(':').and_then(|off| {
+            let (id, expr) = s.split_at(off);
 
-                (Some(id.parse()?), &expr[1..])
-            }
-            None => (None, s),
-        };
+            id.parse().ok().map(|n| { (Some(n), &expr[1..])})
+        }).unwrap_or((None, s));
 
         let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
             (true, Some(end)) if end > 0 => Pattern {
@@ -261,7 +258,7 @@ macro_rules! pattern {
 /// Define multi `Pattern` with flags and ID
 #[macro_export]
 macro_rules! patterns {
-    ( [ $( $expr:expr ), * ] ) => {{
+    [ $( $expr:expr ), * ] => {{
         patterns!([ $( $expr ), * ], flags => CompileFlags::default())
     }};
     ( [ $( $expr:expr ), * ], flags => $flags:expr ) => {{
@@ -329,7 +326,21 @@ impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Pattern {
     }
 }
 
-impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Patterns {
+impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Vec<Pattern> {
+    ///
+    /// The multiple regular expression compiler.
+    ///
+    /// This is the function call with which a set of expressions is compiled into a database
+    /// which can be passed to the runtime functions.
+    /// Each expression can be labelled with a unique integer
+    // which is passed into the match callback to identify the pattern that has matched.
+    ///
+    fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<RawDatabase<T>> {
+        self.as_slice().build_for_platform(platform)
+    }
+}
+
+impl<'a, T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for &'a [Pattern] {
     ///
     /// The multiple regular expression compiler.
     ///
@@ -344,7 +355,7 @@ impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Patterns {
         let mut flags = Vec::with_capacity(self.len());
         let mut ids = Vec::with_capacity(self.len());
 
-        for pattern in self {
+        for pattern in self.iter() {
             let expr = CString::new(pattern.expression.as_str())?;
 
             expressions.push(expr);
@@ -520,7 +531,7 @@ pub mod tests {
     fn test_patterns_build() {
         let _ = env_logger::init();
 
-        let db: BlockDatabase = patterns!(["test", "foo", "bar"]).build().unwrap();
+        let db: BlockDatabase = patterns!["test", "foo", "bar"].build().unwrap();
 
         validate_database_with_size(&db, DATABASE_SIZE);
     }
