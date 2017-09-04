@@ -372,7 +372,7 @@ pub mod tests {
         db.scan::<BlockDatabase>("foo test bar", 0, &mut s, None, None)
             .unwrap();
 
-        fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
+        extern "C" fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
             assert_eq!(id, 0);
             assert_eq!(from, 4);
             assert_eq!(to, 8);
@@ -403,7 +403,7 @@ pub mod tests {
         db.scan::<VectoredDatabase>(&data, 0, &mut s, None, None)
             .unwrap();
 
-        fn callback(id: u32, from: u64, to: u64, flags: u32, _: &VectoredDatabase) -> u32 {
+        extern "C" fn callback(id: u32, from: u64, to: u64, flags: u32, _: &VectoredDatabase) -> u32 {
             assert_eq!(id, 0);
             assert_eq!(from, 3);
             assert_eq!(to, 7);
@@ -431,7 +431,7 @@ pub mod tests {
 
         let data = vec!["foo", "test", "bar"];
 
-        fn callback(id: u32, from: u64, to: u64, flags: u32, _: &StreamingDatabase) -> u32 {
+        extern "C" fn callback(id: u32, from: u64, to: u64, flags: u32, _: &StreamingDatabase) -> u32 {
             assert_eq!(id, 0);
             assert_eq!(from, 0);
             assert_eq!(to, 7);

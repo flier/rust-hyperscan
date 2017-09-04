@@ -274,7 +274,7 @@ impl Benchmark {
         self.match_count.store(0, Ordering::Relaxed);
     }
 
-    fn on_match(_: u32, _: u64, _: u64, _: u32, match_count: &AtomicUsize) -> u32 {
+    extern "C" fn on_match(_: u32, _: u64, _: u64, _: u32, match_count: &AtomicUsize) -> u32 {
         match_count.fetch_add(1, Ordering::Relaxed);
 
         0

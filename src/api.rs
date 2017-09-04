@@ -208,8 +208,8 @@ pub type ScanFlags = u32;
 ///
 /// Fn(id: u32, from: u64, to: u64, flags: u32) -> bool
 ///
-pub type MatchEventCallback<D> = fn(id: u32, from: u64, to: u64, flags: u32, data: &D) -> u32;
-pub type MatchEventCallbackMut<D> = fn(id: u32, from: u64, to: u64, flags: u32, data: &mut D) -> u32;
+pub type MatchEventCallback<D> = extern "C" fn(id: u32, from: u64, to: u64, flags: u32, data: &D) -> u32;
+pub type MatchEventCallbackMut<D> = extern "C" fn(id: u32, from: u64, to: u64, flags: u32, data: &mut D) -> u32;
 
 /// The block (non-streaming) regular expression scanner.
 pub trait BlockScanner<T: AsRef<[u8]>, S: Scratch> {
@@ -236,9 +236,7 @@ pub trait BlockScanner<T: AsRef<[u8]>, S: Scratch> {
             data,
             flags,
             scratch,
-            callback.map(|f| unsafe {
-                mem::transmute::<MatchEventCallbackMut<D>, MatchEventCallback<D>>(f)
-            }),
+            callback.map(|f| unsafe { mem::transmute(f) }),
             context.map(|v| &*v),
         )
     }
@@ -256,6 +254,23 @@ pub trait VectoredScanner<T: AsRef<[u8]>, S: Scratch> {
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self>;
+
+    fn scan_mut<D>(
+        &self,
+        data: &Vec<T>,
+        flags: ScanFlags,
+        scratch: &mut S,
+        callback: Option<MatchEventCallback<D>>,
+        context: Option<&mut D>,
+    ) -> Result<&Self> {
+        self.scan(
+            data,
+            flags,
+            scratch,
+            callback.map(|f| unsafe { mem::transmute(f) }),
+            context.map(|v| &*v)
+        )
+    }
 }
 
 /// Raw `Stream` type

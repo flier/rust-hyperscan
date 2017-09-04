@@ -134,7 +134,7 @@ fn main() {
     println!("Scanning {} bytes with Hyperscan", input_data.len());
 
     // This is the function that will be called for each match that occurs.
-    fn event_handler(_: u32, _: u64, to: u64, _: u32, pattern: &hyperscan::Pattern) -> u32 {
+    extern "C" fn event_handler(_: u32, _: u64, to: u64, _: u32, pattern: &hyperscan::Pattern) -> u32 {
         println!("Match for pattern \"{}\" at offset {}", &pattern, to);
 
         0
