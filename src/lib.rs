@@ -49,7 +49,7 @@ mod runtime;
 
 pub use constants::*;
 pub use api::*;
-pub use common::{valid_platform, version, BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
+pub use common::{valid_platform, version, Block, Streaming, Vectored, DatabaseType, BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
 pub use compile::{Pattern, Patterns};
 pub use runtime::{RawScratch, RawStream};
 

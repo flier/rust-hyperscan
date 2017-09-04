@@ -1,6 +1,10 @@
 #![feature(test)]
 #![feature(concat_idents)]
 
+#[macro_use]
+extern crate lazy_static;
+extern crate rand;
+
 extern crate hyperscan;
 extern crate regex;
 
@@ -11,7 +15,9 @@ extern crate test;
 mod bench {
     use std::sync::atomic::{Ordering, AtomicUsize};
 
-    use hyperscan::{self as hs, ScratchAllocator, BlockScanner, DatabaseBuilder};
+    use rand::{Rng, thread_rng};
+    use hyperscan::*;
+    use regex::Regex;
 
     use test::{Bencher, black_box};
 
@@ -21,170 +27,235 @@ mod bench {
 
     const SHORT_DATA: &str = "Flier Lu <flier.lu@gmail.com>";
 
-    extern "C" fn on_matched(_: u32, _: u64, _: u64, _: u32, matched: &AtomicUsize) -> u32 {
+    lazy_static! {
+        static ref _4K_DATA: String = {
+            thread_rng().gen_ascii_chars().take(4096).chain(SHORT_DATA.chars()).collect()
+        };
+    }
+
+    extern "C" fn on_matched(_id: u32, _from: u64, _to: u64, _flags: u32, matched: &AtomicUsize) -> u32 {
         matched.fetch_add(1, Ordering::Relaxed);
         0
+    }
+
+    struct HsBencher {}
+
+    impl HsBencher {
+        #[cfg(feature = "bench_parse")]
+        fn bench_parse(b: &mut Bencher, r: &str) {
+            b.iter(|| { let _: Pattern = r.parse().unwrap(); })
+        }
+
+        #[cfg(feature = "bench_compile")]
+        fn bench_compile<T: DatabaseType>(b: &mut Bencher, r: &str) {
+            let p: Pattern = r.parse().unwrap();
+            let platform = PlatformInfo::populate().ok();
+
+            b.iter(|| { let _: RawDatabase<T> = p.build_for_platform(platform.as_ref()).unwrap(); })
+        }
+
+        #[cfg(feature = "bench_scan")]
+        fn bench_block_scan(b: &mut Bencher, r: &str, data: &str, times: usize) {
+            let p: Pattern = r.parse().unwrap();
+            let platform = PlatformInfo::populate().ok();
+            let db: BlockDatabase = p.build_for_platform(platform.as_ref()).unwrap();
+            let mut s = db.alloc().unwrap();
+
+            b.iter(|| {
+                let matched = AtomicUsize::new(0);
+                let n = black_box(times);
+
+                (0..n).fold(0, |_, _| {
+                    let _ = db.scan(data, 0, &mut s, Some(on_matched), Some(&matched)).unwrap();
+                    0
+                });
+
+                assert!(matched.into_inner() >= n);
+            });
+        }
+    }
+
+    struct RegexBencher {}
+
+    impl RegexBencher {
+        #[cfg(feature = "bench_compile")]
+        fn bench_compile(b: &mut Bencher, r: &str) {
+            b.iter(|| { let _ = Regex::new(r).unwrap(); })
+        }
+
+        #[cfg(feature = "bench_scan")]
+        fn bench_scan(b: &mut Bencher, r: &str, data: &str, times: usize) {
+            let r = Regex::new(r).unwrap();
+
+            let n = black_box(times);
+
+            b.iter(|| {
+                assert_eq!((0..n).fold(0, |matched, _| {
+                    matched + r.find_iter(data).count()
+                }), n)
+            });
+        }
     }
 
     #[cfg(feature = "bench_parse")]
     #[bench]
     fn parse_simple_pattern(b: &mut Bencher) {
-        b.iter(|| { let _: hs::Pattern = RE_SIMPLE.parse().unwrap(); })
+        HsBencher::bench_parse(b, RE_SIMPLE);
     }
 
     #[cfg(feature = "bench_parse")]
     #[bench]
     fn parse_email_pattern(b: &mut Bencher) {
-        b.iter(|| { let _: hs::Pattern = RE_EMAIL.parse().unwrap(); })
+        HsBencher::bench_parse(b, RE_EMAIL);
     }
 
     #[cfg(feature = "bench_parse")]
     #[bench]
     fn parse_rfc5322_pattern(b: &mut Bencher) {
-        b.iter(|| { let _: hs::Pattern = RE_RFC5322.parse().unwrap(); })
+        HsBencher::bench_parse(b, RE_RFC5322);
     }
 
     #[cfg(feature = "bench_compile")]
     #[bench]
     fn compile_simple_pattern_as_block_database(b: &mut Bencher) {
-        let p: hs::Pattern = RE_SIMPLE.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-
-        b.iter(|| { let _: hs::BlockDatabase = p.build_for_platform(platform.as_ref()).unwrap(); })
+        HsBencher::bench_compile::<Block>(b, RE_SIMPLE);
     }
 
     #[cfg(feature = "bench_compile")]
     #[bench]
     fn compile_simple_pattern_as_vectored_database(b: &mut Bencher) {
-        let p: hs::Pattern = RE_SIMPLE.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-
-        b.iter(|| { let _: hs::VectoredDatabase = p.build_for_platform(platform.as_ref()).unwrap(); })
+        HsBencher::bench_compile::<Vectored>(b, RE_SIMPLE);
     }
 
     #[cfg(feature = "bench_compile")]
     #[bench]
     fn compile_simple_pattern_as_streaming_database(b: &mut Bencher) {
-        let p: hs::Pattern = RE_SIMPLE.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-
-        b.iter(|| { let _: hs::StreamingDatabase = p.build_for_platform(platform.as_ref()).unwrap(); })
+        HsBencher::bench_compile::<Streaming>(b, RE_SIMPLE);
     }
 
     #[cfg(feature = "bench_compile")]
     #[bench]
     fn compile_email_pattern_as_block_database(b: &mut Bencher) {
-        let p: hs::Pattern = RE_EMAIL.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-
-        b.iter(|| { let _: hs::BlockDatabase = p.build_for_platform(platform.as_ref()).unwrap(); })
+        HsBencher::bench_compile::<Block>(b, RE_EMAIL);
     }
 
     #[cfg(feature = "bench_compile")]
     #[bench]
     fn compile_email_pattern_as_vectored_database(b: &mut Bencher) {
-        let p: hs::Pattern = RE_EMAIL.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-
-        b.iter(|| { let _: hs::VectoredDatabase = p.build_for_platform(platform.as_ref()).unwrap(); })
+        HsBencher::bench_compile::<Vectored>(b, RE_EMAIL);
     }
 
     #[cfg(feature = "bench_compile")]
     #[bench]
     fn compile_email_pattern_as_streaming_database(b: &mut Bencher) {
-        let p: hs::Pattern = RE_EMAIL.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-
-        b.iter(|| { let _: hs::StreamingDatabase = p.build_for_platform(platform.as_ref()).unwrap(); })
+        HsBencher::bench_compile::<Streaming>(b, RE_EMAIL);
     }
 
     #[cfg(feature = "bench_compile")]
     #[bench]
     fn compile_rfc5322_pattern_as_block_database(b: &mut Bencher) {
-        let p: hs::Pattern = RE_RFC5322.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-
-        b.iter(|| { let _: hs::BlockDatabase = p.build_for_platform(platform.as_ref()).unwrap(); })
+        HsBencher::bench_compile::<Block>(b, RE_RFC5322);
     }
 
     #[cfg(feature = "bench_compile")]
     #[bench]
     fn compile_rfc5322_pattern_as_vectored_database(b: &mut Bencher) {
-        let p: hs::Pattern = RE_RFC5322.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-
-        b.iter(|| { let _: hs::VectoredDatabase = p.build_for_platform(platform.as_ref()).unwrap(); })
+        HsBencher::bench_compile::<Vectored>(b, RE_RFC5322);
     }
 
     #[cfg(feature = "bench_compile")]
     #[bench]
     fn compile_rfc5322_pattern_as_streaming_database(b: &mut Bencher) {
-        let p: hs::Pattern = RE_RFC5322.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
+        HsBencher::bench_compile::<Streaming>(b, RE_RFC5322);
+    }
 
-        b.iter(|| { let _: hs::StreamingDatabase = p.build_for_platform(platform.as_ref()).unwrap(); })
+    #[cfg(feature = "bench_compile")]
+    #[bench]
+    fn compile_simple_pattern_with_regex(b: &mut Bencher) {
+        RegexBencher::bench_compile(b, RE_SIMPLE);
+    }
+
+    #[cfg(feature = "bench_compile")]
+    #[bench]
+    fn compile_email_pattern_with_regex(b: &mut Bencher) {
+        RegexBencher::bench_compile(b, RE_EMAIL);
+    }
+
+    #[cfg(feature = "bench_compile")]
+    #[bench]
+    fn compile_rfc5322_pattern_with_regex(b: &mut Bencher) {
+        RegexBencher::bench_compile(b, RE_RFC5322);
     }
 
     #[cfg(feature = "bench_scan")]
     #[bench]
-    fn scan_simple_pattern_as_block_database_100_times(b: &mut Bencher) {
-        let p: hs::Pattern = RE_SIMPLE.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-        let db: hs::BlockDatabase = p.build_for_platform(platform.as_ref()).unwrap();
-        let mut s = db.alloc().unwrap();
-        let matched = AtomicUsize::new(0);
-
-        let n = black_box(100);
-
-        b.iter(|| {
-            (0..n).fold(0, |_, _| {
-                db.scan(SHORT_DATA, 0, &mut s, Some(on_matched), Some(&matched)).unwrap();
-                0
-            })
-        });
-
-        assert!(matched.into_inner() > 0);
+    fn scan_simple_pattern_as_block_database_1000_times(b: &mut Bencher) {
+        HsBencher::bench_block_scan(b, RE_SIMPLE, SHORT_DATA, 1000);
     }
 
     #[cfg(feature = "bench_scan")]
     #[bench]
-    fn scan_email_pattern_as_block_database_100_times(b: &mut Bencher) {
-        let p: hs::Pattern = RE_EMAIL.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-        let db: hs::BlockDatabase = p.build_for_platform(platform.as_ref()).unwrap();
-        let mut s = db.alloc().unwrap();
-        let matched = AtomicUsize::new(0);
-
-        let n = black_box(100);
-
-        b.iter(|| {
-            (0..n).fold(0, |_, _| {
-                db.scan(SHORT_DATA, 0, &mut s, Some(on_matched), Some(&matched)).unwrap();
-                0
-            })
-        });
-
-        assert!(matched.into_inner() > 0);
+    fn scan_email_pattern_as_block_database_1000_times(b: &mut Bencher) {
+        HsBencher::bench_block_scan(b, RE_EMAIL, SHORT_DATA, 1000);
     }
 
     #[cfg(feature = "bench_scan")]
     #[bench]
-    fn scan_rfc5322_pattern_as_block_database_100_times(b: &mut Bencher) {
-        let p: hs::Pattern = RE_RFC5322.parse().unwrap();
-        let platform = hs::PlatformInfo::populate().ok();
-        let db: hs::BlockDatabase = p.build_for_platform(platform.as_ref()).unwrap();
-        let mut s = db.alloc().unwrap();
-        let matched = AtomicUsize::new(0);
+    fn scan_rfc5322_pattern_as_block_database_1000_times(b: &mut Bencher) {
+        HsBencher::bench_block_scan(b, RE_RFC5322, SHORT_DATA, 1000);
+    }
 
-        let n = black_box(100);
+    #[cfg(feature = "bench_scan")]
+    #[bench]
+    fn scan_simple_pattern_as_block_database_with_4k_data_1000_times(b: &mut Bencher) {
+        HsBencher::bench_block_scan(b, RE_SIMPLE, _4K_DATA.as_str(), 1000);
+    }
 
-        b.iter(|| {
-            (0..n).fold(0, |_, _| {
-                db.scan(SHORT_DATA, 0, &mut s, Some(on_matched), Some(&matched)).unwrap();
-                0
-            })
-        });
+    #[cfg(feature = "bench_scan")]
+    #[bench]
+    fn scan_email_pattern_as_block_database_with_4k_data_1000_times(b: &mut Bencher) {
+        HsBencher::bench_block_scan(b, RE_EMAIL, _4K_DATA.as_str(), 1000);
+    }
 
-        assert!(matched.into_inner() > 0);
+    #[cfg(feature = "bench_scan")]
+    #[bench]
+    fn scan_rfc5322_pattern_as_block_database_with_4k_data_1000_times(b: &mut Bencher) {
+        HsBencher::bench_block_scan(b, RE_RFC5322, _4K_DATA.as_str(), 1000);
+    }
+
+    #[cfg(feature = "bench_scan")]
+    #[bench]
+    fn scan_simple_pattern_with_regex_1000_times(b: &mut Bencher) {
+        RegexBencher::bench_scan(b, RE_SIMPLE, SHORT_DATA, 1000);
+    }
+
+    #[cfg(feature = "bench_scan")]
+    #[bench]
+    fn scan_email_pattern_with_regex_1000_times(b: &mut Bencher) {
+        RegexBencher::bench_scan(b, RE_EMAIL, SHORT_DATA, 1000);
+    }
+
+    #[cfg(feature = "bench_scan")]
+    #[bench]
+    fn scan_rfc5322_pattern_with_regex_1000_times(b: &mut Bencher) {
+        RegexBencher::bench_scan(b, RE_RFC5322, SHORT_DATA, 1000);
+    }
+
+    #[cfg(feature = "bench_scan")]
+    #[bench]
+    fn scan_simple_pattern_with_regex_and_4k_data_1000_times(b: &mut Bencher) {
+        RegexBencher::bench_scan(b, RE_SIMPLE, _4K_DATA.as_str(), 1000);
+    }
+
+    #[cfg(feature = "bench_scan")]
+    #[bench]
+    fn scan_email_pattern_with_regex_and_4k_data_1000_times(b: &mut Bencher) {
+        RegexBencher::bench_scan(b, RE_EMAIL, _4K_DATA.as_str(), 1000);
+    }
+
+    #[cfg(feature = "bench_scan")]
+    #[bench]
+    fn scan_rfc5322_pattern_with_regex_and_4k_data_1000_times(b: &mut Bencher) {
+        RegexBencher::bench_scan(b, RE_RFC5322, _4K_DATA.as_str(), 1000);
     }
 }

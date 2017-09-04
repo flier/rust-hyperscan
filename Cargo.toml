@@ -41,6 +41,8 @@ getopts = "0.2"
 pcap = "0.7"
 pnet = "0.19"
 byteorder = "1.1"
+lazy_static = "0.2"
+rand = "0.3"
 
 [lib]
 name = "hyperscan"
