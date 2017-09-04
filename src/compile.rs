@@ -213,15 +213,20 @@ impl<T: DatabaseType> RawDatabase<T> {
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
-    pub fn compile(expression: &str, flags: CompileFlags, platform: Option<&PlatformInfo>) -> Result<RawDatabase<T>> {
-        let expr = CString::new(expression)?;
+    pub fn compile<S: AsRef<str>>(
+        expression: S,
+        flags: CompileFlags,
+        platform: Option<&PlatformInfo>,
+    ) -> Result<RawDatabase<T>> {
+        let expression = expression.as_ref();
+        let cexpr = CString::new(expression)?;
         let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
             check_compile_error!(
                 hs_compile(
-                    expr.as_bytes_with_nul().as_ptr() as *const i8,
+                    cexpr.as_ptr() as *const i8,
                     flags.bits(),
                     T::MODE.bits(),
                     platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
