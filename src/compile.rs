@@ -11,7 +11,7 @@ use regex_syntax;
 use raw::*;
 use constants::*;
 use api::*;
-use common::RawDatabase;
+use common::{DatabaseType, RawDatabase};
 use errors::{Error, RawCompileErrorPtr, Result};
 
 impl Default for CompileFlags {
@@ -224,7 +224,7 @@ impl<T: DatabaseType> RawDatabase<T> {
                 hs_compile(
                     expr.as_bytes_with_nul().as_ptr() as *const i8,
                     flags.bits(),
-                    T::mode().bits(),
+                    T::MODE.bits(),
                     platform.map(|p| p.as_raw()).unwrap_or_else(ptr::null),
                     &mut db,
                     &mut err,
@@ -237,7 +237,7 @@ impl<T: DatabaseType> RawDatabase<T> {
             "pattern `/{}/{}` compiled to {} database {:p}",
             expression,
             flags,
-            T::name(),
+            T::NAME,
             db
         );
 
@@ -294,7 +294,7 @@ impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Patterns {
                     flags.as_ptr(),
                     ids.as_ptr(),
                     self.len() as u32,
-                    T::mode().bits(),
+                    T::MODE.bits(),
                     platform.map(|p| p.as_raw()).unwrap_or_else(ptr::null),
                     &mut db,
                     &mut err,
@@ -306,7 +306,7 @@ impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Patterns {
         debug!(
             "patterns [{}] compiled to {} database {:p}",
             Vec::from_iter(self.iter().map(|p| format!("`{}`", p))).join(", "),
-            T::name(),
+            T::NAME,
             db
         );
 

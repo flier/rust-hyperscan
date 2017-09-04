@@ -7,7 +7,7 @@ use std::ops::{Deref, DerefMut};
 use raw::*;
 use api::*;
 use errors::Result;
-use common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
+use common::{BlockDatabase, DatabaseType, RawDatabase, StreamingDatabase, VectoredDatabase};
 
 /// A large enough region of scratch space to support a given database.
 ///
@@ -112,12 +112,10 @@ impl Scratch for RawScratch {
 }
 
 impl<T: DatabaseType> ScratchAllocator<RawScratch> for RawDatabase<T> {
-    #[inline]
     fn alloc(&self) -> Result<RawScratch> {
         RawScratch::alloc(self)
     }
 
-    #[inline]
     fn realloc(&self, s: &mut RawScratch) -> Result<&Self> {
         s.realloc(self)?;
 

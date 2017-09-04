@@ -11,7 +11,7 @@ use libc;
 
 use raw::*;
 use api::*;
-use constants::CompileMode;
+use constants::*;
 use errors::Result;
 
 /// Utility function for identifying this release version.
@@ -25,6 +25,38 @@ pub fn valid_platform() -> Result<()> {
     Ok(())
 }
 
+/// Compile mode
+pub trait DatabaseType {
+    const MODE: CompileMode;
+    const NAME: &'static str;
+}
+
+/// Block scan (non-streaming) database.
+#[derive(Debug)]
+pub enum Block {}
+
+/// Streaming database.
+#[derive(Debug)]
+pub enum Streaming {}
+
+/// Vectored scanning database.
+#[derive(Debug)]
+pub enum Vectored {}
+
+impl DatabaseType for Block {
+    const MODE: CompileMode = HS_MODE_BLOCK;
+    const NAME: &'static str = "Block";
+}
+
+impl DatabaseType for Streaming {
+    const MODE: CompileMode = HS_MODE_STREAM;
+    const NAME: &'static str = "Streaming";
+}
+impl DatabaseType for Vectored {
+    const MODE: CompileMode = HS_MODE_VECTORED;
+    const NAME: &'static str = "Vectored";
+}
+
 /// A compiled pattern database that can then be used to scan data.
 pub struct RawDatabase<T: DatabaseType> {
     db: RawDatabasePtr,
@@ -33,7 +65,7 @@ pub struct RawDatabase<T: DatabaseType> {
 
 impl<T: DatabaseType> fmt::Debug for RawDatabase<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RawDatabase<{}>{{db: {:p}}}", T::name(), self.db)
+        write!(f, "RawDatabase<{}>{{db: {:p}}}", T::NAME, self.db)
     }
 }
 
@@ -47,7 +79,7 @@ pub type VectoredDatabase = RawDatabase<Vectored>;
 impl<T: DatabaseType> RawDatabase<T> {
     /// Constructs a compiled pattern database from a raw pointer.
     pub fn from_raw(db: RawDatabasePtr) -> RawDatabase<T> {
-        trace!("construct {} database {:p}", T::name(), db);
+        trace!("construct {} database {:p}", T::NAME, db);
 
         RawDatabase {
             db: db,
@@ -60,7 +92,7 @@ impl<T: DatabaseType> RawDatabase<T> {
         unsafe {
             check_hs_error!(hs_free_database(self.db));
 
-            trace!("free {} database {:p}", T::name(), self.db);
+            trace!("free {} database {:p}", T::NAME, self.db);
 
             self.db = ptr::null_mut();
 
@@ -80,11 +112,11 @@ impl<T: DatabaseType> Deref for RawDatabase<T> {
 
 impl<T: DatabaseType> Database for RawDatabase<T> {
     fn database_mode(&self) -> CompileMode {
-        T::mode()
+        T::MODE
     }
 
     fn database_name(&self) -> &'static str {
-        T::name()
+        T::NAME
     }
 
     fn database_size(&self) -> Result<usize> {
@@ -96,7 +128,7 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
 
         debug!(
             "database size of {} database {:p}: {}",
-            T::name(),
+            T::NAME,
             self.db,
             size
         );
@@ -117,7 +149,7 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
 
             debug!(
                 "database info of {} database {:p}: {:?}",
-                T::name(),
+                T::NAME,
                 self.db,
                 result
             );
@@ -139,7 +171,7 @@ impl<'a, T: DatabaseType> SerializableDatabase<RawDatabase<T>, RawSerializedData
 
             debug!(
                 "serialized {} database {:p} to {} bytes",
-                T::name(),
+                T::NAME,
                 self.db,
                 size
             );
@@ -160,7 +192,7 @@ impl<'a, T: DatabaseType> SerializableDatabase<RawDatabase<T>, RawSerializedData
 
             debug!(
                 "deserialized {} database to {:p} from {} bytes",
-                T::name(),
+                T::NAME,
                 db,
                 bytes.len()
             );
@@ -179,7 +211,7 @@ impl<'a, T: DatabaseType> SerializableDatabase<RawDatabase<T>, RawSerializedData
 
             debug!(
                 "deserialized {} database at {:p} from {} bytes",
-                T::name(),
+                T::NAME,
                 self.db,
                 bytes.len()
             );

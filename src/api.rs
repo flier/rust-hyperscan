@@ -10,60 +10,6 @@ use constants::*;
 use raw::*;
 use errors::Result;
 
-/// Compile mode
-pub trait DatabaseType {
-    fn mode() -> CompileMode;
-
-    fn name() -> &'static str;
-}
-
-/// Block scan (non-streaming) database.
-#[derive(Debug)]
-pub enum Block {}
-
-/// Streaming database.
-#[derive(Debug)]
-pub enum Streaming {}
-
-/// Vectored scanning database.
-#[derive(Debug)]
-pub enum Vectored {}
-
-impl DatabaseType for Block {
-    #[inline]
-    fn mode() -> CompileMode {
-        HS_MODE_BLOCK
-    }
-
-    #[inline]
-    fn name() -> &'static str {
-        "Block"
-    }
-}
-
-impl DatabaseType for Streaming {
-    #[inline]
-    fn mode() -> CompileMode {
-        HS_MODE_STREAM
-    }
-
-    #[inline]
-    fn name() -> &'static str {
-        "Streaming"
-    }
-}
-impl DatabaseType for Vectored {
-    #[inline]
-    fn mode() -> CompileMode {
-        HS_MODE_VECTORED
-    }
-
-    #[inline]
-    fn name() -> &'static str {
-        "Vectored"
-    }
-}
-
 /// Raw `Database` pointer
 pub type RawDatabasePtr = *mut hs_database_t;
 
