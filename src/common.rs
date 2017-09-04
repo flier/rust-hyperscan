@@ -1,8 +1,8 @@
 use std::ptr;
 use std::fmt;
-use std::slice;
 use std::ffi::CStr;
 use std::os::raw::c_char;
+use std::slice;
 use std::borrow::Cow;
 use std::marker::PhantomData;
 
@@ -159,8 +159,79 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
     }
 }
 
-impl<'a, T: DatabaseType> SerializableDatabase<RawSerializedDatabase<'a>> for RawDatabase<T> {
-    fn serialize(&self) -> Result<RawSerializedDatabase<'a>> {
+/// A pattern database was serialized to a stream of bytes.
+impl<T: AsRef<[u8]>> SerializedDatabase for T {
+    fn database_size(&self) -> Result<usize> {
+        let buf = self.as_ref();
+        let mut size: usize = 0;
+
+        unsafe {
+            check_hs_error!(hs_serialized_database_size(
+                buf.as_ptr() as *const i8,
+                buf.len(),
+                &mut size,
+            ));
+        }
+
+        Ok(size)
+    }
+
+    fn database_info(&self) -> Result<String> {
+        let buf = self.as_ref();
+        let mut p: *mut c_char = ptr::null_mut();
+
+        unsafe {
+            check_hs_error!(hs_serialized_database_info(
+                buf.as_ptr() as *const i8,
+                buf.len(),
+                &mut p,
+            ));
+
+            let result = match CStr::from_ptr(p).to_str() {
+                Ok(info) => Ok(info.to_string()),
+                Err(_) => bail!(hs_error!(Invalid)),
+            };
+
+            libc::free(p as *mut libc::c_void);
+
+            result
+        }
+    }
+}
+
+pub struct RawSerializedDatabase {
+    bytes: *mut u8,
+    size: usize,
+}
+
+impl Drop for RawSerializedDatabase {
+    fn drop(&mut self) {
+        unsafe { libc::free(self.bytes as *mut libc::c_void) }
+    }
+}
+
+impl AsRef<[u8]> for RawSerializedDatabase {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { slice::from_raw_parts(self.bytes, self.size) }
+    }
+}
+
+impl AsMut<[u8]> for RawSerializedDatabase {
+    fn as_mut(&mut self) -> &mut [u8] {
+        unsafe { slice::from_raw_parts_mut(self.bytes, self.size) }
+    }
+}
+
+impl RawSerializedDatabase {
+    pub fn new(bytes: *mut u8, size: usize) -> Self {
+        RawSerializedDatabase { bytes, size }
+    }
+}
+
+impl<T: DatabaseType> SerializableDatabase for RawDatabase<T> {
+    type Target = RawSerializedDatabase;
+
+    fn serialize(&self) -> Result<Self::Target> {
         let mut bytes: *mut c_char = ptr::null_mut();
         let mut size: usize = 0;
 
@@ -173,12 +244,13 @@ impl<'a, T: DatabaseType> SerializableDatabase<RawSerializedDatabase<'a>> for Ra
                 self.db,
                 size
             );
-
-            Ok(slice::from_raw_parts(bytes as *mut u8, size))
         }
+
+        Ok(RawSerializedDatabase::new(bytes as *mut u8, size))
     }
 
-    fn deserialize(bytes: &[u8]) -> Result<RawDatabase<T>> {
+    fn deserialize<B: AsRef<[u8]>>(buf: B) -> Result<Self> {
+        let bytes = buf.as_ref();
         let mut db: RawDatabasePtr = ptr::null_mut();
 
         unsafe {
@@ -199,7 +271,9 @@ impl<'a, T: DatabaseType> SerializableDatabase<RawSerializedDatabase<'a>> for Ra
         Ok(Self::from_raw(db))
     }
 
-    fn deserialize_at(&self, bytes: &[u8]) -> Result<&RawDatabase<T>> {
+    fn deserialize_at<B: AsRef<[u8]>>(&self, buf: B) -> Result<&Self> {
+        let bytes = buf.as_ref();
+
         unsafe {
             check_hs_error!(hs_deserialize_database_at(
                 bytes.as_ptr() as *const i8,
@@ -239,10 +313,6 @@ impl RawDatabase<Streaming> {
         Ok(size)
     }
 }
-
-pub type RawSerializedDatabase<'a> = &'a [u8];
-
-impl<'a> SerializedDatabase for RawSerializedDatabase<'a> {}
 
 #[cfg(test)]
 pub mod tests {
@@ -291,7 +361,7 @@ pub mod tests {
         validate_database_with_size(db, DATABASE_SIZE);
     }
 
-    pub fn validate_serialized_database<T: SerializedDatabase + ?Sized>(data: &T) {
+    pub fn validate_serialized_database<T: SerializedDatabase>(data: &T) {
         assert_eq!(data.as_ref().len(), DATABASE_SIZE);
         assert_eq!(data.database_size().unwrap(), DATABASE_SIZE);
 
