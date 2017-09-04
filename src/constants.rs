@@ -186,3 +186,19 @@ pub const HS_TUNE_FAMILY_SKX: TuneFamily = 7;
 /// This indicates that the compiled database should be tuned for the
 /// Goldmont microarchitecture.
 pub const HS_TUNE_FAMILY_GLM: TuneFamily = 8;
+
+bitflags! {
+    pub struct ExpressionExtFlags : u64 {
+        #[doc="Flag indicating that the hs_expr_ext::min_offset field is used."]
+        const HS_EXT_FLAG_MIN_OFFSET = 1;
+
+        #[doc="Flag indicating that the hs_expr_ext::max_offset field is used."]
+        const HS_EXT_FLAG_MAX_OFFSET = 2;
+
+        #[doc="Flag indicating that the hs_expr_ext::min_length field is used."]
+        const HS_EXT_FLAG_MIN_LENGTH = 4;
+
+        #[doc="Flag indicating that the hs_expr_ext::edit_distance field is used."]
+        const HS_EXT_FLAG_EDIT_DISTANCE = 8;
+    }
+}

@@ -70,6 +70,46 @@ impl FromStr for CompileFlags {
     }
 }
 
+/// A structure containing additional parameters related to an expression
+///
+/// These parameters allow the set of matches produced by a pattern to be constrained at compile time,
+/// rather than relying on the application to process unwanted matches at runtime.
+#[derive(Debug, Clone)]
+pub struct ExpressionExt {
+    /// The minimum end offset in the data stream at which this expression should match successfully.
+    pub min_offset: Option<u64>,
+
+    /// The maximum end offset in the data stream at which this expression should match successfully.
+    pub max_offset: Option<u64>,
+
+    /// The minimum match length (from start to end) required to successfully match this expression.
+    pub min_length: Option<u64>,
+
+    /// Allow patterns to approximately match within this edit distance.
+    pub edit_distance: Option<u32>,
+}
+
+impl ExpressionExt {
+    fn to_raw(&self) -> hs_expr_ext_t {
+        let flags = self.min_offset
+            .map_or(ExpressionExtFlags::empty(), |_| HS_EXT_FLAG_MIN_OFFSET) |
+            self.max_offset
+                .map_or(ExpressionExtFlags::empty(), |_| HS_EXT_FLAG_MAX_OFFSET) |
+            self.min_length
+                .map_or(ExpressionExtFlags::empty(), |_| HS_EXT_FLAG_MIN_LENGTH) |
+            self.edit_distance
+                .map_or(ExpressionExtFlags::empty(), |_| HS_EXT_FLAG_EDIT_DISTANCE);
+
+        hs_expr_ext_t {
+            flags: flags.bits(),
+            min_offset: self.min_offset.unwrap_or_default(),
+            max_offset: self.max_offset.unwrap_or_default(),
+            min_length: self.min_length.unwrap_or_default(),
+            edit_distance: self.edit_distance.unwrap_or_default(),
+        }
+    }
+}
+
 /// Pattern that has matched.
 #[derive(Debug, Clone)]
 pub struct Pattern {
@@ -79,6 +119,8 @@ pub struct Pattern {
     pub flags: CompileFlags,
     /// ID number to be associated with the corresponding pattern in the expressions array.
     pub id: Option<usize>,
+    /// Ext set of matches produced by a pattern to be constrained at compile time.
+    pub ext: Option<ExpressionExt>,
 }
 
 impl fmt::Display for Pattern {
@@ -120,12 +162,14 @@ impl FromStr for Pattern {
                 expression: expr[1..end].into(),
                 flags: expr[end + 1..].parse()?,
                 id: id,
+                ext: None,
             },
 
             _ => Pattern {
                 expression: String::from(expr),
                 flags: CompileFlags::empty(),
                 id: id,
+                ext: None,
             },
         };
 
@@ -142,15 +186,28 @@ impl Expression for Pattern {
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(
-                hs_expression_info(
-                    expr.as_bytes_with_nul().as_ptr() as *const i8,
-                    self.flags.bits(),
-                    &mut info,
-                    &mut err,
-                ),
-                err
-            );
+            if let Some(ref ext) = self.ext {
+                check_compile_error!(
+                    hs_expression_ext_info(
+                        expr.as_bytes_with_nul().as_ptr() as *const i8,
+                        self.flags.bits(),
+                        &ext.to_raw(),
+                        &mut info,
+                        &mut err,
+                    ),
+                    err
+                );
+            } else {
+                check_compile_error!(
+                    hs_expression_info(
+                        expr.as_bytes_with_nul().as_ptr() as *const i8,
+                        self.flags.bits(),
+                        &mut info,
+                        &mut err,
+                    ),
+                    err
+                );
+            }
 
             let info = info.into();
 
@@ -171,21 +228,32 @@ macro_rules! pattern {
         $crate::Pattern {
             expression: $expr.into(),
             flags: CompileFlags::default(),
-            id: None
+            id: None,
+            ext: None,
         }
     }};
     ( $expr:expr, flags => $flags:expr ) => {{
         $crate::Pattern {
             expression: $expr.into(),
             flags: $flags.into(),
-            id: None
+            id: None,
+            ext: None,
         }
     }};
     ( $expr:expr, flags => $flags:expr, id => $id:expr ) => {{
         $crate::Pattern {
             expression: $expr.into(),
             flags: $flags.into(),
-            id: Some($id)
+            id: Some($id),
+            ext: None,
+        }
+    }};
+    ( $expr:expr, flags => $flags:expr, id => $id:expr, ext => $ext:expr ) => {{
+        $crate::Pattern {
+            expression: $expr.into(),
+            flags: $flags.into(),
+            id: Some($id),
+            ext: $ext,
         }
     }}
 }
