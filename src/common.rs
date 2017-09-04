@@ -140,10 +140,7 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
         unsafe {
             check_hs_error!(hs_database_info(self.db, &mut p));
 
-            let result = match CStr::from_ptr(p).to_str() {
-                Ok(info) => Ok(info.to_string()),
-                Err(_) => bail!(hs_error!(Invalid)),
-            };
+            let result = CStr::from_ptr(p).to_str()?.to_owned();
 
             debug!(
                 "database info of {} database {:p}: {:?}",
@@ -154,7 +151,7 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
 
             libc::free(p as *mut libc::c_void);
 
-            result
+            Ok(result)
         }
     }
 }
@@ -187,14 +184,11 @@ impl<T: AsRef<[u8]>> SerializedDatabase for T {
                 &mut p,
             ));
 
-            let result = match CStr::from_ptr(p).to_str() {
-                Ok(info) => Ok(info.to_string()),
-                Err(_) => bail!(hs_error!(Invalid)),
-            };
+            let result = CStr::from_ptr(p).to_str()?.to_owned();
 
             libc::free(p as *mut libc::c_void);
 
-            result
+            Ok(result)
         }
     }
 }

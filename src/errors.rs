@@ -11,6 +11,8 @@ error_chain! {
         ParseError(::std::num::ParseIntError) #[doc="An error which can be returned when parsing an integer."];
 
         NulError(::std::ffi::NulError);
+
+        Utf8Error(::std::str::Utf8Error);
     }
 
     errors {
@@ -111,12 +113,6 @@ impl fmt::Display for HsError {
             HsError::UnsupportedArch => write!(f, "unsupported CPU architecture."),
             HsError::Failed(err) => write!(f, "internal operation failed, error code {}.", err),
         }
-    }
-}
-
-macro_rules! hs_error {
-    ($err:ident) => {
-        $crate::errors::ErrorKind::HsError($crate::errors::HsError :: $err)
     }
 }
 
