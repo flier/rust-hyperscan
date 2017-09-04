@@ -60,6 +60,7 @@ mod bench {
             let platform = PlatformInfo::populate().ok();
             let db: BlockDatabase = p.build_for_platform(platform.as_ref()).unwrap();
             let mut s = db.alloc().unwrap();
+            let mut bytes = 0;
 
             b.iter(|| {
                 let matched = AtomicUsize::new(0);
@@ -70,8 +71,12 @@ mod bench {
                     0
                 });
 
+                bytes += (data.len() * n) as u64;
+
                 assert!(matched.into_inner() >= n);
             });
+
+            b.bytes = bytes;
         }
     }
 
@@ -86,14 +91,18 @@ mod bench {
         #[cfg(feature = "bench_scan")]
         fn bench_scan(b: &mut Bencher, r: &str, data: &str, times: usize) {
             let r = Regex::new(r).unwrap();
-
+            let mut bytes = 0;
             let n = black_box(times);
 
             b.iter(|| {
                 assert_eq!((0..n).fold(0, |matched, _| {
                     matched + r.find_iter(data).count()
-                }), n)
+                }), n);
+
+                bytes += (data.len() * times) as u64;
             });
+
+            b.bytes = bytes;
         }
     }
 
