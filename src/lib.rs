@@ -8,7 +8,7 @@
 //!
 //! use hyperscan::*;
 //!
-//! fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
+//! extern "C" fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
 //!     assert_eq!(id, 0);
 //!     assert_eq!(from, 5);
 //!     assert_eq!(to, 9);
@@ -22,9 +22,9 @@
 //! fn main() {
 //!     let pattern = &pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST};
 //!     let db: BlockDatabase = pattern.build().unwrap();
-//!     let scratch = db.alloc().unwrap();
+//!     let mut scratch = db.alloc().unwrap();
 //!
-//!     db.scan::<BlockDatabase>("some test data", 0, &scratch, Some(callback), Some(&db)).unwrap();
+//!     db.scan::<BlockDatabase>("some test data", 0, &mut scratch, Some(callback), Some(&db)).unwrap();
 //! }
 //! ```
 #![cfg_attr(feature = "clippy", feature(plugin))]
@@ -48,6 +48,7 @@ mod common;
 #[macro_use]
 mod compile;
 mod runtime;
+pub mod regex;
 
 pub use constants::*;
 pub use api::*;
@@ -60,7 +61,7 @@ pub use runtime::{RawScratch, RawStream};
 #[macro_use]
 extern crate matches;
 #[cfg(test)]
-extern crate regex;
+extern crate regex as re;
 
 #[cfg(test)]
 mod tests {

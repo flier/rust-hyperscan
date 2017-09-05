@@ -314,7 +314,7 @@ pub mod tests {
 
     use std::ptr;
 
-    use regex::Regex;
+    use re::Regex;
 
     use super::super::*;
     use raw::AsPtr;
