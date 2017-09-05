@@ -148,11 +148,13 @@ impl FromStr for Pattern {
     type Err = Error;
 
     fn from_str(s: &str) -> StdResult<Self, Self::Err> {
-        let (id, expr) =  s.find(':').and_then(|off| {
-            let (id, expr) = s.split_at(off);
+        let (id, expr) = s.find(':')
+            .and_then(|off| {
+                let (id, expr) = s.split_at(off);
 
-            id.parse().ok().map(|n| { (Some(n), &expr[1..])})
-        }).unwrap_or((None, s));
+                id.parse().ok().map(|n| (Some(n), &expr[1..]))
+            })
+            .unwrap_or((None, s));
 
         let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
             (true, Some(end)) if end > 0 => Pattern {
@@ -350,40 +352,61 @@ impl<'a, T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for &'a [Pattern] {
     // which is passed into the match callback to identify the pattern that has matched.
     ///
     fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<RawDatabase<T>> {
-        let mut expressions = Vec::with_capacity(self.len());
-        let mut ptrs = Vec::with_capacity(self.len());
+        let mut exprs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
         let mut ids = Vec::with_capacity(self.len());
+        let mut exts = Vec::with_capacity(self.len());
 
         for pattern in self.iter() {
-            let expr = CString::new(pattern.expression.as_str())?;
-
-            expressions.push(expr);
+            exprs.push(CString::new(pattern.expression.as_str())?);
             flags.push(pattern.flags.bits());
             ids.push(pattern.id.unwrap_or_default() as c_uint);
+            exts.push(pattern.ext.as_ref().map(|ext| ext.to_raw()));
         }
 
-        for expr in &expressions {
-            ptrs.push(expr.as_bytes_with_nul().as_ptr() as *const i8);
-        }
+        let expr_ptrs = exprs
+            .iter()
+            .map(|expr| expr.as_bytes_with_nul().as_ptr() as *const i8)
+            .collect::<Vec<*const i8>>();
 
         let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(
-                hs_compile_multi(
-                    ptrs.as_ptr(),
-                    flags.as_ptr(),
-                    ids.as_ptr(),
-                    self.len() as u32,
-                    T::MODE.bits(),
-                    platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
-                    &mut db,
-                    &mut err,
-                ),
-                err
-            );
+            if exts.iter().any(|ptr| ptr.is_some()) {
+                let ext_ptrs = exts.iter()
+                    .map(|ext| ext.map_or_else(ptr::null, |ext| &ext))
+                    .collect::<Vec<*const hs_expr_ext_t>>();
+
+                check_compile_error!(
+                    hs_compile_ext_multi(
+                        expr_ptrs.as_ptr(),
+                        flags.as_ptr(),
+                        ids.as_ptr(),
+                        ext_ptrs.as_ptr(),
+                        self.len() as u32,
+                        T::MODE.bits(),
+                        platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
+                        &mut db,
+                        &mut err,
+                    ),
+                    err
+                );
+            } else {
+                check_compile_error!(
+                    hs_compile_multi(
+                        expr_ptrs.as_ptr(),
+                        flags.as_ptr(),
+                        ids.as_ptr(),
+                        self.len() as u32,
+                        T::MODE.bits(),
+                        platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
+                        &mut db,
+                        &mut err,
+                    ),
+                    err
+                );
+            }
         }
 
         debug!(
