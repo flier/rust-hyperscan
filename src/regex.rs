@@ -37,6 +37,7 @@ use errors::Result;
 /// let mat = re.find("phone: 111-222-3333").unwrap();
 /// assert_eq!((mat.start(), mat.end()), (7, 19));
 /// ```
+#[derive(Debug)]
 pub struct Regex {
     pattern: Pattern,
     db: BlockDatabase,
@@ -77,7 +78,7 @@ impl Regex {
     /// # }
     /// ```
     pub fn is_match(&self, text: &str) -> bool {
-        self.find(text).is_some()
+        self.is_match_at(text, 0)
     }
 
     /// Returns the start and end byte range of the leftmost-first match in
@@ -101,18 +102,7 @@ impl Regex {
     /// # }
     /// ```
     pub fn find<'t>(&self, text: &'t str) -> Option<Match<'t>> {
-        self.db.alloc().ok().and_then(|mut s| {
-            let m = RefCell::new(Match::new(text));
-
-            self.db
-                .scan(text, 0, &mut s, Some(Match::matched), Some(&m))
-                .ok()
-                .and_then(|_| if m.borrow().is_matched() {
-                    Some(m.into_inner())
-                } else {
-                    None
-                })
-        })
+        self.find_at(text, 0)
     }
 
     /// Returns an iterator for each successive non-overlapping match in
@@ -134,7 +124,50 @@ impl Regex {
     /// # }
     /// ```
     pub fn find_iter<'r, 't>(&'r self, text: &'t str) -> Matches<'r, 't> {
-        Matches::new(&self.db, text)
+        Matches::new(self, text)
+    }
+}
+
+/// Advanced or "lower level" search methods.
+impl Regex {
+    /// Returns the same as is_match, but starts the search at the given
+    /// offset.
+    ///
+    /// The significance of the starting point is that it takes the surrounding
+    /// context into consideration. For example, the `\A` anchor can only
+    /// match when `start == 0`.
+    #[doc(hidden)]
+    pub fn is_match_at(&self, text: &str, start: usize) -> bool {
+        self.find_at(text, start).is_some()
+    }
+
+    /// Returns the same as find, but starts the search at the given
+    /// offset.
+    ///
+    /// The significance of the starting point is that it takes the surrounding
+    /// context into consideration. For example, the `\A` anchor can only
+    /// match when `start == 0`.
+    #[doc(hidden)]
+    pub fn find_at<'t>(&self, text: &'t str, start: usize) -> Option<Match<'t>> {
+        self.db.alloc().ok().and_then(|mut s| {
+            let text = &text[start..];
+            let m = RefCell::new(Match::new(text));
+
+            self.db
+                .scan(
+                    text,
+                    self.pattern.flags.bits(),
+                    &mut s,
+                    Some(Match::matched),
+                    Some(&m),
+                )
+                .ok()
+                .and_then(|_| if m.borrow().is_matched() {
+                    Some(m.into_inner())
+                } else {
+                    None
+                })
+        })
     }
 }
 
@@ -166,7 +199,7 @@ impl<'t> Match<'t> {
         self.end = to as usize;
     }
 
-    extern "C" fn matched(id: u32, from: u64, to: u64, flags: u32, m: &RefCell<Match>) -> u32 {
+    extern "C" fn matched(_id: u32, from: u64, to: u64, _flags: u32, m: &RefCell<Match>) -> u32 {
         (*m.borrow_mut()).update(from, to);
 
         0
@@ -190,7 +223,7 @@ impl<'t> Match<'t> {
 
 #[derive(Debug)]
 pub struct Matches<'r, 't> {
-    db: &'r BlockDatabase,
+    re: &'r Regex,
     text: &'t str,
     m: RefCell<Option<Match<'t>>>,
 }
@@ -202,9 +235,15 @@ impl<'r, 't> Iterator for Matches<'r, 't> {
         let m = self.m.borrow_mut().take();
 
         m.map(|ref m| &self.text[m.end..]).and_then(|text| {
-            self.db.alloc().ok().and_then(|mut s| {
-                self.db
-                    .scan(text, 0, &mut s, Some(Self::matched), Some(&self.m))
+            self.re.db.alloc().ok().and_then(|mut s| {
+                self.re.db
+                    .scan(
+                        text,
+                        self.re.pattern.flags.bits(),
+                        &mut s,
+                        Some(Self::matched),
+                        Some(&self.m),
+                    )
                     .ok()
                     .and_then(|_| {
                         (*self.m.borrow()).as_ref().and_then(|m| if m.is_matched() {
@@ -219,18 +258,26 @@ impl<'r, 't> Iterator for Matches<'r, 't> {
 }
 
 impl<'r, 't> Matches<'r, 't> {
-    fn new(db: &'r BlockDatabase, text: &'t str) -> Matches<'r, 't> {
+    fn new(re: &'r Regex, text: &'t str) -> Matches<'r, 't> {
         Matches {
-            db,
+            re,
             text,
             m: RefCell::new(Some(Match::new(text))),
         }
     }
-    extern "C" fn matched(id: u32, from: u64, to: u64, flags: u32, m: &RefCell<Option<Match<'t>>>) -> u32 {
+    extern "C" fn matched(_id: u32, from: u64, to: u64, _flags: u32, m: &RefCell<Option<Match<'t>>>) -> u32 {
         if let Some(ref mut m) = *m.borrow_mut() {
             m.update(from, to);
         }
 
         0
+    }
+}
+
+/// Auxiliary methods.
+impl Regex {
+    /// Returns the original string of this regex.
+    pub fn as_str(&self) -> &str {
+        &self.pattern.expression
     }
 }

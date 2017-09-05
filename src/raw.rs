@@ -1,4 +1,4 @@
-#![allow(non_camel_case_types, dead_code, doc_markdown)]
+#![allow(non_camel_case_types, dead_code)]
 
 include!(concat!(env!("OUT_DIR"), "/raw_bindgen.rs"));
 
