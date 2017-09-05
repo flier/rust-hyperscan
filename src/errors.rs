@@ -136,11 +136,11 @@ pub struct CompileError(RawCompileErrorPtr);
 unsafe impl Send for CompileError {}
 
 impl CompileError {
-    fn expression(&self) -> usize {
+    pub fn expression(&self) -> usize {
         unsafe { (*self.0).expression as usize }
     }
 
-    fn message(&self) -> String {
+    pub fn message(&self) -> String {
         unsafe { String::from(CStr::from_ptr((*self.0).message).to_str().unwrap()) }
     }
 }
@@ -164,7 +164,11 @@ macro_rules! check_compile_error {
         if $crate::HS_SUCCESS != $result {
             match $result {
                 $crate::HS_COMPILER_ERROR => {
-                    bail!($crate::errors::ErrorKind::CompileError($err.into()))
+                    let err: $crate::errors::CompileError = $err.into();
+
+                    trace!("compile expression #{} failed, {}", err.expression(), err.message());
+
+                    bail!($crate::errors::ErrorKind::CompileError(err))
                 },
                 _ => {
                     bail!($crate::errors::ErrorKind::HsError($result.into()))
