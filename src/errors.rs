@@ -1,5 +1,4 @@
 use std::fmt;
-use std::ptr;
 use std::string::ToString;
 use std::ffi::CStr;
 
@@ -149,9 +148,7 @@ impl CompileError {
 impl Drop for CompileError {
     fn drop(&mut self) {
         unsafe {
-            if self.0 != ptr::null_mut() {
-                assert_hs_error!(hs_free_compile_error(self.0));
-            }
+            assert_hs_error!(hs_free_compile_error(self.0));
         }
     }
 }

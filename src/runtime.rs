@@ -154,14 +154,14 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for BlockDatabase {
             )
         }
 
-        Ok(&self)
+        Ok(self)
     }
 }
 
 impl<T: AsRef<[u8]>, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
     fn scan<D>(
         &self,
-        data: &Vec<T>,
+        data: &[T],
         flags: ScanFlags,
         scratch: &mut S,
         callback: Option<MatchEventCallback<D>>,
@@ -197,7 +197,7 @@ impl<T: AsRef<[u8]>, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
             self.as_ptr(),
         );
 
-        Ok(&self)
+        Ok(self)
     }
 }
 
@@ -264,7 +264,7 @@ impl<S: Scratch> Stream<S> for RawStream {
 
         trace!("stream closed at {:p}", self.0);
 
-        Ok(&self)
+        Ok(self)
     }
 
     fn reset<D>(
@@ -286,7 +286,7 @@ impl<S: Scratch> Stream<S> for RawStream {
 
         trace!("stream reset at {:p}", self.0);
 
-        Ok(&self)
+        Ok(self)
     }
 }
 
@@ -319,7 +319,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for RawStream {
             self.0
         );
 
-        Ok(&self)
+        Ok(self)
     }
 }
 

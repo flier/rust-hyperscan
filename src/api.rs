@@ -169,7 +169,7 @@ pub type RawScratchPtr = *mut hs_scratch_t;
 
 /// A Hyperscan scratch space.
 ///
-pub trait Scratch: AsMutPtr<Type = RawScratchType> {
+pub trait Scratch: AsMutPtr<Type = RawScratchType> + Clone {
     /// Provides the size of the given scratch space.
     fn size(&self) -> Result<usize>;
 
@@ -248,7 +248,7 @@ pub trait VectoredScanner<T: AsRef<[u8]>, S: Scratch> {
     /// takes place for vectoring-mode pattern databases.
     fn scan<D>(
         &self,
-        data: &Vec<T>,
+        data: &[T],
         flags: ScanFlags,
         scratch: &mut S,
         callback: Option<MatchEventCallback<D>>,
@@ -257,10 +257,10 @@ pub trait VectoredScanner<T: AsRef<[u8]>, S: Scratch> {
 
     fn scan_mut<D>(
         &self,
-        data: &Vec<T>,
+        data: &[T],
         flags: ScanFlags,
         scratch: &mut S,
-        callback: Option<MatchEventCallback<D>>,
+        callback: Option<MatchEventCallbackMut<D>>,
         context: Option<&mut D>,
     ) -> Result<&Self> {
         self.scan(
@@ -268,7 +268,7 @@ pub trait VectoredScanner<T: AsRef<[u8]>, S: Scratch> {
             flags,
             scratch,
             callback.map(|f| unsafe { mem::transmute(f) }),
-            context.map(|v| &*v)
+            context.map(|v| &*v),
         )
     }
 }
@@ -281,7 +281,7 @@ pub type RawStreamPtr = *mut hs_stream_t;
 /// Flags modifying the behaviour of the stream.
 pub type StreamFlags = u32;
 
-/// The stream returned by StreamingDatabase::open_stream
+/// The stream returned by `StreamingDatabase::open_stream()`
 pub trait Stream<S: Scratch>: AsPtr<Type = RawStreamType> {
     /// Close a stream.
     fn close<D>(&self, scratch: &mut S, callback: Option<MatchEventCallback<D>>, context: Option<&D>) -> Result<&Self>;

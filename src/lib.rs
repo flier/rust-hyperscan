@@ -27,6 +27,8 @@
 //!     db.scan::<BlockDatabase>("some test data", 0, &scratch, Some(callback), Some(&db)).unwrap();
 //! }
 //! ```
+#![cfg_attr(feature = "clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", plugin(clippy(conf_file = ".clippy.toml")))]
 
 #[macro_use]
 extern crate bitflags;
@@ -49,7 +51,8 @@ mod runtime;
 
 pub use constants::*;
 pub use api::*;
-pub use common::{valid_platform, version, Block, Streaming, Vectored, DatabaseType, BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
+pub use common::{valid_platform, version, Block, BlockDatabase, DatabaseType, RawDatabase, Streaming,
+                 StreamingDatabase, Vectored, VectoredDatabase};
 pub use compile::{Pattern, Patterns};
 pub use runtime::{RawScratch, RawStream};
 

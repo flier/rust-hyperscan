@@ -26,6 +26,8 @@ error-chain = "0.10"
 bitflags = "0.9"
 regex-syntax = "0.4"
 
+clippy = {version = "*", optional = true}
+
 [build-dependencies]
 log = "0.3"
 env_logger = "0.4"

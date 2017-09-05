@@ -16,7 +16,7 @@ pub const HS_NOMEM: HsError = -2;
 /// was located.
 pub const HS_SCAN_TERMINATED: HsError = -3;
 
-/// The pattern compiler failed, and the @ref hs_compile_error_t should be
+/// The pattern compiler failed, and the `CompileError` should be
 /// inspected for more detail.
 pub const HS_COMPILER_ERROR: HsError = -4;
 
@@ -34,8 +34,8 @@ pub const HS_DB_MODE_ERROR: HsError = -7;
 /// A parameter passed to this function was not correctly aligned.
 pub const HS_BAD_ALIGN: HsError = -8;
 
-/// The memory allocator (either malloc() or the allocator set with @ref
-/// hs_set_allocator()) did not correctly return memory suitably aligned for the
+/// The memory allocator (either `libc::malloc()` or the allocator set with
+/// `hs_set_allocator()` did not correctly return memory suitably aligned for the
 /// largest representable data type on this platform.
 pub const HS_BAD_ALLOC: HsError = -9;
 
@@ -44,12 +44,12 @@ pub const HS_BAD_ALLOC: HsError = -9;
 /// This error is returned when Hyperscan is able to detect that the scratch
 /// region given is already in use by another Hyperscan API call.
 ///
-/// A separate scratch region, allocated with @ref hs_alloc_scratch() or @ref
-/// hs_clone_scratch(), is required for every concurrent caller of the Hyperscan
+/// A separate scratch region, allocated with `ScratchAllocator::alloc()` or
+/// `Scratch::clone()`, is required for every concurrent caller of the Hyperscan
 /// API.
 ///
-/// For example, this error might be returned when @ref hs_scan() has been
-/// called inside a callback delivered by a currently-executing @ref hs_scan()
+/// For example, this error might be returned when `BlockScanner::scan()` has been
+/// called inside a callback delivered by a currently-executing `BlockScanner::scan()`
 /// call using the same scratch region.
 ///
 /// Note: Not all concurrent uses of scratch regions may be detected. This error
