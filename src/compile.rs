@@ -366,7 +366,7 @@ impl<'a, T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for &'a [Pattern] {
 
         let expr_ptrs = exprs
             .iter()
-            .map(|expr| expr.as_bytes_with_nul().as_ptr() as *const i8)
+            .map(|expr| expr.as_ptr() as *const i8)
             .collect::<Vec<*const i8>>();
 
         let mut db: RawDatabasePtr = ptr::null_mut();

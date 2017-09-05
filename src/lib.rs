@@ -34,6 +34,7 @@
 extern crate bitflags;
 #[macro_use]
 extern crate error_chain;
+extern crate hexplay;
 extern crate libc;
 #[macro_use]
 extern crate log;

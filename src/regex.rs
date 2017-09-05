@@ -1,10 +1,12 @@
 use std::cell::RefCell;
 
+use hexplay::HexViewBuilder;
+
 use api::{BlockScanner, DatabaseBuilder, ScratchAllocator};
 use common::BlockDatabase;
 use compile::Pattern;
-use constants::HS_FLAG_SOM_LEFTMOST;
-use errors::Result;
+use constants::{HS_FLAG_UTF8, HS_FLAG_SOM_LEFTMOST};
+use errors::{Error, ErrorKind, HsError, Result};
 
 /// A compiled regular expression for matching Unicode strings.
 ///
@@ -52,7 +54,7 @@ impl Regex {
     pub fn new(re: &str) -> Result<Self> {
         let mut pattern: Pattern = re.parse()?;
 
-        pattern.flags |= HS_FLAG_SOM_LEFTMOST;
+        pattern.flags |= HS_FLAG_SOM_LEFTMOST | HS_FLAG_UTF8;
 
         let db: BlockDatabase = pattern.build()?;
 
@@ -126,6 +128,59 @@ impl Regex {
     pub fn find_iter<'r, 't>(&'r self, text: &'t str) -> Matches<'r, 't> {
         Matches::new(self, text)
     }
+
+
+    /// Returns an iterator of substrings of `text` delimited by a match of the
+    /// regular expression. Namely, each element of the iterator corresponds to
+    /// text that *isn't* matched by the regular expression.
+    ///
+    /// This method will *not* copy the text given.
+    ///
+    /// # Example
+    ///
+    /// To split a string delimited by arbitrary amounts of spaces or tabs:
+    ///
+    /// ```rust
+    /// # extern crate hyperscan; use hyperscan::regex::Regex;
+    /// # fn main() {
+    /// let re = Regex::new(r"[ \t]+").unwrap();
+    /// let fields: Vec<&str> = re.split("a b \t  c\td    e").collect();
+    /// assert_eq!(fields, vec!["a", "b", "c", "d", "e"]);
+    /// # }
+    /// ```
+    pub fn split<'r, 't>(&'r self, text: &'t str) -> Split<'r, 't> {
+        Split {
+            finder: self.find_iter(text),
+            last: 0,
+        }
+    }
+
+    /// Returns an iterator of at most `limit` substrings of `text` delimited
+    /// by a match of the regular expression. (A `limit` of `0` will return no
+    /// substrings.) Namely, each element of the iterator corresponds to text
+    /// that *isn't* matched by the regular expression. The remainder of the
+    /// string that is not split will be the last element in the iterator.
+    ///
+    /// This method will *not* copy the text given.
+    ///
+    /// # Example
+    ///
+    /// Get the first two words in some text:
+    ///
+    /// ```rust
+    /// # extern crate hyperscan; use hyperscan::regex::Regex;
+    /// # fn main() {
+    /// let re = Regex::new(r"\W+").unwrap();
+    /// let fields: Vec<&str> = re.splitn("Hey! How are you?", 3).collect();
+    /// assert_eq!(fields, vec!("Hey", "How", "are you?"));
+    /// # }
+    /// ```
+    pub fn splitn<'r, 't>(&'r self, text: &'t str, limit: usize) -> SplitN<'r, 't> {
+        SplitN {
+            splits: self.split(text),
+            n: limit,
+        }
+    }
 }
 
 /// Advanced or "lower level" search methods.
@@ -153,21 +208,33 @@ impl Regex {
             let text = &text[start..];
             let m = RefCell::new(Match::new(text));
 
-            self.db
-                .scan(
-                    text,
-                    self.pattern.flags.bits(),
-                    &mut s,
-                    Some(Match::matched),
-                    Some(&m),
-                )
-                .ok()
-                .and_then(|_| if m.borrow().is_matched() {
+            match self.db.scan(
+                text,
+                self.pattern.flags.bits(),
+                &mut s,
+                Some(Match::short_matched),
+                Some(&m),
+            ) {
+                Ok(_) | Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => if m.borrow().is_matched() {
                     Some(m.into_inner())
                 } else {
                     None
-                })
+                },
+                Err(err) => {
+                    warn!("scan failed, {}", err);
+
+                    None
+                }
+            }
         })
+    }
+}
+
+/// Auxiliary methods.
+impl Regex {
+    /// Returns the original string of this regex.
+    pub fn as_str(&self) -> &str {
+        &self.pattern.expression
     }
 }
 
@@ -199,10 +266,10 @@ impl<'t> Match<'t> {
         self.end = to as usize;
     }
 
-    extern "C" fn matched(_id: u32, from: u64, to: u64, _flags: u32, m: &RefCell<Match>) -> u32 {
+    extern "C" fn short_matched(_id: u32, from: u64, to: u64, _flags: u32, m: &RefCell<Match>) -> u32 {
         (*m.borrow_mut()).update(from, to);
 
-        0
+        1
     }
 
     /// Returns the starting byte offset of the match in the haystack.
@@ -234,24 +301,48 @@ impl<'r, 't> Iterator for Matches<'r, 't> {
     fn next(&mut self) -> Option<Self::Item> {
         let m = self.m.borrow_mut().take();
 
-        m.map(|ref m| &self.text[m.end..]).and_then(|text| {
+        m.map(|ref m| m.end).and_then(|offset| {
+            trace!(
+                "scaning text from offset {}:\n{}",
+                offset,
+                HexViewBuilder::new(&self.text[offset..].as_bytes())
+                    .address_offset(offset)
+                    .row_width(16)
+                    .finish()
+            );
+
             self.re.db.alloc().ok().and_then(|mut s| {
-                self.re.db
-                    .scan(
-                        text,
-                        self.re.pattern.flags.bits(),
-                        &mut s,
-                        Some(Self::matched),
-                        Some(&self.m),
-                    )
-                    .ok()
-                    .and_then(|_| {
-                        (*self.m.borrow()).as_ref().and_then(|m| if m.is_matched() {
-                            Some(m.clone())
+                let m = RefCell::new(Match::new(self.text));
+
+                match self.re.db.scan(
+                    &self.text[offset..],
+                    self.re.pattern.flags.bits(),
+                    &mut s,
+                    Some(Match::short_matched),
+                    Some(&m),
+                ) {
+                    Ok(_) | Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
+                        let mut m = m.into_inner();
+
+                        if m.is_matched() {
+                            m.start += offset;
+                            m.end += offset;
+
+                            trace!("scan matched, {:?}", m);
+
+                            *self.m.borrow_mut() = Some(m.clone());
+
+                            Some(m)
                         } else {
                             None
-                        })
-                    })
+                        }
+                    }
+                    Err(err) => {
+                        warn!("scan failed, {}", err);
+
+                        None
+                    }
+                }
             })
         })
     }
@@ -265,19 +356,73 @@ impl<'r, 't> Matches<'r, 't> {
             m: RefCell::new(Some(Match::new(text))),
         }
     }
-    extern "C" fn matched(_id: u32, from: u64, to: u64, _flags: u32, m: &RefCell<Option<Match<'t>>>) -> u32 {
-        if let Some(ref mut m) = *m.borrow_mut() {
-            m.update(from, to);
-        }
 
-        0
+    pub fn text(&self) -> &'t str {
+        self.text
     }
 }
 
-/// Auxiliary methods.
-impl Regex {
-    /// Returns the original string of this regex.
-    pub fn as_str(&self) -> &str {
-        &self.pattern.expression
+
+/// Yields all substrings delimited by a regular expression match.
+///
+/// `'r` is the lifetime of the compiled regular expression and `'t` is the
+/// lifetime of the string being split.
+pub struct Split<'r, 't> {
+    finder: Matches<'r, 't>,
+    last: usize,
+}
+
+impl<'r, 't> Iterator for Split<'r, 't> {
+    type Item = &'t str;
+
+    fn next(&mut self) -> Option<&'t str> {
+        let text = self.finder.text();
+        loop {
+            match self.finder.next() {
+                None => if self.last >= text.len() {
+                    return None;
+                } else {
+                    let s = &text[self.last..];
+                    self.last = text.len();
+                    return Some(s);
+                },
+                Some(m) => if self.last == m.start() {
+                    // merge two contiguous matched region
+                    self.last = m.end()
+                } else {
+                    let matched = &text[self.last..m.start()];
+                    self.last = m.end();
+                    return Some(matched);
+                },
+            }
+        }
+    }
+}
+
+/// Yields at most `N` substrings delimited by a regular expression match.
+///
+/// The last substring will be whatever remains after splitting.
+///
+/// `'r` is the lifetime of the compiled regular expression and `'t` is the
+/// lifetime of the string being split.
+pub struct SplitN<'r, 't> {
+    splits: Split<'r, 't>,
+    n: usize,
+}
+
+impl<'r, 't> Iterator for SplitN<'r, 't> {
+    type Item = &'t str;
+
+    fn next(&mut self) -> Option<&'t str> {
+        if self.n == 0 {
+            return None;
+        }
+        self.n -= 1;
+        if self.n == 0 {
+            let text = self.splits.finder.text();
+            Some(&text[self.splits.last..])
+        } else {
+            self.splits.next()
+        }
     }
 }
