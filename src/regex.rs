@@ -1,3 +1,6 @@
+use std::fmt;
+use std::str;
+use std::rc::Rc;
 use std::cell::RefCell;
 use std::borrow::Cow;
 
@@ -40,10 +43,24 @@ use errors::{Error, ErrorKind, HsError, Result};
 /// let mat = re.find("phone: 111-222-3333").unwrap();
 /// assert_eq!((mat.start(), mat.end()), (7, 19));
 /// ```
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Regex {
     pattern: Pattern,
-    db: BlockDatabase,
+    db: Rc<BlockDatabase>,
+}
+
+impl fmt::Display for Regex {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.pattern)
+    }
+}
+
+impl str::FromStr for Regex {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        Regex::new(s)
+    }
 }
 
 /// Core regular expression methods.
@@ -57,7 +74,7 @@ impl Regex {
 
         pattern.flags |= HS_FLAG_SOM_LEFTMOST | HS_FLAG_UTF8;
 
-        let db: BlockDatabase = pattern.build()?;
+        let db: Rc<BlockDatabase> = Rc::new(pattern.build()?);
 
         Ok(Regex { pattern, db })
     }
