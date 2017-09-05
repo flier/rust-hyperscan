@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::borrow::Cow;
 
 use hexplay::HexViewBuilder;
 
@@ -180,6 +181,85 @@ impl Regex {
             splits: self.split(text),
             n: limit,
         }
+    }
+
+
+    /// Replaces the leftmost-first match with the replacement provided.
+    /// The replacement can be a regular string (where `$N` and `$name` are
+    /// expanded to match capture groups) or a function that takes the matches'
+    /// `Captures` and returns the replaced string.
+    ///
+    /// If no match is found, then a copy of the string is returned unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate hyperscan; use hyperscan::regex::Regex;
+    /// # fn main() {
+    /// let re = Regex::new("[^01]+").unwrap();
+    /// assert_eq!(re.replace("104561078910", ""), "101078910");
+    /// # }
+    /// ```
+    pub fn replace<'t>(&self, text: &'t str, rep: &str) -> Cow<'t, str> {
+        self.replacen(text, 1, rep)
+    }
+
+    /// Replaces all non-overlapping matches in `text` with the replacement
+    /// provided. This is the same as calling `replacen` with `limit` set to
+    /// `0`.
+    ///
+    /// See the documentation for `replace` for details on how to access
+    /// capturing group matches in the replacement string.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate hyperscan; use hyperscan::regex::Regex;
+    /// # fn main() {
+    /// let re = Regex::new("[^01]+").unwrap();
+    /// assert_eq!(re.replace_all("104561078910", ""), "101010");
+    /// # }
+    /// ```
+    pub fn replace_all<'t>(&self, text: &'t str, rep: &str) -> Cow<'t, str> {
+        self.replacen(text, 0, rep)
+    }
+
+    /// Replaces at most `limit` non-overlapping matches in `text` with the
+    /// replacement provided. If `limit` is 0, then all non-overlapping matches
+    /// are replaced.
+    ///
+    /// See the documentation for `replace` for details on how to access
+    /// capturing group matches in the replacement string.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate hyperscan; use hyperscan::regex::Regex;
+    /// # fn main() {
+    /// let re = Regex::new("[^01]+").unwrap();
+    /// assert_eq!(re.replacen("1023104561078910", 2, ""), "10101078910");
+    /// # }
+    /// ```
+    pub fn replacen<'t>(&self, text: &'t str, limit: usize, rep: &str) -> Cow<'t, str> {
+        let mut new = String::with_capacity(text.len());
+        let mut matched = 0;
+        let mut last_match = 0;
+        for m in self.find_iter(text) {
+            if m.start() > last_match {
+                if limit > 0 && matched >= limit {
+                    break;
+                }
+                matched += 1;
+                new.push_str(&text[last_match..m.start()]);
+                new.push_str(rep);
+            }
+            last_match = m.end();
+        }
+        if last_match == 0 {
+            return Cow::Borrowed(text);
+        }
+        new.push_str(&text[last_match..]);
+        return Cow::Owned(new);
     }
 }
 
