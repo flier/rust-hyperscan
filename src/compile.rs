@@ -91,14 +91,19 @@ pub struct ExpressionExt {
 
 impl ExpressionExt {
     fn to_raw(&self) -> hs_expr_ext_t {
-        let flags = self.min_offset
-            .map_or(ExpressionExtFlags::empty(), |_| HS_EXT_FLAG_MIN_OFFSET) |
-            self.max_offset
-                .map_or(ExpressionExtFlags::empty(), |_| HS_EXT_FLAG_MAX_OFFSET) |
-            self.min_length
-                .map_or(ExpressionExtFlags::empty(), |_| HS_EXT_FLAG_MIN_LENGTH) |
-            self.edit_distance
-                .map_or(ExpressionExtFlags::empty(), |_| HS_EXT_FLAG_EDIT_DISTANCE);
+        let flags = self.min_offset.map_or(ExpressionExtFlags::empty(), |_| {
+            HS_EXT_FLAG_MIN_OFFSET
+        }) |
+            self.max_offset.map_or(ExpressionExtFlags::empty(), |_| {
+                HS_EXT_FLAG_MAX_OFFSET
+            }) |
+            self.min_length.map_or(ExpressionExtFlags::empty(), |_| {
+                HS_EXT_FLAG_MIN_LENGTH
+            }) |
+            self.edit_distance.map_or(
+                ExpressionExtFlags::empty(),
+                |_| HS_EXT_FLAG_EDIT_DISTANCE,
+            );
 
         hs_expr_ext_t {
             flags: flags.bits(),

@@ -9,7 +9,7 @@ use hexplay::HexViewBuilder;
 use api::{BlockScanner, DatabaseBuilder, ScratchAllocator};
 use common::BlockDatabase;
 use compile::Pattern;
-use constants::{HS_FLAG_UTF8, HS_FLAG_SOM_LEFTMOST};
+use constants::*;
 use errors::{Error, ErrorKind, HsError, Result};
 
 /// A compiled regular expression for matching Unicode strings.
@@ -312,11 +312,14 @@ impl Regex {
                 Some(Match::short_matched),
                 Some(&m),
             ) {
-                Ok(_) | Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => if m.borrow().is_matched() {
-                    Some(m.into_inner())
-                } else {
-                    None
-                },
+                Ok(_) |
+                Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
+                    if m.borrow().is_matched() {
+                        Some(m.into_inner())
+                    } else {
+                        None
+                    }
+                }
                 Err(err) => {
                     warn!("scan failed, {}", err);
 
@@ -418,7 +421,8 @@ impl<'r, 't> Iterator for Matches<'r, 't> {
                     Some(Match::short_matched),
                     Some(&m),
                 ) {
-                    Ok(_) | Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
+                    Ok(_) |
+                    Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
                         let mut m = m.into_inner();
 
                         if m.is_matched() {
@@ -476,21 +480,25 @@ impl<'r, 't> Iterator for Split<'r, 't> {
         let text = self.finder.text();
         loop {
             match self.finder.next() {
-                None => if self.last >= text.len() {
-                    return None;
-                } else {
-                    let s = &text[self.last..];
-                    self.last = text.len();
-                    return Some(s);
-                },
-                Some(m) => if self.last == m.start() {
-                    // merge two contiguous matched region
-                    self.last = m.end()
-                } else {
-                    let matched = &text[self.last..m.start()];
-                    self.last = m.end();
-                    return Some(matched);
-                },
+                None => {
+                    if self.last >= text.len() {
+                        return None;
+                    } else {
+                        let s = &text[self.last..];
+                        self.last = text.len();
+                        return Some(s);
+                    }
+                }
+                Some(m) => {
+                    if self.last == m.start() {
+                        // merge two contiguous matched region
+                        self.last = m.end()
+                    } else {
+                        let matched = &text[self.last..m.start()];
+                        self.last = m.end();
+                        return Some(matched);
+                    }
+                }
             }
         }
     }
@@ -521,5 +529,118 @@ impl<'r, 't> Iterator for SplitN<'r, 't> {
         } else {
             self.splits.next()
         }
+    }
+}
+
+/// The set of user configurable options for compiling zero or more regexes.
+#[derive(Clone, Debug)]
+#[allow(missing_docs)]
+pub struct RegexOptions {
+    pub expression: Option<String>,
+    pub case_insensitive: bool,
+    pub multi_line: bool,
+    pub dot_matches_new_line: bool,
+    pub unicode: bool,
+}
+
+impl Default for RegexOptions {
+    fn default() -> Self {
+        RegexOptions {
+            expression: None,
+            case_insensitive: false,
+            multi_line: false,
+            dot_matches_new_line: false,
+            unicode: true,
+        }
+    }
+}
+
+impl RegexOptions {
+    fn build(&self) -> Result<Regex> {
+        let mut pattern: Pattern = if let Some(ref expression) = self.expression {
+            expression.parse()?
+        } else {
+            bail!("missed expression")
+        };
+
+        pattern.flags |= HS_FLAG_SOM_LEFTMOST | HS_FLAG_UTF8;
+
+        if self.case_insensitive {
+            pattern.flags |= HS_FLAG_CASELESS;
+        }
+
+        if self.multi_line {
+            pattern.flags |= HS_FLAG_MULTILINE;
+        }
+
+        if self.dot_matches_new_line {
+            pattern.flags |= HS_FLAG_DOTALL;
+        }
+
+        if self.unicode {
+            pattern.flags |= HS_FLAG_UCP;
+        }
+
+        let db: Rc<BlockDatabase> = Rc::new(pattern.build()?);
+
+        Ok(Regex { pattern, db })
+    }
+}
+
+/// A configurable builder for a regular expression.
+///
+/// A builder can be used to configure how the regex is built, for example, by
+/// setting the default flags (which can be overridden in the expression
+/// itself) or setting various limits.
+pub struct RegexBuilder(RegexOptions);
+
+impl RegexBuilder {
+    /// Create a new regular expression builder with the given pattern.
+    ///
+    /// If the pattern is invalid, then an error will be returned when
+    /// `build` is called.
+    pub fn new(pattern: &str) -> RegexBuilder {
+        let mut builder = RegexBuilder(RegexOptions::default());
+        builder.0.expression = Some(pattern.to_owned());
+        builder
+    }
+
+    /// Set the value for the case insensitive (`i`) flag.
+    pub fn case_insensitive(&mut self, yes: bool) -> &mut RegexBuilder {
+        self.0.case_insensitive = yes;
+        self
+    }
+
+    /// Set the value for the multi-line matching (`m`) flag.
+    pub fn multi_line(&mut self, yes: bool) -> &mut RegexBuilder {
+        self.0.multi_line = yes;
+        self
+    }
+
+    /// Set the value for the any character (`s`) flag, where in `.` matches
+    /// anything when `s` is set and matches anything except for new line when
+    /// it is not set (the default).
+    ///
+    /// N.B. "matches anything" means "any byte" for `regex::bytes::Regex`
+    /// expressions and means "any Unicode scalar value" for `regex::Regex`
+    /// expressions.
+    pub fn dot_matches_new_line(&mut self, yes: bool) -> &mut RegexBuilder {
+        self.0.dot_matches_new_line = yes;
+        self
+    }
+
+    /// Set the value for the Unicode (`u`) flag.
+    pub fn unicode(&mut self, yes: bool) -> &mut RegexBuilder {
+        self.0.unicode = yes;
+        self
+    }
+
+    /// Consume the builder and compile the regular expression.
+    ///
+    /// Note that calling `as_str` on the resulting `Regex` will produce the
+    /// pattern given to `new` verbatim. Notably, it will not incorporate any
+    /// of the flags set on this builder.
+    pub fn build(&self) -> Result<Regex> {
+        self.0.build()
     }
 }
