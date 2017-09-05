@@ -1,5 +1,8 @@
 use std::fmt;
 use std::str;
+use std::vec;
+use std::slice;
+use std::iter;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::borrow::Cow;
@@ -91,11 +94,9 @@ impl Regex {
     /// bytes:
     ///
     /// ```rust
-    /// # extern crate hyperscan; use hyperscan::regex::Regex;
-    /// # fn main() {
+    /// # use hyperscan::regex::Regex;
     /// let text = "I categorically deny having triskaidekaphobia.";
     /// assert!(Regex::new(r"\b\w{13}\b").unwrap().is_match(text));
-    /// # }
     /// ```
     pub fn is_match(&self, text: &str) -> bool {
         self.is_match_at(text, 0)
@@ -114,12 +115,10 @@ impl Regex {
     /// ASCII word bytes:
     ///
     /// ```rust
-    /// # extern crate hyperscan; use hyperscan::regex::Regex;
-    /// # fn main() {
+    /// # use hyperscan::regex::Regex;
     /// let text = "I categorically deny having triskaidekaphobia.";
     /// let mat = Regex::new(r"\b\w{13}\b").unwrap().find(text).unwrap();
     /// assert_eq!((mat.start(), mat.end()), (2, 15));
-    /// # }
     /// ```
     pub fn find<'t>(&self, text: &'t str) -> Option<Match<'t>> {
         self.find_at(text, 0)
@@ -135,13 +134,11 @@ impl Regex {
     /// word bytes:
     ///
     /// ```rust
-    /// # extern crate hyperscan; use hyperscan::regex::Regex;
-    /// # fn main() {
+    /// # use hyperscan::regex::Regex;
     /// let text = "Retroactively relinquishing remunerations is reprehensible.";
     /// for mat in Regex::new(r"\b\w{13}\b").unwrap().find_iter(text) {
     ///     println!("{:?}", mat);
     /// }
-    /// # }
     /// ```
     pub fn find_iter<'r, 't>(&'r self, text: &'t str) -> Matches<'r, 't> {
         Matches::new(self, text)
@@ -159,12 +156,10 @@ impl Regex {
     /// To split a string delimited by arbitrary amounts of spaces or tabs:
     ///
     /// ```rust
-    /// # extern crate hyperscan; use hyperscan::regex::Regex;
-    /// # fn main() {
+    /// # use hyperscan::regex::Regex;
     /// let re = Regex::new(r"[ \t]+").unwrap();
     /// let fields: Vec<&str> = re.split("a b \t  c\td    e").collect();
     /// assert_eq!(fields, vec!["a", "b", "c", "d", "e"]);
-    /// # }
     /// ```
     pub fn split<'r, 't>(&'r self, text: &'t str) -> Split<'r, 't> {
         Split {
@@ -186,12 +181,10 @@ impl Regex {
     /// Get the first two words in some text:
     ///
     /// ```rust
-    /// # extern crate hyperscan; use hyperscan::regex::Regex;
-    /// # fn main() {
+    /// # use hyperscan::regex::Regex;
     /// let re = Regex::new(r"\W+").unwrap();
     /// let fields: Vec<&str> = re.splitn("Hey! How are you?", 3).collect();
     /// assert_eq!(fields, vec!("Hey", "How", "are you?"));
-    /// # }
     /// ```
     pub fn splitn<'r, 't>(&'r self, text: &'t str, limit: usize) -> SplitN<'r, 't> {
         SplitN {
@@ -211,11 +204,9 @@ impl Regex {
     /// # Examples
     ///
     /// ```rust
-    /// # extern crate hyperscan; use hyperscan::regex::Regex;
-    /// # fn main() {
+    /// # use hyperscan::regex::Regex;
     /// let re = Regex::new("[^01]+").unwrap();
     /// assert_eq!(re.replace("104561078910", ""), "101078910");
-    /// # }
     /// ```
     pub fn replace<'t>(&self, text: &'t str, rep: &str) -> Cow<'t, str> {
         self.replacen(text, 1, rep)
@@ -231,11 +222,9 @@ impl Regex {
     /// # Examples
     ///
     /// ```rust
-    /// # extern crate hyperscan; use hyperscan::regex::Regex;
-    /// # fn main() {
+    /// # use hyperscan::regex::Regex;
     /// let re = Regex::new("[^01]+").unwrap();
     /// assert_eq!(re.replace_all("104561078910", ""), "101010");
-    /// # }
     /// ```
     pub fn replace_all<'t>(&self, text: &'t str, rep: &str) -> Cow<'t, str> {
         self.replacen(text, 0, rep)
@@ -251,11 +240,9 @@ impl Regex {
     /// # Examples
     ///
     /// ```rust
-    /// # extern crate hyperscan; use hyperscan::regex::Regex;
-    /// # fn main() {
+    /// # use hyperscan::regex::Regex;
     /// let re = Regex::new("[^01]+").unwrap();
     /// assert_eq!(re.replacen("1023104561078910", 2, ""), "10101078910");
-    /// # }
     /// ```
     pub fn replacen<'t>(&self, text: &'t str, limit: usize, rep: &str) -> Cow<'t, str> {
         let mut new = String::with_capacity(text.len());
@@ -536,7 +523,7 @@ impl<'r, 't> Iterator for SplitN<'r, 't> {
 #[derive(Clone, Debug)]
 #[allow(missing_docs)]
 pub struct RegexOptions {
-    pub expression: Option<String>,
+    pub expressions: Vec<String>,
     pub case_insensitive: bool,
     pub multi_line: bool,
     pub dot_matches_new_line: bool,
@@ -546,44 +533,12 @@ pub struct RegexOptions {
 impl Default for RegexOptions {
     fn default() -> Self {
         RegexOptions {
-            expression: None,
+            expressions: Vec::new(),
             case_insensitive: false,
             multi_line: false,
             dot_matches_new_line: false,
             unicode: true,
         }
-    }
-}
-
-impl RegexOptions {
-    fn build(&self) -> Result<Regex> {
-        let mut pattern: Pattern = if let Some(ref expression) = self.expression {
-            expression.parse()?
-        } else {
-            bail!("missed expression")
-        };
-
-        pattern.flags |= HS_FLAG_SOM_LEFTMOST | HS_FLAG_UTF8;
-
-        if self.case_insensitive {
-            pattern.flags |= HS_FLAG_CASELESS;
-        }
-
-        if self.multi_line {
-            pattern.flags |= HS_FLAG_MULTILINE;
-        }
-
-        if self.dot_matches_new_line {
-            pattern.flags |= HS_FLAG_DOTALL;
-        }
-
-        if self.unicode {
-            pattern.flags |= HS_FLAG_UCP;
-        }
-
-        let db: Rc<BlockDatabase> = Rc::new(pattern.build()?);
-
-        Ok(Regex { pattern, db })
     }
 }
 
@@ -601,7 +556,7 @@ impl RegexBuilder {
     /// `build` is called.
     pub fn new(pattern: &str) -> RegexBuilder {
         let mut builder = RegexBuilder(RegexOptions::default());
-        builder.0.expression = Some(pattern.to_owned());
+        builder.0.expressions.push(pattern.to_owned());
         builder
     }
 
@@ -641,6 +596,374 @@ impl RegexBuilder {
     /// pattern given to `new` verbatim. Notably, it will not incorporate any
     /// of the flags set on this builder.
     pub fn build(&self) -> Result<Regex> {
-        self.0.build()
+        let mut pattern: Pattern = if let Some(ref expression) = self.0.expressions.first() {
+            expression.parse()?
+        } else {
+            bail!("missing expression")
+        };
+
+        pattern.flags |= HS_FLAG_SOM_LEFTMOST | HS_FLAG_UTF8;
+
+        if self.0.case_insensitive {
+            pattern.flags |= HS_FLAG_CASELESS;
+        }
+
+        if self.0.multi_line {
+            pattern.flags |= HS_FLAG_MULTILINE;
+        }
+
+        if self.0.dot_matches_new_line {
+            pattern.flags |= HS_FLAG_DOTALL;
+        }
+
+        if self.0.unicode {
+            pattern.flags |= HS_FLAG_UCP;
+        }
+
+        let db: Rc<BlockDatabase> = Rc::new(pattern.build()?);
+
+        Ok(Regex { pattern, db })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct RegexSet {
+    patterns: Vec<Pattern>,
+    db: Rc<BlockDatabase>,
+}
+
+impl RegexSet {
+    /// Create a new regex set with the given regular expressions.
+    ///
+    /// This takes an iterator of `S`, where `S` is something that can produce
+    /// a `&str`. If any of the strings in the iterator are not valid regular
+    /// expressions, then an error is returned.
+    ///
+    /// # Example
+    ///
+    /// Create a new regex set from an iterator of strings:
+    ///
+    /// ```rust
+    /// # use hyperscan::regex::RegexSet;
+    /// let set = RegexSet::new(&[r"\w+", r"\d+"]).unwrap();
+    /// assert!(set.is_match("foo"));
+    /// ```
+    pub fn new<I, S>(exprs: I) -> Result<RegexSet>
+    where
+        S: AsRef<str>,
+        I: IntoIterator<Item = S>,
+    {
+        RegexSetBuilder::new(exprs).build()
+    }
+
+    /// Returns true if and only if one of the regexes in this set matches
+    /// the text given.
+    ///
+    /// This method should be preferred if you only need to test whether any
+    /// of the regexes in the set should match, but don't care about *which*
+    /// regexes matched. This is because the underlying matching engine will
+    /// quit immediately after seeing the first match instead of continuing to
+    /// find all matches.
+    ///
+    /// Note that as with searches using `Regex`, the expression is unanchored
+    /// by default. That is, if the regex does not start with `^` or `\A`, or
+    /// end with `$` or `\z`, then it is permitted to match anywhere in the
+    /// text.
+    ///
+    /// # Example
+    ///
+    /// Tests whether a set matches some text:
+    ///
+    /// ```rust
+    /// # use hyperscan::regex::RegexSet;
+    /// let set = RegexSet::new(&[r"\w+", r"\d+"]).unwrap();
+    /// assert!(set.is_match("foo"));
+    /// ```
+    pub fn is_match(&self, text: &str) -> bool {
+        self.matches(text).matched_any()
+    }
+
+    /// Returns the set of regular expressions that match in the given text.
+    ///
+    /// The set returned contains the index of each regular expression that
+    /// matches in the given text. The index is in correspondence with the
+    /// order of regular expressions given to `RegexSet`'s constructor.
+    ///
+    /// The set can also be used to iterate over the matched indices.
+    ///
+    /// Note that as with searches using `Regex`, the expression is unanchored
+    /// by default. That is, if the regex does not start with `^` or `\A`, or
+    /// end with `$` or `\z`, then it is permitted to match anywhere in the
+    /// text.
+    ///
+    /// # Example
+    ///
+    /// Tests which regular expressions match the given text:
+    ///
+    /// ```rust
+    /// # use hyperscan::regex::RegexSet;
+    /// let set = RegexSet::new(&[
+    ///     r"\w+",
+    ///     r"\d+",
+    ///     r"\pL+",
+    ///     r"foo",
+    ///     r"bar",
+    ///     r"barfoo",
+    ///     r"foobar",
+    /// ]).unwrap();
+    /// let matches: Vec<_> = set.matches("foobar").into_iter().collect();
+    /// assert_eq!(matches, vec![0, 2, 3, 4, 6]);
+    ///
+    /// // You can also test whether a particular regex matched:
+    /// let matches = set.matches("foobar");
+    /// assert!(!matches.matched(5));
+    /// assert!(matches.matched(6));
+    /// ```
+    pub fn matches(&self, text: &str) -> SetMatches {
+        let matches = RefCell::new(vec![None; self.patterns.len()]);
+
+        if let Some(mut s) = self.db.alloc().ok() {
+            match self.db.scan(
+                text,
+                0,
+                &mut s,
+                Some(Self::matched),
+                Some(&matches),
+            ) {
+                Ok(_) |
+                Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {}
+                Err(err) => {
+                    warn!("scan failed, {}", err);
+                }
+            }
+        }
+
+        SetMatches { matches: matches.into_inner() }
+    }
+
+    extern "C" fn matched(
+        id: u32,
+        from: u64,
+        to: u64,
+        _flags: u32,
+        data: &RefCell<Vec<Option<(usize, usize)>>>,
+    ) -> u32 {
+        trace!("matched #{} @ [{}..{}]", id, from, to);
+
+        (*data.borrow_mut()).get_mut(id as usize).map(|m| {
+            *m = Some((from as usize, to as usize))
+        });
+
+        0
+    }
+
+    /// Returns the total number of regular expressions in this set.
+    pub fn len(&self) -> usize {
+        self.patterns.len()
+    }
+}
+
+/// A set of matches returned by a regex set.
+#[derive(Clone, Debug)]
+pub struct SetMatches {
+    matches: Vec<Option<(usize, usize)>>,
+}
+
+impl SetMatches {
+    /// Whether this set contains any matches.
+    pub fn matched_any(&self) -> bool {
+        self.matches.iter().any(|b| b.is_some())
+    }
+
+    /// Whether the regex at the given index matched.
+    ///
+    /// The index for a regex is determined by its insertion order upon the
+    /// initial construction of a `RegexSet`, starting at `0`.
+    pub fn matched(&self, regex_index: usize) -> bool {
+        self.matches.get(regex_index).map_or(false, |m| m.is_some())
+    }
+
+    /// The total number of regexes in the set that created these matches.
+    pub fn len(&self) -> usize {
+        self.matches.len()
+    }
+
+    /// Returns an iterator over indexes in the regex that matched.
+    pub fn iter(&self) -> SetMatchesIter {
+        SetMatchesIter((&*self.matches).into_iter().enumerate())
+    }
+}
+
+impl IntoIterator for SetMatches {
+    type IntoIter = SetMatchesIntoIter;
+    type Item = usize;
+
+    fn into_iter(self) -> Self::IntoIter {
+        SetMatchesIntoIter(self.matches.into_iter().enumerate())
+    }
+}
+
+impl<'a> IntoIterator for &'a SetMatches {
+    type IntoIter = SetMatchesIter<'a>;
+    type Item = usize;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+/// An owned iterator over the set of matches from a regex set.
+pub struct SetMatchesIntoIter(iter::Enumerate<vec::IntoIter<Option<(usize, usize)>>>);
+
+impl Iterator for SetMatchesIntoIter {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<usize> {
+        loop {
+            match self.0.next() {
+                None => return None,
+                Some((_, None)) => {}
+                Some((i, Some(_))) => return Some(i),
+            }
+        }
+    }
+}
+
+impl DoubleEndedIterator for SetMatchesIntoIter {
+    fn next_back(&mut self) -> Option<usize> {
+        loop {
+            match self.0.next_back() {
+                None => return None,
+                Some((_, None)) => {}
+                Some((i, Some(_))) => return Some(i),
+            }
+        }
+    }
+}
+
+/// A borrowed iterator over the set of matches from a regex set.
+///
+/// The lifetime `'a` refers to the lifetime of a `SetMatches` value.
+#[derive(Clone)]
+pub struct SetMatchesIter<'a>(iter::Enumerate<slice::Iter<'a, Option<(usize, usize)>>>);
+
+impl<'a> Iterator for SetMatchesIter<'a> {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<usize> {
+        loop {
+            match self.0.next() {
+                None => return None,
+                Some((_, &None)) => {}
+                Some((i, &Some(_))) => return Some(i),
+            }
+        }
+    }
+}
+
+impl<'a> DoubleEndedIterator for SetMatchesIter<'a> {
+    fn next_back(&mut self) -> Option<usize> {
+        loop {
+            match self.0.next_back() {
+                None => return None,
+                Some((_, &None)) => {}
+                Some((i, &Some(_))) => return Some(i),
+            }
+        }
+    }
+}
+
+/// A configurable builder for a set of regular expressions.
+///
+/// A builder can be used to configure how the regexes are built, for example,
+/// by setting the default flags (which can be overridden in the expression
+/// itself) or setting various limits.
+pub struct RegexSetBuilder(RegexOptions);
+
+impl RegexSetBuilder {
+    /// Create a new regular expression builder with the given pattern.
+    ///
+    /// If the pattern is invalid, then an error will be returned when
+    /// `build` is called.
+    pub fn new<I, S>(patterns: I) -> RegexSetBuilder
+    where
+        S: AsRef<str>,
+        I: IntoIterator<Item = S>,
+    {
+        let mut builder = RegexSetBuilder(RegexOptions::default());
+        builder.0.expressions = patterns
+            .into_iter()
+            .map(|pat| pat.as_ref().to_owned())
+            .collect();
+        builder
+    }
+
+
+    /// Set the value for the case insensitive (`i`) flag.
+    pub fn case_insensitive(&mut self, yes: bool) -> &mut RegexSetBuilder {
+        self.0.case_insensitive = yes;
+        self
+    }
+
+    /// Set the value for the multi-line matching (`m`) flag.
+    pub fn multi_line(&mut self, yes: bool) -> &mut RegexSetBuilder {
+        self.0.multi_line = yes;
+        self
+    }
+
+    /// Set the value for the any character (`s`) flag, where in `.` matches
+    /// anything when `s` is set and matches anything except for new line when
+    /// it is not set (the default).
+    ///
+    /// N.B. "matches anything" means "any byte" for `regex::bytes::RegexSet`
+    /// expressions and means "any Unicode scalar value" for `regex::RegexSet`
+    /// expressions.
+    pub fn dot_matches_new_line(&mut self, yes: bool) -> &mut RegexSetBuilder {
+        self.0.dot_matches_new_line = yes;
+        self
+    }
+
+    /// Set the value for the Unicode (`u`) flag.
+    pub fn unicode(&mut self, yes: bool) -> &mut RegexSetBuilder {
+        self.0.unicode = yes;
+        self
+    }
+
+    /// Consume the builder and compile the regular expressions into a set.
+    pub fn build(&self) -> Result<RegexSet> {
+        if self.0.expressions.is_empty() {
+            bail!("missing expression");
+        }
+
+        let mut patterns = Vec::with_capacity(self.0.expressions.len());
+
+        for (id, expression) in self.0.expressions.iter().enumerate() {
+            let mut pattern: Pattern = expression.parse()?;
+
+            pattern.id = Some(id);
+            pattern.flags |= HS_FLAG_SOM_LEFTMOST;
+
+            if self.0.case_insensitive {
+                pattern.flags |= HS_FLAG_CASELESS;
+            }
+
+            if self.0.multi_line {
+                pattern.flags |= HS_FLAG_MULTILINE;
+            }
+
+            if self.0.dot_matches_new_line {
+                pattern.flags |= HS_FLAG_DOTALL;
+            }
+
+            if self.0.unicode {
+                pattern.flags |= HS_FLAG_UCP;
+            }
+
+            patterns.push(pattern);
+        }
+
+        let db: Rc<BlockDatabase> = Rc::new(patterns.build()?);
+
+        Ok(RegexSet { patterns, db })
     }
 }
