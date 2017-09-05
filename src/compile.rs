@@ -422,8 +422,6 @@ impl<'a, T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for &'a [Pattern] {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate env_logger;
-
     use std::ptr;
 
     use super::super::*;
@@ -435,8 +433,6 @@ pub mod tests {
 
     #[test]
     fn test_compile_flags() {
-        let _ = env_logger::init();
-
         let flags = HS_FLAG_CASELESS | HS_FLAG_DOTALL;
 
         assert!(flags.contains(HS_FLAG_CASELESS));
@@ -458,8 +454,6 @@ pub mod tests {
 
     #[test]
     fn test_database_compile() {
-        let _ = env_logger::init();
-
         let db = BlockDatabase::compile(
             "test",
             CompileFlags::default(),
@@ -473,8 +467,6 @@ pub mod tests {
 
     #[test]
     fn test_pattern() {
-        let _ = env_logger::init();
-
         let p: Pattern = "test".parse().unwrap();
 
         assert_eq!(p.expression, "test");
@@ -514,8 +506,6 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build() {
-        let _ = env_logger::init();
-
         let p = &pattern!{"test"};
 
         assert_eq!(p.expression, "test");
@@ -537,8 +527,6 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build_with_flags() {
-        let _ = env_logger::init();
-
         let p = &pattern!{"test", flags => HS_FLAG_CASELESS};
 
         assert_eq!(p.expression, "test");
@@ -552,8 +540,6 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build() {
-        let _ = env_logger::init();
-
         let db: BlockDatabase = patterns!["test", "foo", "bar"].build().unwrap();
 
         validate_database_with_size(&db, DATABASE_SIZE);
@@ -561,8 +547,6 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build_with_flags() {
-        let _ = env_logger::init();
-
         let db: BlockDatabase = patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS | HS_FLAG_DOTALL)
             .build()
             .unwrap();

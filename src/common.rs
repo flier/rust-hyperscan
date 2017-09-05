@@ -310,8 +310,6 @@ impl RawDatabase<Streaming> {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate env_logger;
-
     use std::ptr;
 
     use re::Regex;
@@ -371,8 +369,6 @@ pub mod tests {
 
     #[test]
     fn test_database() {
-        let _ = env_logger::init();
-
         let db = BlockDatabase::compile("test", CompileFlags::default(), None).unwrap();
 
         assert!(db.as_ptr() != ptr::null_mut());
@@ -382,8 +378,6 @@ pub mod tests {
 
     #[test]
     fn test_database_serialize() {
-        let _ = env_logger::init();
-
         let db = StreamingDatabase::compile("test", CompileFlags::default(), None).unwrap();
 
         let data = db.serialize().unwrap();
@@ -393,8 +387,6 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize() {
-        let _ = env_logger::init();
-
         let db = VectoredDatabase::compile("test", CompileFlags::default(), None).unwrap();
 
         let data = db.serialize().unwrap();
@@ -406,8 +398,6 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize_at() {
-        let _ = env_logger::init();
-
         let db = BlockDatabase::compile("test", CompileFlags::default(), None).unwrap();
 
         let data = db.serialize().unwrap();

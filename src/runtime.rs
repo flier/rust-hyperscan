@@ -325,8 +325,6 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for RawStream {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate env_logger;
-
     use std::ptr;
 
     use super::super::*;
@@ -337,8 +335,6 @@ pub mod tests {
 
     #[test]
     fn test_scratch() {
-        let _ = env_logger::init();
-
         let db: BlockDatabase = pattern!{"test"}.build().unwrap();
 
         assert!(db.as_ptr() != ptr::null_mut());
@@ -362,8 +358,6 @@ pub mod tests {
 
     #[test]
     fn test_block_scan() {
-        let _ = env_logger::init();
-
         let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
             .build()
             .unwrap();
@@ -391,8 +385,6 @@ pub mod tests {
 
     #[test]
     fn test_vectored_scan() {
-        let _ = env_logger::init();
-
         let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
             .build()
             .unwrap();
@@ -422,8 +414,6 @@ pub mod tests {
 
     #[test]
     fn test_streaming_scan() {
-        let _ = env_logger::init();
-
         let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}.build().unwrap();
 
         let mut s = RawScratch::alloc(&db).unwrap();

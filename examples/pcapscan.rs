@@ -21,7 +21,6 @@
 //
 
 extern crate byteorder;
-extern crate env_logger;
 #[macro_use]
 extern crate error_chain;
 extern crate getopts;
@@ -29,6 +28,7 @@ extern crate hyperscan;
 extern crate log;
 extern crate pcap;
 extern crate pnet;
+extern crate pretty_env_logger;
 
 use std::env;
 use std::time::{Duration, Instant};
@@ -408,7 +408,7 @@ impl Benchmark {
 // Main entry point.
 #[allow(unused_must_use)]
 fn main() {
-    env_logger::init().unwrap();
+    pretty_env_logger::init().unwrap();
 
     // Process command line arguments.
     let args: Vec<String> = env::args().collect();
