@@ -51,6 +51,7 @@ impl DatabaseType for Streaming {
     const MODE: CompileMode = HS_MODE_STREAM;
     const NAME: &'static str = "Streaming";
 }
+
 impl DatabaseType for Vectored {
     const MODE: CompileMode = HS_MODE_VECTORED;
     const NAME: &'static str = "Vectored";

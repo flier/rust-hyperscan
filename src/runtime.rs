@@ -143,7 +143,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for BlockDatabase {
                 flags as u32,
                 scratch.as_mut_ptr(),
                 mem::transmute(callback),
-                mem::transmute(context)
+                mem::transmute(context),
             ));
 
             trace!(
@@ -185,7 +185,7 @@ impl<T: AsRef<[u8]>, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
                 flags as u32,
                 scratch.as_mut_ptr(),
                 mem::transmute(callback),
-                mem::transmute(context)
+                mem::transmute(context),
             ));
         }
 
@@ -258,7 +258,7 @@ impl<S: Scratch> Stream<S> for RawStream {
                 self.0,
                 scratch.as_mut_ptr(),
                 mem::transmute(callback),
-                mem::transmute(context)
+                mem::transmute(context),
             ));
         }
 
@@ -280,7 +280,7 @@ impl<S: Scratch> Stream<S> for RawStream {
                 flags,
                 scratch.as_mut_ptr(),
                 mem::transmute(callback),
-                mem::transmute(context)
+                mem::transmute(context),
             ));
         }
 
@@ -309,7 +309,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for RawStream {
                 flags as u32,
                 scratch.as_mut_ptr(),
                 mem::transmute(callback),
-                mem::transmute(context)
+                mem::transmute(context),
             ));
         }
 
@@ -326,10 +326,10 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for RawStream {
 #[cfg(test)]
 pub mod tests {
     use std::ptr;
+    use std::cell::RefCell;
 
     use super::super::*;
     use raw::AsPtr;
-    use errors::{Error, ErrorKind, HsError};
 
     const SCRATCH_SIZE: usize = 2500;
 
@@ -358,82 +358,78 @@ pub mod tests {
 
     #[test]
     fn test_block_scan() {
-        let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
+        let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS | HS_FLAG_SOM_LEFTMOST}
             .build()
             .unwrap();
         let mut s = RawScratch::alloc(&db).unwrap();
+        let matches = RefCell::new(Vec::new());
 
-        db.scan::<BlockDatabase>("foo test bar", 0, &mut s, None, None)
-            .unwrap();
+        extern "C" fn callback(_id: u32, from: u64, to: u64, _flags: u32, matches: &RefCell<Vec<(u64, u64)>>) -> u32 {
+            (*matches.borrow_mut()).push((from, to));
 
-        extern "C" fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
-            assert_eq!(id, 0);
-            assert_eq!(from, 4);
-            assert_eq!(to, 8);
-            assert_eq!(flags, 0);
-
-            1
+            0
         };
 
-        assert_matches!(
-            db.scan("foo test bar".as_bytes(), 0, &mut s, Some(callback), Some(&db))
-                .err()
-                .unwrap(),
-            Error(ErrorKind::HsError(HsError::ScanTerminated), _)
-        );
+        db.scan(
+            "foo test bar".as_bytes(),
+            0,
+            &mut s,
+            Some(callback),
+            Some(&matches),
+        ).unwrap();
+
+        assert_eq!(matches.into_inner(), vec![(4, 8)]);
     }
 
     #[test]
     fn test_vectored_scan() {
-        let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
+        let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS | HS_FLAG_SOM_LEFTMOST}
             .build()
             .unwrap();
         let mut s = RawScratch::alloc(&db).unwrap();
-
+        let matches = RefCell::new(Vec::new());
         let data = vec!["foo", "test", "bar"];
 
-        db.scan::<VectoredDatabase>(&data, 0, &mut s, None, None)
-            .unwrap();
+        extern "C" fn callback(_id: u32, from: u64, to: u64, _flags: u32, matches: &RefCell<Vec<(u64, u64)>>) -> u32 {
+            (*matches.borrow_mut()).push((from, to));
 
-        extern "C" fn callback(id: u32, from: u64, to: u64, flags: u32, _: &VectoredDatabase) -> u32 {
-            assert_eq!(id, 0);
-            assert_eq!(from, 3);
-            assert_eq!(to, 7);
-            assert_eq!(flags, 0);
-
-            1
+            0
         };
 
-        let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
+        db.scan(&data, 0, &mut s, Some(callback), Some(&matches))
+            .unwrap();
 
-        assert_matches!(
-            db.scan(&data, 0, &mut s, Some(callback), Some(&db)).err().unwrap(),
-            Error(ErrorKind::HsError(HsError::ScanTerminated), _)
-        );
+        assert_eq!(matches.into_inner(), vec![(3, 7)]);
     }
 
     #[test]
     fn test_streaming_scan() {
-        let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}.build().unwrap();
+        let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS | HS_FLAG_SOM_LEFTMOST}
+            .build()
+            .unwrap();
 
         let mut s = RawScratch::alloc(&db).unwrap();
-        let st = db.open_stream(0).unwrap();
+        let stream = db.open_stream(0).unwrap();
+        let matches = RefCell::new(Vec::new());
 
         let data = vec!["foo", "test", "bar"];
 
-        extern "C" fn callback(id: u32, from: u64, to: u64, flags: u32, _: &StreamingDatabase) -> u32 {
-            assert_eq!(id, 0);
-            assert_eq!(from, 0);
-            assert_eq!(to, 7);
-            assert_eq!(flags, 0);
+        extern "C" fn callback(_id: u32, from: u64, to: u64, _flags: u32, matches: &RefCell<Vec<(u64, u64)>>) -> u32 {
+            (*matches.borrow_mut()).push((from, to));
 
             0
         }
 
         for d in data {
-            st.scan(d, 0, &mut s, Some(callback), Some(&db)).unwrap();
+            stream
+                .scan(d, 0, &mut s, Some(callback), Some(&matches))
+                .unwrap();
         }
 
-        st.close(&mut s, Some(callback), Some(&db)).unwrap();
+        stream
+            .close(&mut s, Some(callback), Some(&matches))
+            .unwrap();
+
+        assert_eq!(matches.into_inner(), vec![(3, 7)]);
     }
 }

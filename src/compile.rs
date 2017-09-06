@@ -14,6 +14,8 @@ use api::*;
 use common::{DatabaseType, RawDatabase};
 use errors::{Error, RawCompileErrorPtr, Result};
 
+const HS_MODE_SOM_HORIZON_DEFAULT: CompileMode = HS_MODE_SOM_HORIZON_SMALL;
+
 impl Default for CompileFlags {
     fn default() -> Self {
         CompileFlags::empty()
@@ -290,6 +292,11 @@ impl<T: DatabaseType> RawDatabase<T> {
         flags: CompileFlags,
         platform: Option<&PlatformInfo>,
     ) -> Result<RawDatabase<T>> {
+        let mode = if T::MODE == HS_MODE_STREAM && flags.contains(HS_FLAG_SOM_LEFTMOST) {
+            T::MODE | HS_MODE_SOM_HORIZON_DEFAULT
+        } else {
+            T::MODE
+        };
         let expression = expression.as_ref();
         let cexpr = CString::new(expression)?;
         let mut db: RawDatabasePtr = ptr::null_mut();
@@ -300,7 +307,7 @@ impl<T: DatabaseType> RawDatabase<T> {
                 hs_compile(
                     cexpr.as_ptr() as *const i8,
                     flags.bits(),
-                    T::MODE.bits(),
+                    mode.bits(),
                     platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
                     &mut db,
                     &mut err,
@@ -357,6 +364,15 @@ impl<'a, T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for &'a [Pattern] {
     // which is passed into the match callback to identify the pattern that has matched.
     ///
     fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<RawDatabase<T>> {
+        let mode = if T::MODE == HS_MODE_STREAM &&
+            self.iter().any(|pattern| {
+                pattern.flags.contains(HS_FLAG_SOM_LEFTMOST)
+            })
+        {
+            T::MODE | HS_MODE_SOM_HORIZON_DEFAULT
+        } else {
+            T::MODE
+        };
         let mut exprs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
         let mut ids = Vec::with_capacity(self.len());
@@ -390,7 +406,7 @@ impl<'a, T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for &'a [Pattern] {
                         ids.as_ptr(),
                         ext_ptrs.as_ptr(),
                         self.len() as u32,
-                        T::MODE.bits(),
+                        mode.bits(),
                         platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
                         &mut db,
                         &mut err,
@@ -404,7 +420,7 @@ impl<'a, T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for &'a [Pattern] {
                         flags.as_ptr(),
                         ids.as_ptr(),
                         self.len() as u32,
-                        T::MODE.bits(),
+                        mode.bits(),
                         platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
                         &mut db,
                         &mut err,
