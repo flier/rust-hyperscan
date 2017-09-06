@@ -94,6 +94,71 @@
 //!     assert_eq!(matches.into_inner(), vec![(5, 9)]);
 //! }
 //! ```
+//!
+//! # Vectored Mode
+//!
+//! The vectored mode runtime API, like the block mode API, consists of a single function: `VectoredScanner::scan()`.
+//! This function accepts an array of data pointers and lengths,
+//! facilitating the scanning in sequence of a set of data blocks that are not contiguous in memory.
+//!
+//! From the caller’s perspective, this mode will produce the same matches as if the set of data blocks were
+//! (a) scanned in sequence with a series of streaming mode scans,
+//! or (b) copied in sequence into a single block of memory and then scanned in block mode.
+//!
+//! ## Examples
+//!
+//! ```
+//! #[macro_use]
+//! extern crate hyperscan;
+//!
+//! use std::cell::RefCell;
+//!
+//! use hyperscan::*;
+//!
+//! extern "C" fn callback(_id: u32, from: u64, to: u64, _flags: u32, matches: &RefCell<Vec<(u64, u64)>>) -> u32 {
+//!     (*matches.borrow_mut()).push((from, to));
+//!
+//!     0 // 0 - continue, 1 - terminate
+//! }
+//!
+//! fn main() {
+//!     // If SOM was requested for the pattern (see Start of Match),
+//!     // the from argument will be set to the leftmost possible start-offset for the match.
+//!     let pattern = &pattern!{"test", flags => HS_FLAG_CASELESS | HS_FLAG_SOM_LEFTMOST};
+//!     // Build block database
+//!     let db: VectoredDatabase = pattern.build().unwrap();
+//!     // Allocate scratch to store on-the-fly internal data.
+//!     let mut scratch = db.alloc().unwrap();
+//!     // Collect matched location (from, to)
+//!     let matches = RefCell::new(Vec::new());
+//!
+//!     db.scan(&["some", "test", "data"], 0, &mut scratch, Some(callback), Some(&matches)).unwrap();
+//!
+//!     assert_eq!(matches.into_inner(), vec![(4, 8)]);
+//! }
+//! ```
+//!
+//! # Scratch Space
+//!
+//! While scanning data, Hyperscan needs a small amount of temporary memory to store on-the-fly internal data.
+//! This amount is unfortunately too large to fit on the stack, particularly for embedded applications,
+//! and allocating memory dynamically is too expensive,
+//! so a pre-allocated “scratch” space must be provided to the scanning functions.
+//!
+//! The function `ScratchAllocator::alloc()` allocates a large enough region of scratch space
+//! to support a given database. If the application uses multiple databases,
+//! only a single scratch region is necessary: in this case, calling `Scratch::realloc()`
+//! on each database (with the same scratch pointer) will ensure that the scratch space is large enough
+//! to support scanning against any of the given databases.
+//!
+//! While the Hyperscan library is re-entrant, the use of scratch spaces is not.
+//! For example, if by design it is deemed necessary to run recursive or nested scanning
+//! (say, from the match callback function), then an additional scratch space is required for that context.
+//!
+//! In the absence of recursive scanning, only one such space is required per thread and can
+//! (and indeed should) be allocated before data scanning is to commence.
+//!
+
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy(conf_file = ".clippy.toml")))]
 
