@@ -282,8 +282,15 @@ macro_rules! patterns {
     }};
 }
 
+/// The regular expression pattern database compiler.
 pub trait DatabaseCompiler: Sized {
-    fn compile<S: AsRef<str>>(expression: S, flags: CompileFlags, platform: Option<&PlatformInfo>) -> Result<Self>;
+    /// Compile expression with flags to database
+    fn compile<S: AsRef<str>>(
+        expression: S,
+        flags: CompileFlags,
+        ext: Option<&ExpressionExt>,
+        platform: Option<&PlatformInfo>,
+    ) -> Result<Self>;
 }
 
 impl<D, T> DatabaseCompiler for D
@@ -295,7 +302,12 @@ where
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
-    fn compile<S: AsRef<str>>(expression: S, flags: CompileFlags, platform: Option<&PlatformInfo>) -> Result<Self> {
+    fn compile<S: AsRef<str>>(
+        expression: S,
+        flags: CompileFlags,
+        ext: Option<&ExpressionExt>,
+        platform: Option<&PlatformInfo>,
+    ) -> Result<Self> {
         let mode = if T::mode() == HS_MODE_STREAM && flags.contains(HS_FLAG_SOM_LEFTMOST) {
             T::mode() | HS_MODE_SOM_HORIZON_DEFAULT
         } else {
@@ -307,17 +319,40 @@ where
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(
-                hs_compile(
-                    cexpr.as_ptr() as *const i8,
-                    flags.bits(),
-                    mode.bits(),
-                    platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
-                    &mut db,
-                    &mut err,
-                ),
-                err
-            );
+            if let Some(ext) = ext {
+                let cexpr_ptrs = vec![cexpr.as_ptr() as *const i8];
+                let flags = vec![flags.bits()];
+                let ids = vec![0];
+                let ext = ext.to_raw();
+                let exts = vec![&ext as *const hs_expr_ext];
+
+                check_compile_error!(
+                    hs_compile_ext_multi(
+                        cexpr_ptrs.as_ptr(),
+                        flags.as_ptr(),
+                        ids.as_ptr(),
+                        exts.as_ptr(),
+                        1,
+                        mode.bits(),
+                        platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
+                        &mut db,
+                        &mut err,
+                    ),
+                    err
+                );
+            } else {
+                check_compile_error!(
+                    hs_compile(
+                        cexpr.as_ptr() as *const i8,
+                        flags.bits(),
+                        mode.bits(),
+                        platform.map(|p| p.as_ptr()).unwrap_or_else(ptr::null),
+                        &mut db,
+                        &mut err,
+                    ),
+                    err
+                );
+            }
         }
 
         debug!(
@@ -340,7 +375,7 @@ impl<D: Database<DatabaseType = T> + From<RawDatabase<T>>, T: DatabaseType> Data
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
     fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<D> {
-        D::compile(&self.expression, self.flags, platform).map(|db| db.into())
+        D::compile(&self.expression, self.flags, self.ext.as_ref(), platform).map(|db| db.into())
     }
 }
 
@@ -479,11 +514,7 @@ pub mod tests {
 
     #[test]
     fn test_database_compile() {
-        let db = BlockDatabase::compile(
-            "test",
-            CompileFlags::default(),
-            PlatformInfo::populate().ok().as_ref(),
-        ).unwrap();
+        let db = BlockDatabase::compile("test", CompileFlags::default(), None, None).unwrap();
 
         assert!(db.as_ptr() != ptr::null_mut());
 
