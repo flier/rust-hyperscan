@@ -12,6 +12,7 @@ use hexplay::HexViewBuilder;
 use api::{BlockScanner, DatabaseBuilder, ScratchAllocator};
 use common::BlockDatabase;
 use compile::Pattern;
+use runtime::RawScratch;
 use constants::*;
 use errors::{Error, ErrorKind, HsError, Result};
 
@@ -50,6 +51,7 @@ use errors::{Error, ErrorKind, HsError, Result};
 pub struct Regex {
     pattern: Pattern,
     db: Rc<BlockDatabase>,
+    s: RefCell<RawScratch>,
 }
 
 impl fmt::Display for Regex {
@@ -78,8 +80,9 @@ impl Regex {
         pattern.flags |= HS_FLAG_SOM_LEFTMOST | HS_FLAG_UTF8;
 
         let db: Rc<BlockDatabase> = Rc::new(pattern.build()?);
+        let s = RefCell::new(db.alloc()?);
 
-        Ok(Regex { pattern, db })
+        Ok(Regex { pattern, db, s })
     }
 
     /// Returns true if and only if the regex matches the string given.
@@ -288,32 +291,31 @@ impl Regex {
     /// match when `start == 0`.
     #[doc(hidden)]
     pub fn find_at<'t>(&self, text: &'t str, start: usize) -> Option<Match<'t>> {
-        self.db.alloc().ok().and_then(|mut s| {
-            let text = &text[start..];
-            let m = RefCell::new(Match::new(text));
+        let text = &text[start..];
+        let mut s = self.s.borrow_mut();
+        let m = RefCell::new(Match::new(text));
 
-            match self.db.scan(
-                text,
-                0,
-                &mut s,
-                Some(Match::short_matched),
-                Some(&m),
-            ) {
-                Ok(_) |
-                Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
-                    if m.borrow().is_matched() {
-                        Some(m.into_inner())
-                    } else {
-                        None
-                    }
-                }
-                Err(err) => {
-                    warn!("scan failed, {}", err);
-
+        match self.db.scan(
+            text,
+            0,
+            &mut *s,
+            Some(Match::short_matched),
+            Some(&m),
+        ) {
+            Ok(_) |
+            Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
+                if m.borrow().is_matched() {
+                    Some(m.into_inner())
+                } else {
                     None
                 }
             }
-        })
+            Err(err) => {
+                warn!("scan failed, {}", err);
+
+                None
+            }
+        }
     }
 }
 
@@ -398,40 +400,39 @@ impl<'r, 't> Iterator for Matches<'r, 't> {
                     .finish()
             );
 
-            self.re.db.alloc().ok().and_then(|mut s| {
-                let m = RefCell::new(Match::new(self.text));
+            let mut s = self.re.s.borrow_mut();
+            let m = RefCell::new(Match::new(self.text));
 
-                match self.re.db.scan(
-                    &self.text[offset..],
-                    0,
-                    &mut s,
-                    Some(Match::short_matched),
-                    Some(&m),
-                ) {
-                    Ok(_) |
-                    Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
-                        let mut m = m.into_inner();
+            match self.re.db.scan(
+                &self.text[offset..],
+                0,
+                &mut *s,
+                Some(Match::short_matched),
+                Some(&m),
+            ) {
+                Ok(_) |
+                Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
+                    let mut m = m.into_inner();
 
-                        if m.is_matched() {
-                            m.start += offset;
-                            m.end += offset;
+                    if m.is_matched() {
+                        m.start += offset;
+                        m.end += offset;
 
-                            trace!("scan matched, {:?}", m);
+                        trace!("scan matched, {:?}", m);
 
-                            *self.m.borrow_mut() = Some(m.clone());
+                        *self.m.borrow_mut() = Some(m.clone());
 
-                            Some(m)
-                        } else {
-                            None
-                        }
-                    }
-                    Err(err) => {
-                        warn!("scan failed, {}", err);
-
+                        Some(m)
+                    } else {
                         None
                     }
                 }
-            })
+                Err(err) => {
+                    warn!("scan failed, {}", err);
+
+                    None
+                }
+            }
         })
     }
 }
@@ -621,15 +622,26 @@ impl RegexBuilder {
         }
 
         let db: Rc<BlockDatabase> = Rc::new(pattern.build()?);
+        let s = RefCell::new(db.alloc()?);
 
-        Ok(Regex { pattern, db })
+        Ok(Regex { pattern, db, s })
     }
 }
 
+/// Match multiple (possibly overlapping) regular expressions in a single scan.
+///
+/// A regex set corresponds to the union of two or more regular expressions.
+/// That is, a regex set will match text where at least one of its
+/// constituent regular expressions matches. A regex set as its formulated here
+/// provides a touch more power: it will also report *which* regular
+/// expressions in the set match. Indeed, this is the key difference between
+/// regex sets and a single `Regex` with many alternates, since only one
+/// alternate can match at a time.
 #[derive(Clone, Debug)]
 pub struct RegexSet {
     patterns: Vec<Pattern>,
     db: Rc<BlockDatabase>,
+    s: RefCell<RawScratch>,
 }
 
 impl RegexSet {
@@ -720,21 +732,20 @@ impl RegexSet {
     /// assert!(matches.matched(6));
     /// ```
     pub fn matches(&self, text: &str) -> SetMatches {
+        let mut s = self.s.borrow_mut();
         let matches = RefCell::new(vec![None; self.patterns.len()]);
 
-        if let Some(mut s) = self.db.alloc().ok() {
-            match self.db.scan(
-                text,
-                0,
-                &mut s,
-                Some(Self::matched),
-                Some(&matches),
-            ) {
-                Ok(_) |
-                Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {}
-                Err(err) => {
-                    warn!("scan failed, {}", err);
-                }
+        match self.db.scan(
+            text,
+            0,
+            &mut *s,
+            Some(Self::matched),
+            Some(&matches),
+        ) {
+            Ok(_) |
+            Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {}
+            Err(err) => {
+                warn!("scan failed, {}", err);
             }
         }
 
@@ -963,7 +974,8 @@ impl RegexSetBuilder {
         }
 
         let db: Rc<BlockDatabase> = Rc::new(patterns.build()?);
+        let s = RefCell::new(db.alloc()?);
 
-        Ok(RegexSet { patterns, db })
+        Ok(RegexSet { patterns, db, s })
     }
 }
