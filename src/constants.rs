@@ -66,6 +66,7 @@ pub const HS_SCRATCH_IN_USE: HsError = -10;
 pub const HS_ARCH_ERROR: HsError = -11;
 
 bitflags! {
+    #[doc="Compile mode flags"]
     pub struct CompileMode: u32 {
         #[doc="Compiler mode flag: Block scan (non-streaming) database."]
         const HS_MODE_BLOCK = 1;
@@ -91,6 +92,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[doc="Pattern flags"]
     pub struct CompileFlags: u32 {
         #[doc="Compile flag: Set case-insensitive matching."]
         const HS_FLAG_CASELESS = 1;
@@ -122,6 +124,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[doc="CPU feature support flags"]
     pub struct CpuFeatures: u64 {
         #[doc="Setting this flag indicates that the target platform supports AVX2 instructions."]
         const HS_CPU_FEATURES_AVX2 = 1 << 2;
@@ -131,6 +134,7 @@ bitflags! {
     }
 }
 
+/// Tuning flags
 pub type TuneFamily = u32;
 
 /// Tuning Parameter - Generic
@@ -188,6 +192,7 @@ pub const HS_TUNE_FAMILY_SKX: TuneFamily = 7;
 pub const HS_TUNE_FAMILY_GLM: TuneFamily = 8;
 
 bitflags! {
+    #[doc="Expression extension use the flags to indicate which fields are used."]
     pub struct ExpressionExtFlags : u64 {
         #[doc="Flag indicating that the hs_expr_ext::min_offset field is used."]
         const HS_EXT_FLAG_MIN_OFFSET = 1;
