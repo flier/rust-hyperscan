@@ -147,7 +147,6 @@ impl Regex {
         Matches::new(self, text)
     }
 
-
     /// Returns an iterator of substrings of `text` delimited by a match of the
     /// regular expression. Namely, each element of the iterator corresponds to
     /// text that *isn't* matched by the regular expression.
@@ -195,7 +194,6 @@ impl Regex {
             n: limit,
         }
     }
-
 
     /// Replaces the leftmost-first match with the replacement provided.
     /// The replacement can be a regular string (where `$N` and `$name` are
@@ -291,12 +289,11 @@ impl Regex {
     /// match when `start == 0`.
     #[doc(hidden)]
     pub fn find_at<'t>(&self, text: &'t str, start: usize) -> Option<Match<'t>> {
-        let text = &text[start..];
         let mut s = self.s.borrow_mut();
         let m = RefCell::new(Match::new(text));
 
         match self.db.scan(
-            text,
+            &text[start..],
             0,
             &mut *s,
             Some(Match::short_matched),
@@ -305,7 +302,7 @@ impl Regex {
             Ok(_) |
             Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
                 if m.borrow().is_matched() {
-                    Some(m.into_inner())
+                    Some(m.into_inner().seek(start))
                 } else {
                     None
                 }
@@ -330,7 +327,7 @@ impl Regex {
 /// Match represents a single match of a regex in a haystack.
 ///
 /// The lifetime parameter 't refers to the lifetime of the matched text.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Match<'t> {
     text: &'t str,
     start: usize,
@@ -338,6 +335,7 @@ pub struct Match<'t> {
 }
 
 impl<'t> Match<'t> {
+    /// Creates a new match from the given haystack.
     fn new(text: &'t str) -> Match<'t> {
         Match {
             text: text,
@@ -350,13 +348,17 @@ impl<'t> Match<'t> {
         self.end > self.start
     }
 
-    fn update(&mut self, from: u64, to: u64) {
-        self.start = from as usize;
-        self.end = to as usize;
+    fn seek(mut self, offset: usize) -> Self {
+        self.start += offset;
+        self.end += offset;
+        self
     }
 
     extern "C" fn short_matched(_id: u32, from: u64, to: u64, _flags: u32, m: &RefCell<Match>) -> u32 {
-        (*m.borrow_mut()).update(from, to);
+        let mut m = m.borrow_mut();
+
+        (*m).start = from as usize;
+        (*m).end = to as usize;
 
         1
     }
@@ -377,6 +379,19 @@ impl<'t> Match<'t> {
     }
 }
 
+impl<'t> From<Match<'t>> for &'t str {
+    fn from(m: Match<'t>) -> &'t str {
+        m.as_str()
+    }
+}
+
+/// An iterator over all non-overlapping matches for a particular string.
+///
+/// The iterator yields a `Match` value. The iterator stops when no more
+/// matches can be found.
+///
+/// `'r` is the lifetime of the compiled regular expression and `'t` is the
+/// lifetime of the matched string.
 #[derive(Debug)]
 pub struct Matches<'r, 't> {
     re: &'r Regex,
@@ -412,13 +427,10 @@ impl<'r, 't> Iterator for Matches<'r, 't> {
             ) {
                 Ok(_) |
                 Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
-                    let mut m = m.into_inner();
+                    let m = m.into_inner();
 
                     if m.is_matched() {
-                        m.start += offset;
-                        m.end += offset;
-
-                        trace!("scan matched, {:?}", m);
+                        let m = m.seek(offset);
 
                         *self.m.borrow_mut() = Some(m.clone());
 
@@ -733,14 +745,14 @@ impl RegexSet {
     /// ```
     pub fn matches(&self, text: &str) -> SetMatches {
         let mut s = self.s.borrow_mut();
-        let matches = RefCell::new(vec![None; self.patterns.len()]);
+        let m = RefCell::new(vec![None; self.patterns.len()]);
 
         match self.db.scan(
             text,
             0,
             &mut *s,
             Some(Self::matched),
-            Some(&matches),
+            Some(&m),
         ) {
             Ok(_) |
             Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {}
@@ -749,7 +761,7 @@ impl RegexSet {
             }
         }
 
-        SetMatches { matches: matches.into_inner() }
+        SetMatches { matches: m.into_inner() }
     }
 
     extern "C" fn matched(
@@ -759,11 +771,11 @@ impl RegexSet {
         _flags: u32,
         data: &RefCell<Vec<Option<(usize, usize)>>>,
     ) -> u32 {
-        trace!("matched #{} @ [{}..{}]", id, from, to);
-
-        (*data.borrow_mut()).get_mut(id as usize).map(|m| {
+        if let Some(m) = (*data.borrow_mut()).get_mut(id as usize) {
             *m = Some((from as usize, to as usize))
-        });
+        } else {
+            warn!("missing pattern id #{}", id)
+        }
 
         0
     }
