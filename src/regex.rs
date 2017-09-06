@@ -294,7 +294,7 @@ impl Regex {
 
             match self.db.scan(
                 text,
-                self.pattern.flags.bits(),
+                0,
                 &mut s,
                 Some(Match::short_matched),
                 Some(&m),
@@ -403,7 +403,7 @@ impl<'r, 't> Iterator for Matches<'r, 't> {
 
                 match self.re.db.scan(
                     &self.text[offset..],
-                    self.re.pattern.flags.bits(),
+                    0,
                     &mut s,
                     Some(Match::short_matched),
                     Some(&m),
