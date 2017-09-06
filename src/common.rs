@@ -31,7 +31,14 @@ pub enum Block {}
 
 /// Streaming database.
 #[derive(Debug)]
-pub enum Streaming {
+pub enum Streaming {}
+
+/// Vectored scanning database.
+#[derive(Debug)]
+pub enum Vectored {}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum StreamMode {
     /// Streaming database use limited precision to track start of match offsets in stream state.
     ///
     /// This mode will use less stream state than `MediumStreaming` and
@@ -49,25 +56,21 @@ pub enum Streaming {
     Large,
 }
 
-impl Default for Streaming {
+impl Default for StreamMode {
     fn default() -> Self {
-        Streaming::Small
+        StreamMode::Small
     }
 }
 
-impl From<Streaming> for CompileMode {
-    fn from(s: Streaming) -> Self {
-        match s {
-            Streaming::Small => HS_MODE_SOM_HORIZON_SMALL,
-            Streaming::Medium => HS_MODE_SOM_HORIZON_MEDIUM,
-            Streaming::Large => HS_MODE_SOM_HORIZON_LARGE,
+impl From<StreamMode> for CompileMode {
+    fn from(mode: StreamMode) -> Self {
+        match mode {
+            StreamMode::Small => HS_MODE_SOM_HORIZON_SMALL,
+            StreamMode::Medium => HS_MODE_SOM_HORIZON_MEDIUM,
+            StreamMode::Large => HS_MODE_SOM_HORIZON_LARGE,
         }
     }
 }
-
-/// Vectored scanning database.
-#[derive(Debug)]
-pub enum Vectored {}
 
 impl DatabaseType for Block {
     fn mode() -> CompileMode {
@@ -111,12 +114,6 @@ impl<T: DatabaseType> fmt::Debug for RawDatabase<T> {
 
 macro_rules! impl_database {
     ($name:ident, $mode:ty) => {
-        impl From<RawDatabase<$mode>> for $name {
-            fn from(db: RawDatabase<$mode>) -> Self {
-                $name(db)
-            }
-        }
-
         impl ::std::ops::Deref for $name {
             type Target = RawDatabase<$mode>;
 
@@ -139,13 +136,31 @@ macro_rules! impl_database {
 #[derive(Debug)]
 pub struct BlockDatabase(RawDatabase<Block>);
 
+impl From<RawDatabase<Block>> for BlockDatabase {
+    fn from(db: RawDatabase<Block>) -> Self {
+        BlockDatabase(db)
+    }
+}
+
 /// Streaming database.
 #[derive(Debug)]
-pub struct StreamingDatabase(RawDatabase<Streaming>);
+pub struct StreamingDatabase(RawDatabase<Streaming>, StreamMode);
+
+impl From<RawDatabase<Streaming>> for StreamingDatabase {
+    fn from(db: RawDatabase<Streaming>) -> Self {
+        StreamingDatabase(db, StreamMode::default())
+    }
+}
 
 /// Vectored scanning database.
 #[derive(Debug)]
 pub struct VectoredDatabase(RawDatabase<Vectored>);
+
+impl From<RawDatabase<Vectored>> for VectoredDatabase {
+    fn from(db: RawDatabase<Vectored>) -> Self {
+        VectoredDatabase(db)
+    }
+}
 
 impl_database!(BlockDatabase, Block);
 impl_database!(StreamingDatabase, Streaming);
@@ -375,6 +390,14 @@ impl<T: DatabaseType> Drop for RawDatabase<T> {
 }
 
 impl StreamingDatabase {
+    pub fn stream_mode(&self) -> StreamMode {
+        self.1
+    }
+
+    pub fn set_stream_mode(&mut self, mode: StreamMode) {
+        self.1 = mode
+    }
+
     pub fn stream_size(&self) -> Result<usize> {
         let mut size: usize = 0;
 

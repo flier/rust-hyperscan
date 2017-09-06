@@ -120,8 +120,8 @@ pub mod regex;
 
 pub use constants::*;
 pub use api::*;
-pub use common::{valid_platform, version, Block, BlockDatabase, RawDatabase, Streaming, StreamingDatabase, Vectored,
-                 VectoredDatabase};
+pub use common::{valid_platform, version, StreamMode, Block, BlockDatabase, RawDatabase, Streaming, StreamingDatabase,
+                 Vectored, VectoredDatabase};
 pub use compile::{Pattern, Patterns, DatabaseCompiler};
 pub use runtime::{RawScratch, RawStream};
 
