@@ -11,7 +11,7 @@ use regex_syntax;
 use raw::*;
 use constants::*;
 use api::*;
-use common::{DatabaseType, RawDatabase};
+use common::RawDatabase;
 use errors::{Error, RawCompileErrorPtr, Result};
 
 const HS_MODE_SOM_HORIZON_DEFAULT: CompileMode = HS_MODE_SOM_HORIZON_SMALL;
@@ -282,20 +282,24 @@ macro_rules! patterns {
     }};
 }
 
-impl<T: DatabaseType> RawDatabase<T> {
+pub trait DatabaseCompiler: Sized {
+    fn compile<S: AsRef<str>>(expression: S, flags: CompileFlags, platform: Option<&PlatformInfo>) -> Result<Self>;
+}
+
+impl<D, T> DatabaseCompiler for D
+where
+    D: From<RawDatabase<T>> + Database<DatabaseType = T>,
+    T: DatabaseType,
+{
     /// The basic regular expression compiler.
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
-    pub fn compile<S: AsRef<str>>(
-        expression: S,
-        flags: CompileFlags,
-        platform: Option<&PlatformInfo>,
-    ) -> Result<RawDatabase<T>> {
-        let mode = if T::MODE == HS_MODE_STREAM && flags.contains(HS_FLAG_SOM_LEFTMOST) {
-            T::MODE | HS_MODE_SOM_HORIZON_DEFAULT
+    fn compile<S: AsRef<str>>(expression: S, flags: CompileFlags, platform: Option<&PlatformInfo>) -> Result<Self> {
+        let mode = if T::mode() == HS_MODE_STREAM && flags.contains(HS_FLAG_SOM_LEFTMOST) {
+            T::mode() | HS_MODE_SOM_HORIZON_DEFAULT
         } else {
-            T::MODE
+            T::mode()
         };
         let expression = expression.as_ref();
         let cexpr = CString::new(expression)?;
@@ -320,27 +324,27 @@ impl<T: DatabaseType> RawDatabase<T> {
             "pattern `/{}/{}` compiled to {} database {:p}",
             expression,
             flags,
-            T::NAME,
+            T::name(),
             db
         );
 
-        Ok(RawDatabase::from_raw(db))
+        Ok(RawDatabase::from_raw(db).into())
     }
 }
 
-impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Pattern {
+impl<D: Database<DatabaseType = T> + From<RawDatabase<T>>, T: DatabaseType> DatabaseBuilder<D> for Pattern {
     ///
     /// The basic regular expression compiler.
     ///
     /// / This is the function call with which an expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
-    fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<RawDatabase<T>> {
-        RawDatabase::compile(&self.expression, self.flags, platform)
+    fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<D> {
+        D::compile(&self.expression, self.flags, platform).map(|db| db.into())
     }
 }
 
-impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Vec<Pattern> {
+impl<D: Database<DatabaseType = T> + From<RawDatabase<T>>, T: DatabaseType> DatabaseBuilder<D> for Vec<Pattern> {
     ///
     /// The multiple regular expression compiler.
     ///
@@ -349,12 +353,12 @@ impl<T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for Vec<Pattern> {
     /// Each expression can be labelled with a unique integer
     // which is passed into the match callback to identify the pattern that has matched.
     ///
-    fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<RawDatabase<T>> {
+    fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<D> {
         self.as_slice().build_for_platform(platform)
     }
 }
 
-impl<'a, T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for &'a [Pattern] {
+impl<'a, D: Database<DatabaseType = T> + From<RawDatabase<T>>, T: DatabaseType> DatabaseBuilder<D> for &'a [Pattern] {
     ///
     /// The multiple regular expression compiler.
     ///
@@ -363,15 +367,15 @@ impl<'a, T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for &'a [Pattern] {
     /// Each expression can be labelled with a unique integer
     // which is passed into the match callback to identify the pattern that has matched.
     ///
-    fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<RawDatabase<T>> {
-        let mode = if T::MODE == HS_MODE_STREAM &&
+    fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<D> {
+        let mode = if T::mode() == HS_MODE_STREAM &&
             self.iter().any(|pattern| {
                 pattern.flags.contains(HS_FLAG_SOM_LEFTMOST)
             })
         {
-            T::MODE | HS_MODE_SOM_HORIZON_DEFAULT
+            T::mode() | HS_MODE_SOM_HORIZON_DEFAULT
         } else {
-            T::MODE
+            T::mode()
         };
         let mut exprs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
@@ -433,11 +437,11 @@ impl<'a, T: DatabaseType> DatabaseBuilder<RawDatabase<T>> for &'a [Pattern] {
         debug!(
             "patterns [{}] compiled to {} database {:p}",
             Vec::from_iter(self.iter().map(|p| format!("`{}`", p))).join(", "),
-            T::NAME,
+            T::name(),
             db
         );
 
-        Ok(RawDatabase::from_raw(db))
+        Ok(RawDatabase::from_raw(db).into())
     }
 }
 

@@ -6,7 +6,7 @@ use std::os::raw::c_uint;
 use raw::*;
 use api::*;
 use errors::Result;
-use common::{BlockDatabase, DatabaseType, RawDatabase, StreamingDatabase, VectoredDatabase};
+use common::{BlockDatabase, StreamingDatabase, VectoredDatabase};
 
 /// A large enough region of scratch space to support a given database.
 ///
@@ -24,7 +24,10 @@ impl RawScratch {
     /// This is required for runtime use, and one scratch space per thread,
     /// or concurrent caller, is required.
     ///
-    fn alloc<T: Database>(db: &T) -> Result<RawScratch> {
+    fn alloc<D>(db: &D) -> Result<RawScratch>
+    where
+        D: AsPtr<Type = RawDatabaseType> + fmt::Debug,
+    {
         let mut s: RawScratchPtr = ptr::null_mut();
 
         unsafe {
@@ -32,10 +35,9 @@ impl RawScratch {
         }
 
         trace!(
-            "allocated scratch at {:p} for {} database {:p}",
+            "allocated scratch at {:p} for {:?}",
             s,
-            db.database_name(),
-            db.as_ptr(),
+            db,
         );
 
         Ok(RawScratch(s))
@@ -96,23 +98,28 @@ impl Scratch for RawScratch {
     }
 
 
-    fn realloc<T: Database>(&mut self, db: &T) -> Result<&Self> {
+    fn realloc<D>(&mut self, db: &D) -> Result<&Self>
+    where
+        D: AsPtr<Type = RawDatabaseType> + fmt::Debug,
+    {
         unsafe {
             check_hs_error!(hs_alloc_scratch(db.as_ptr(), &mut self.0));
         }
 
         trace!(
-            "reallocated scratch {:p} for {} database {:p}",
+            "reallocated scratch {:p} for {:?}",
             self.0,
-            db.database_name(),
-            db.as_ptr(),
+            db,
         );
 
         Ok(self)
     }
 }
 
-impl<T: DatabaseType> ScratchAllocator<RawScratch> for RawDatabase<T> {
+impl<D> ScratchAllocator<RawScratch> for D
+where
+    D: AsPtr<Type = RawDatabaseType> + fmt::Debug,
+{
     fn alloc(&self) -> Result<RawScratch> {
         RawScratch::alloc(self)
     }
@@ -149,7 +156,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for BlockDatabase {
             trace!(
                 "block scan {} bytes with {} database at {:p}",
                 bytes.len(),
-                self.database_name(),
+                self.name(),
                 self.as_ptr(),
             )
         }
@@ -193,7 +200,7 @@ impl<T: AsRef<[u8]>, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
             "vectored scan {} bytes in {} parts with {} database at {:p}",
             lens.iter().fold(0, |sum, len| sum + len),
             lens.len(),
-            self.database_name(),
+            self.name(),
             self.as_ptr(),
         );
 
@@ -212,7 +219,7 @@ impl StreamingScanner<RawStream, RawScratch> for StreamingDatabase {
         trace!(
             "stream opened at {:p} for {} database at {:p}",
             id,
-            self.database_name(),
+            self.name(),
             self.as_ptr(),
         );
 

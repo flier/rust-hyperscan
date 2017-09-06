@@ -1,4 +1,5 @@
 use std::mem;
+use std::fmt;
 
 use libc;
 
@@ -6,24 +7,37 @@ use constants::*;
 use raw::*;
 use errors::Result;
 
+/// Compile mode
+pub trait DatabaseType {
+    fn mode() -> CompileMode;
+
+    fn name() -> &'static str;
+}
+
 /// Raw `Database` type
 pub type RawDatabaseType = hs_database_t;
 /// Raw `Database` pointer
 pub type RawDatabasePtr = *mut hs_database_t;
 
 /// A Hyperscan pattern database.
-pub trait Database: AsPtr<Type = RawDatabaseType> {
+pub trait Database {
+    type DatabaseType: DatabaseType;
+
     /// Provides the id of compiled mode of the given database.
-    fn database_mode(&self) -> CompileMode;
+    fn mode(&self) -> CompileMode {
+        Self::DatabaseType::mode()
+    }
 
     /// Provides the name of compiled mode of the given database.
-    fn database_name(&self) -> &'static str;
+    fn name(&self) -> &'static str {
+        Self::DatabaseType::name()
+    }
 
     /// Provides the size of the given database in bytes.
-    fn database_size(&self) -> Result<usize>;
+    fn size(&self) -> Result<usize>;
 
     /// Utility function providing information about a database.
-    fn database_info(&self) -> Result<String>;
+    fn info(&self) -> Result<String>;
 }
 
 /// A pattern database can be serialized to a stream of bytes.
@@ -47,9 +61,9 @@ where
 
 /// A pattern database was serialized to a stream of bytes.
 pub trait SerializedDatabase: AsRef<[u8]> {
-    fn database_size(&self) -> Result<usize>;
+    fn size(&self) -> Result<usize>;
 
-    fn database_info(&self) -> Result<String>;
+    fn info(&self) -> Result<String>;
 }
 
 /// Raw `PlatformInfo` type
@@ -174,7 +188,9 @@ pub trait Scratch: AsMutPtr<Type = RawScratchType> + Clone {
     fn size(&self) -> Result<usize>;
 
     /// Reallocate a "scratch" space for use by Hyperscan.
-    fn realloc<T: Database>(&mut self, db: &T) -> Result<&Self>;
+    fn realloc<D>(&mut self, db: &D) -> Result<&Self>
+    where
+        D: AsPtr<Type = RawDatabaseType> + fmt::Debug;
 }
 
 /// `Scratch` allocator

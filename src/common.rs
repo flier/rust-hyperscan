@@ -1,6 +1,7 @@
 use std::ptr;
 use std::fmt;
 use std::ffi::CStr;
+use std::ops::Deref;
 use std::os::raw::c_char;
 use std::slice;
 use std::borrow::Cow;
@@ -9,7 +10,7 @@ use std::marker::PhantomData;
 use libc;
 
 use raw::*;
-use api::{Database, RawDatabasePtr, RawDatabaseType, SerializableDatabase, SerializedDatabase};
+use api::{Database, DatabaseType, RawDatabasePtr, RawDatabaseType, SerializableDatabase, SerializedDatabase};
 use constants::*;
 use errors::Result;
 
@@ -24,37 +25,76 @@ pub fn valid_platform() -> Result<()> {
     Ok(())
 }
 
-/// Compile mode
-pub trait DatabaseType {
-    const MODE: CompileMode;
-    const NAME: &'static str;
-}
-
 /// Block scan (non-streaming) database.
 #[derive(Debug)]
 pub enum Block {}
 
 /// Streaming database.
 #[derive(Debug)]
-pub enum Streaming {}
+pub enum Streaming {
+    /// Streaming database use limited precision to track start of match offsets in stream state.
+    ///
+    /// This mode will use less stream state than `MediumStreaming` and
+    /// will limit start of match accuracy to offsets within 2^16 bytes of the end of match offset reported.
+    Small,
+    /// Streaming database use medium precision to track start of match offsets in stream state.
+    ///
+    /// This mode will use less stream state than `LargeStreaming` and
+    /// will limit start of match accuracy to offsets within 2^32 bytes of the end of match offset reported.
+    Medium,
+    /// Streaming database use full precision to track start of match offsets in stream state.
+    ///
+    /// This mode will use the most stream state per pattern,
+    /// but will always return an accurate start of match offset regardless of how far back in the past it was found.
+    Large,
+}
+
+impl Default for Streaming {
+    fn default() -> Self {
+        Streaming::Small
+    }
+}
+
+impl From<Streaming> for CompileMode {
+    fn from(s: Streaming) -> Self {
+        match s {
+            Streaming::Small => HS_MODE_SOM_HORIZON_SMALL,
+            Streaming::Medium => HS_MODE_SOM_HORIZON_MEDIUM,
+            Streaming::Large => HS_MODE_SOM_HORIZON_LARGE,
+        }
+    }
+}
 
 /// Vectored scanning database.
 #[derive(Debug)]
 pub enum Vectored {}
 
 impl DatabaseType for Block {
-    const MODE: CompileMode = HS_MODE_BLOCK;
-    const NAME: &'static str = "Block";
+    fn mode() -> CompileMode {
+        HS_MODE_BLOCK
+    }
+
+    fn name() -> &'static str {
+        "Block"
+    }
 }
 
 impl DatabaseType for Streaming {
-    const MODE: CompileMode = HS_MODE_STREAM;
-    const NAME: &'static str = "Streaming";
+    fn mode() -> CompileMode {
+        HS_MODE_STREAM
+    }
+    fn name() -> &'static str {
+        "Streaming"
+    }
 }
 
 impl DatabaseType for Vectored {
-    const MODE: CompileMode = HS_MODE_VECTORED;
-    const NAME: &'static str = "Vectored";
+    fn mode() -> CompileMode {
+        HS_MODE_VECTORED
+    }
+    fn name() -> &'static str {
+        "Vectored"
+    }
 }
 
 /// A compiled pattern database that can then be used to scan data.
@@ -65,21 +105,56 @@ pub struct RawDatabase<T: DatabaseType> {
 
 impl<T: DatabaseType> fmt::Debug for RawDatabase<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RawDatabase<{}>{{db: {:p}}}", T::NAME, self.db)
+        write!(f, "RawDatabase<{}>{{db: {:p}}}", T::name(), self.db)
     }
 }
 
+macro_rules! impl_database {
+    ($name:ident, $mode:ty) => {
+        impl From<RawDatabase<$mode>> for $name {
+            fn from(db: RawDatabase<$mode>) -> Self {
+                $name(db)
+            }
+        }
+
+        impl ::std::ops::Deref for $name {
+            type Target = RawDatabase<$mode>;
+
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        impl AsPtr for $name {
+            type Type = RawDatabaseType;
+
+            fn as_ptr(&self) -> *const Self::Type {
+                self.0.as_ptr()
+            }
+        }
+    };
+}
+
 /// Block scan (non-streaming) database.
-pub type BlockDatabase = RawDatabase<Block>;
+#[derive(Debug)]
+pub struct BlockDatabase(RawDatabase<Block>);
+
 /// Streaming database.
-pub type StreamingDatabase = RawDatabase<Streaming>;
+#[derive(Debug)]
+pub struct StreamingDatabase(RawDatabase<Streaming>);
+
 /// Vectored scanning database.
-pub type VectoredDatabase = RawDatabase<Vectored>;
+#[derive(Debug)]
+pub struct VectoredDatabase(RawDatabase<Vectored>);
+
+impl_database!(BlockDatabase, Block);
+impl_database!(StreamingDatabase, Streaming);
+impl_database!(VectoredDatabase, Vectored);
 
 impl<T: DatabaseType> RawDatabase<T> {
     /// Constructs a compiled pattern database from a raw pointer.
     pub fn from_raw(db: RawDatabasePtr) -> RawDatabase<T> {
-        trace!("construct {} database {:p}", T::NAME, db);
+        trace!("construct {} database {:p}", T::name(), db);
 
         RawDatabase {
             db: db,
@@ -92,7 +167,7 @@ impl<T: DatabaseType> RawDatabase<T> {
         unsafe {
             check_hs_error!(hs_free_database(self.db));
 
-            trace!("free {} database {:p}", T::NAME, self.db);
+            trace!("free {} database {:p}", T::name(), self.db);
 
             self.db = ptr::null_mut();
 
@@ -109,16 +184,14 @@ impl<T: DatabaseType> AsPtr for RawDatabase<T> {
     }
 }
 
-impl<T: DatabaseType> Database for RawDatabase<T> {
-    fn database_mode(&self) -> CompileMode {
-        T::MODE
-    }
+impl<D, T> Database for D
+where
+    D: Deref<Target = RawDatabase<T>>,
+    T: DatabaseType,
+{
+    type DatabaseType = T;
 
-    fn database_name(&self) -> &'static str {
-        T::NAME
-    }
-
-    fn database_size(&self) -> Result<usize> {
+    fn size(&self) -> Result<usize> {
         let mut size: usize = 0;
 
         unsafe {
@@ -127,7 +200,7 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
 
         debug!(
             "database size of {} database {:p}: {}",
-            T::NAME,
+            T::name(),
             self.db,
             size
         );
@@ -135,7 +208,7 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
         Ok(size)
     }
 
-    fn database_info(&self) -> Result<String> {
+    fn info(&self) -> Result<String> {
         let mut p: *mut c_char = ptr::null_mut();
 
         unsafe {
@@ -145,7 +218,7 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
 
             debug!(
                 "database info of {} database {:p}: {:?}",
-                T::NAME,
+                T::name(),
                 self.db,
                 result
             );
@@ -159,7 +232,7 @@ impl<T: DatabaseType> Database for RawDatabase<T> {
 
 /// A pattern database was serialized to a stream of bytes.
 impl<T: AsRef<[u8]>> SerializedDatabase for T {
-    fn database_size(&self) -> Result<usize> {
+    fn size(&self) -> Result<usize> {
         let buf = self.as_ref();
         let mut size: usize = 0;
 
@@ -174,7 +247,7 @@ impl<T: AsRef<[u8]>> SerializedDatabase for T {
         Ok(size)
     }
 
-    fn database_info(&self) -> Result<String> {
+    fn info(&self) -> Result<String> {
         let buf = self.as_ref();
         let mut p: *mut c_char = ptr::null_mut();
 
@@ -223,7 +296,11 @@ impl RawSerializedDatabase {
     }
 }
 
-impl<T: DatabaseType> SerializableDatabase for RawDatabase<T> {
+impl<D, T> SerializableDatabase for D
+where
+    D: Deref<Target = RawDatabase<T>> + From<RawDatabase<T>>,
+    T: DatabaseType,
+{
     type Target = RawSerializedDatabase;
 
     fn serialize(&self) -> Result<Self::Target> {
@@ -235,7 +312,7 @@ impl<T: DatabaseType> SerializableDatabase for RawDatabase<T> {
 
             debug!(
                 "serialized {} database {:p} to {} bytes",
-                T::NAME,
+                T::name(),
                 self.db,
                 size
             );
@@ -257,13 +334,13 @@ impl<T: DatabaseType> SerializableDatabase for RawDatabase<T> {
 
             debug!(
                 "deserialized {} database to {:p} from {} bytes",
-                T::NAME,
+                T::name(),
                 db,
                 bytes.len()
             );
         }
 
-        Ok(Self::from_raw(db))
+        Ok(RawDatabase::from_raw(db).into())
     }
 
     fn deserialize_at<B: AsRef<[u8]>>(&self, buf: B) -> Result<&Self> {
@@ -278,7 +355,7 @@ impl<T: DatabaseType> SerializableDatabase for RawDatabase<T> {
 
             debug!(
                 "deserialized {} database at {:p} from {} bytes",
-                T::NAME,
+                T::name(),
                 self.db,
                 bytes.len()
             );
@@ -297,7 +374,7 @@ impl<T: DatabaseType> Drop for RawDatabase<T> {
     }
 }
 
-impl RawDatabase<Streaming> {
+impl StreamingDatabase {
     pub fn stream_size(&self) -> Result<usize> {
         let mut size: usize = 0;
 
@@ -343,9 +420,9 @@ pub mod tests {
     }
 
     pub fn validate_database_with_size<T: Database>(db: &T, size: usize) {
-        assert!(db.database_size().unwrap() >= size);
+        assert!(db.size().unwrap() >= size);
 
-        let db_info = db.database_info().unwrap();
+        let db_info = db.info().unwrap();
 
         validate_database_info(&db_info);
     }
@@ -356,9 +433,9 @@ pub mod tests {
 
     pub fn validate_serialized_database<T: SerializedDatabase>(data: &T) {
         assert_eq!(data.as_ref().len(), DATABASE_SIZE);
-        assert_eq!(data.database_size().unwrap(), DATABASE_SIZE);
+        assert_eq!(data.size().unwrap(), DATABASE_SIZE);
 
-        let db_info = data.database_info().unwrap();
+        let db_info = data.info().unwrap();
 
         validate_database_info(&db_info);
     }

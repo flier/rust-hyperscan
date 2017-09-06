@@ -91,11 +91,8 @@ macro_rules! build_database {
     })
 }
 
-/**
- * This function will read in the file with the specified name, with an
- * expression per line, ignoring lines starting with '#' and build a Hyperscan
- * database for it.
- */
+/// This function will read in the file with the specified name,
+/// with an expression per line, ignoring lines starting with '#' and build a Hyperscan database for it.
 fn databases_from_file(filename: &str) -> Result<(StreamingDatabase, BlockDatabase)> {
     // do the actual file reading and string handling
     let patterns = parse_file(filename)?;
@@ -113,9 +110,8 @@ fn databases_from_file(filename: &str) -> Result<(StreamingDatabase, BlockDataba
 
 fn parse_file(filename: &str) -> Result<Patterns> {
     let f = File::open(filename)?;
-    let patterns = io::BufReader::new(f)
-        .lines()
-        .filter_map(|line| -> Option<Pattern> {
+    let patterns = io::BufReader::new(f).lines().filter_map(
+        |line| -> Option<Pattern> {
             if let Ok(line) = line {
                 let line = line.trim();
 
@@ -125,7 +121,8 @@ fn parse_file(filename: &str) -> Result<Patterns> {
             }
 
             None
-        });
+        },
+    );
 
     Ok(patterns.collect())
 }
@@ -295,7 +292,8 @@ impl Benchmark {
                 &mut self.scratch,
                 Some(Self::on_match),
                 Some(&self.match_count),
-            ) {
+            )
+            {
                 println!("ERROR: Unable to close stream. Exiting. {}", err);
             }
         }
@@ -308,7 +306,8 @@ impl Benchmark {
                 &mut self.scratch,
                 Some(Self::on_match),
                 Some(&self.match_count),
-            ) {
+            )
+            {
                 println!("ERROR: Unable to reset stream. Exiting. {}", err);
             }
         }
@@ -326,7 +325,8 @@ impl Benchmark {
                 &mut self.scratch,
                 Some(Self::on_match),
                 Some(&self.match_count),
-            ) {
+            )
+            {
                 println!("ERROR: Unable to scan packet. Exiting. {}", err)
             }
         }
@@ -342,7 +342,8 @@ impl Benchmark {
                 &mut self.scratch,
                 Some(Self::on_match),
                 Some(&self.match_count),
-            ) {
+            )
+            {
                 println!("ERROR: Unable to scan packet. Exiting. {}", err)
             }
         }
@@ -370,20 +371,22 @@ impl Benchmark {
         );
         println!("");
 
-        match self.db_streaming.database_size() {
+        match self.db_streaming.size() {
             Ok(size) => {
                 println!(
                     "Streaming mode Hyperscan database size    : {} bytes.",
                     size
                 );
             }
-            Err(err) => println!(
-                "Error getting streaming mode Hyperscan database size, {}",
-                err
-            ),
+            Err(err) => {
+                println!(
+                    "Error getting streaming mode Hyperscan database size, {}",
+                    err
+                )
+            }
         }
 
-        match self.db_block.database_size() {
+        match self.db_block.size() {
             Ok(size) => {
                 println!(
                     "Block mode Hyperscan database size        : {} bytes.",
@@ -432,18 +435,20 @@ fn main() {
     };
 
     let repeat_count: usize = match matches.opt_str("n") {
-        Some(s) => match s.parse() {
-            Ok(n) => n,
-            Err(err) => {
-                write!(
-                    io::stderr(),
-                    "ERROR: Unable to parse repeats `{}`: {}\n",
-                    s,
-                    err
-                );
-                exit(-1);
+        Some(s) => {
+            match s.parse() {
+                Ok(n) => n,
+                Err(err) => {
+                    write!(
+                        io::stderr(),
+                        "ERROR: Unable to parse repeats `{}`: {}\n",
+                        s,
+                        err
+                    );
+                    exit(-1);
+                }
             }
-        },
+        }
         None => 1,
     };
 
