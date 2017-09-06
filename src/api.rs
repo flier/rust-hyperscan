@@ -223,23 +223,6 @@ pub trait BlockScanner<T: AsRef<[u8]>, S: Scratch> {
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self>;
-
-    fn scan_mut<D>(
-        &mut self,
-        data: T,
-        flags: ScanFlags,
-        scratch: &mut S,
-        callback: Option<MatchEventCallbackMut<D>>,
-        context: Option<&mut D>,
-    ) -> Result<&Self> {
-        self.scan(
-            data,
-            flags,
-            scratch,
-            callback.map(|f| unsafe { mem::transmute(f) }),
-            context.map(|v| &*v),
-        )
-    }
 }
 
 /// The vectored regular expression scanner.
@@ -254,23 +237,6 @@ pub trait VectoredScanner<T: AsRef<[u8]>, S: Scratch> {
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self>;
-
-    fn scan_mut<D>(
-        &self,
-        data: &[T],
-        flags: ScanFlags,
-        scratch: &mut S,
-        callback: Option<MatchEventCallbackMut<D>>,
-        context: Option<&mut D>,
-    ) -> Result<&Self> {
-        self.scan(
-            data,
-            flags,
-            scratch,
-            callback.map(|f| unsafe { mem::transmute(f) }),
-            context.map(|v| &*v),
-        )
-    }
 }
 
 /// Raw `Stream` type
