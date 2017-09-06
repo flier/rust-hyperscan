@@ -185,9 +185,9 @@ pub mod regex;
 
 pub use constants::*;
 pub use api::*;
-pub use common::{valid_platform, version, StreamMode, Block, BlockDatabase, RawDatabase, Streaming, StreamingDatabase,
+pub use common::{valid_platform, version, Block, BlockDatabase, RawDatabase, StreamMode, Streaming, StreamingDatabase,
                  Vectored, VectoredDatabase};
-pub use compile::{Pattern, Patterns, DatabaseCompiler};
+pub use compile::{DatabaseCompiler, Pattern, Patterns};
 pub use runtime::{RawScratch, RawStream};
 
 #[cfg(test)]
@@ -195,8 +195,3 @@ pub use runtime::{RawScratch, RawStream};
 extern crate matches;
 #[cfg(test)]
 extern crate regex as re;
-
-#[cfg(test)]
-mod tests {
-    pub use common::tests::*;
-}
