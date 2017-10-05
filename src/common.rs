@@ -82,10 +82,12 @@ impl<T: Type> Database for RawDatabase<T> {
             check_hs_error!(hs_database_size(self.db, &mut size));
         }
 
-        debug!("database size of {} database {:p}: {}",
-               T::name(),
-               self.db,
-               size);
+        debug!(
+            "database size of {} database {:p}: {}",
+            T::name(),
+            self.db,
+            size
+        );
 
         Ok(size)
     }
@@ -101,10 +103,12 @@ impl<T: Type> Database for RawDatabase<T> {
                 Err(_) => Err(Error::Invalid),
             };
 
-            debug!("database info of {} database {:p}: {:?}",
-                   T::name(),
-                   self.db,
-                   result);
+            debug!(
+                "database info of {} database {:p}: {:?}",
+                T::name(),
+                self.db,
+                result
+            );
 
             libc::free(p as *mut libc::c_void);
 
@@ -121,12 +125,17 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
         unsafe {
             check_hs_error!(hs_serialize_database(self.db, &mut bytes, &mut size));
 
-            debug!("serialized {} database {:p} to {} bytes",
-                   T::name(),
-                   self.db,
-                   size);
+            debug!(
+                "serialized {} database {:p} to {} bytes",
+                T::name(),
+                self.db,
+                size
+            );
 
-            Ok(RawSerializedDatabase::from_raw_parts(bytes as *mut u8, size))
+            Ok(RawSerializedDatabase::from_raw_parts(
+                bytes as *mut u8,
+                size,
+            ))
         }
     }
 
@@ -134,12 +143,18 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
         let mut db: RawDatabasePtr = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_deserialize_database(bytes.as_ptr() as *const i8, bytes.len(), &mut db));
+            check_hs_error!(hs_deserialize_database(
+                bytes.as_ptr() as *const i8,
+                bytes.len(),
+                &mut db,
+            ));
 
-            debug!("deserialized {} database to {:p} from {} bytes",
-                   T::name(),
-                   db,
-                   bytes.len());
+            debug!(
+                "deserialized {} database to {:p} from {} bytes",
+                T::name(),
+                db,
+                bytes.len()
+            );
         }
 
         Ok(Self::from_raw(db))
@@ -147,12 +162,18 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
 
     fn deserialize_at(&self, bytes: &[u8]) -> Result<&RawDatabase<T>, Error> {
         unsafe {
-            check_hs_error!(hs_deserialize_database_at(bytes.as_ptr() as *const i8, bytes.len(), self.db));
+            check_hs_error!(hs_deserialize_database_at(
+                bytes.as_ptr() as *const i8,
+                bytes.len(),
+                self.db,
+            ));
 
-            debug!("deserialized {} database at {:p} from {} bytes",
-                   T::name(),
-                   self.db,
-                   bytes.len());
+            debug!(
+                "deserialized {} database at {:p} from {} bytes",
+                T::name(),
+                self.db,
+                bytes.len()
+            );
 
             Ok(self)
         }
@@ -188,10 +209,12 @@ pub struct RawSerializedDatabase {
 
 impl fmt::Debug for RawSerializedDatabase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "RawSerializedDatabase{{p: {:p}, len: {}}}",
-               self.p,
-               self.len)
+        write!(
+            f,
+            "RawSerializedDatabase{{p: {:p}, len: {}}}",
+            self.p,
+            self.len
+        )
     }
 }
 
@@ -246,9 +269,11 @@ pub mod tests {
     const DATABASE_SIZE: usize = 872;
 
     pub fn validate_database_info(info: &str) -> (Vec<u8>, Option<String>, Option<String>) {
-        if let Some(captures) = Regex::new(r"^Version:\s(\d\.\d\.\d)\sFeatures:\s+(\w+)?\sMode:\s(\w+)$")
-               .unwrap()
-               .captures(info) {
+        if let Some(captures) = Regex::new(
+            r"^Version:\s(\d\.\d\.\d)\sFeatures:\s+(\w+)?\sMode:\s(\w+)$",
+        ).unwrap()
+            .captures(info)
+        {
             let version = captures
                 .get(1)
                 .unwrap()
@@ -266,7 +291,7 @@ pub mod tests {
     }
 
     pub fn validate_database_with_size<T: Database>(db: &T, size: usize) {
-        assert_eq!(db.database_size().unwrap(), size);
+        assert!(db.database_size().unwrap() >= size);
 
         let db_info = db.database_info().unwrap();
 
@@ -301,9 +326,11 @@ pub mod tests {
 
         validate_database(&db);
 
-        assert!(Regex::new(r"RawDatabase<Block>\{db: \w+\}")
-                    .unwrap()
-                    .is_match(&format!("{:?}", db)));
+        assert!(
+            Regex::new(r"RawDatabase<Block>\{db: \w+\}")
+                .unwrap()
+                .is_match(&format!("{:?}", db))
+        );
     }
 
     #[test]
@@ -319,9 +346,11 @@ pub mod tests {
         validate_serialized_database(&data);
         validate_serialized_database(data.as_slice());
 
-        assert!(Regex::new(r"RawSerializedDatabase\{p: \w+, len: \d+\}")
-                    .unwrap()
-                    .is_match(&format!("{:?}", data)));
+        assert!(
+            Regex::new(r"RawSerializedDatabase\{p: \w+, len: \d+\}")
+                .unwrap()
+                .is_match(&format!("{:?}", data))
+        );
     }
 
     #[test]
