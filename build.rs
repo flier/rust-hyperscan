@@ -74,17 +74,17 @@ fn main() {
 
     generate_binding(libhs.include_paths[0].to_str().unwrap(), &out_file);
 
-    if cfg!(target_os = "macos") {
+    for lib in libhs.libs {
+        if lib.contains("hs") {
+            println!("cargo:rustc-link-lib=dylib={}", lib);
+        }
+    }
+
+    if cfg!(any(target_os = "macos", target_os = "freebsd")) {
         println!("cargo:rustc-link-lib=dylib=c++");
     } else {
         println!("cargo:rustc-link-lib=dylib=stdc++");
         println!("cargo:rustc-link-lib=dylib=gcc");
-    }
-
-    for lib in libhs.libs {
-        if lib.contains("hs") {
-            println!("cargo:rustc-link-lib=static={}", lib);
-        }
     }
 
     for link_path in libhs.link_paths {
