@@ -38,7 +38,7 @@
 //! fn main() {
 //!     // If SOM was requested for the pattern (see Start of Match),
 //!     // the from argument will be set to the leftmost possible start-offset for the match.
-//!     let pattern = &pattern!{"test", flags => HS_FLAG_CASELESS | HS_FLAG_SOM_LEFTMOST};
+//!     let pattern = &pattern!{"test", flags => CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_SOM_LEFTMOST};
 //!     // Build streaming database
 //!     let db: StreamingDatabase = pattern.build().unwrap();
 //!     // Allocate scratch to store on-the-fly internal data.
@@ -81,7 +81,7 @@
 //! fn main() {
 //!     // If SOM was requested for the pattern (see Start of Match),
 //!     // the from argument will be set to the leftmost possible start-offset for the match.
-//!     let pattern = &pattern!{"test", flags => HS_FLAG_CASELESS | HS_FLAG_SOM_LEFTMOST};
+//!     let pattern = &pattern!{"test", flags => CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_SOM_LEFTMOST};
 //!     // Build block database
 //!     let db: BlockDatabase = pattern.build().unwrap();
 //!     // Allocate scratch to store on-the-fly internal data.
@@ -124,7 +124,7 @@
 //! fn main() {
 //!     // If SOM was requested for the pattern (see Start of Match),
 //!     // the from argument will be set to the leftmost possible start-offset for the match.
-//!     let pattern = &pattern!{"test", flags => HS_FLAG_CASELESS | HS_FLAG_SOM_LEFTMOST};
+//!     let pattern = &pattern!{"test", flags => CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_SOM_LEFTMOST};
 //!     // Build block database
 //!     let db: VectoredDatabase = pattern.build().unwrap();
 //!     // Allocate scratch to store on-the-fly internal data.

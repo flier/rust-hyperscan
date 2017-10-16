@@ -11,7 +11,7 @@ use libc;
 
 use raw::*;
 use api::{Database, DatabaseType, RawDatabasePtr, RawDatabaseType, SerializableDatabase, SerializedDatabase};
-use constants::*;
+use constants::CompileMode;
 use errors::Result;
 
 /// Utility function for identifying this release version.
@@ -65,16 +65,16 @@ impl Default for StreamMode {
 impl From<StreamMode> for CompileMode {
     fn from(mode: StreamMode) -> Self {
         match mode {
-            StreamMode::Small => HS_MODE_SOM_HORIZON_SMALL,
-            StreamMode::Medium => HS_MODE_SOM_HORIZON_MEDIUM,
-            StreamMode::Large => HS_MODE_SOM_HORIZON_LARGE,
+            StreamMode::Small => CompileMode::HS_MODE_SOM_HORIZON_SMALL,
+            StreamMode::Medium => CompileMode::HS_MODE_SOM_HORIZON_MEDIUM,
+            StreamMode::Large => CompileMode::HS_MODE_SOM_HORIZON_LARGE,
         }
     }
 }
 
 impl DatabaseType for Block {
     fn mode() -> CompileMode {
-        HS_MODE_BLOCK
+        CompileMode::HS_MODE_BLOCK
     }
 
     fn name() -> &'static str {
@@ -84,7 +84,7 @@ impl DatabaseType for Block {
 
 impl DatabaseType for Streaming {
     fn mode() -> CompileMode {
-        HS_MODE_STREAM
+        CompileMode::HS_MODE_STREAM
     }
     fn name() -> &'static str {
         "Streaming"
@@ -93,7 +93,7 @@ impl DatabaseType for Streaming {
 
 impl DatabaseType for Vectored {
     fn mode() -> CompileMode {
-        HS_MODE_VECTORED
+        CompileMode::HS_MODE_VECTORED
     }
     fn name() -> &'static str {
         "Vectored"

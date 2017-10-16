@@ -13,7 +13,7 @@ use api::{BlockScanner, DatabaseBuilder, ScratchAllocator};
 use common::BlockDatabase;
 use compile::Pattern;
 use runtime::RawScratch;
-use constants::*;
+use constants::CompileFlags;
 use errors::{Error, ErrorKind, HsError, Result};
 
 /// A compiled regular expression for matching Unicode strings.
@@ -77,7 +77,7 @@ impl Regex {
     pub fn new(re: &str) -> Result<Self> {
         let mut pattern: Pattern = re.parse()?;
 
-        pattern.flags |= HS_FLAG_SOM_LEFTMOST | HS_FLAG_UTF8;
+        pattern.flags |= CompileFlags::HS_FLAG_SOM_LEFTMOST | CompileFlags::HS_FLAG_UTF8;
 
         let db: Rc<BlockDatabase> = Rc::new(pattern.build()?);
         let s = RefCell::new(db.alloc()?);
@@ -615,22 +615,22 @@ impl RegexBuilder {
             bail!("missing expression")
         };
 
-        pattern.flags |= HS_FLAG_SOM_LEFTMOST | HS_FLAG_UTF8;
+        pattern.flags |= CompileFlags::HS_FLAG_SOM_LEFTMOST | CompileFlags::HS_FLAG_UTF8;
 
         if self.0.case_insensitive {
-            pattern.flags |= HS_FLAG_CASELESS;
+            pattern.flags |= CompileFlags::HS_FLAG_CASELESS;
         }
 
         if self.0.multi_line {
-            pattern.flags |= HS_FLAG_MULTILINE;
+            pattern.flags |= CompileFlags::HS_FLAG_MULTILINE;
         }
 
         if self.0.dot_matches_new_line {
-            pattern.flags |= HS_FLAG_DOTALL;
+            pattern.flags |= CompileFlags::HS_FLAG_DOTALL;
         }
 
         if self.0.unicode {
-            pattern.flags |= HS_FLAG_UCP;
+            pattern.flags |= CompileFlags::HS_FLAG_UCP;
         }
 
         let db: Rc<BlockDatabase> = Rc::new(pattern.build()?);
@@ -964,22 +964,22 @@ impl RegexSetBuilder {
             let mut pattern: Pattern = expression.parse()?;
 
             pattern.id = Some(id);
-            pattern.flags |= HS_FLAG_SOM_LEFTMOST;
+            pattern.flags |= CompileFlags::HS_FLAG_SOM_LEFTMOST;
 
             if self.0.case_insensitive {
-                pattern.flags |= HS_FLAG_CASELESS;
+                pattern.flags |= CompileFlags::HS_FLAG_CASELESS;
             }
 
             if self.0.multi_line {
-                pattern.flags |= HS_FLAG_MULTILINE;
+                pattern.flags |= CompileFlags::HS_FLAG_MULTILINE;
             }
 
             if self.0.dot_matches_new_line {
-                pattern.flags |= HS_FLAG_DOTALL;
+                pattern.flags |= CompileFlags::HS_FLAG_DOTALL;
             }
 
             if self.0.unicode {
-                pattern.flags |= HS_FLAG_UCP;
+                pattern.flags |= CompileFlags::HS_FLAG_UCP;
             }
 
             patterns.push(pattern);

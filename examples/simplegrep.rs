@@ -72,7 +72,7 @@ fn main() {
     // explaining why the pattern didn't compile.
     //
     let _ = args.next();
-    let pattern = pattern!(args.next().unwrap(), flags => HS_FLAG_DOTALL);
+    let pattern = pattern!(args.next().unwrap(), flags => CompileFlags::HS_FLAG_DOTALL);
     let input_filename = args.next().unwrap();
 
     let database: BlockDatabase = match pattern.build() {

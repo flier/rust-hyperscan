@@ -338,7 +338,7 @@ pub mod tests {
     use super::super::*;
     use raw::AsPtr;
 
-    const SCRATCH_SIZE: usize = 2500;
+    const SCRATCH_SIZE: usize = 2000;
 
     #[test]
     fn test_scratch() {
@@ -365,9 +365,10 @@ pub mod tests {
 
     #[test]
     fn test_block_scan() {
-        let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS | HS_FLAG_SOM_LEFTMOST}
-            .build()
-            .unwrap();
+        let db: BlockDatabase =
+            pattern!{"test", flags => CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_SOM_LEFTMOST}
+                .build()
+                .unwrap();
         let mut s = RawScratch::alloc(&db).unwrap();
         let matches = RefCell::new(Vec::new());
 
@@ -390,9 +391,10 @@ pub mod tests {
 
     #[test]
     fn test_vectored_scan() {
-        let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS | HS_FLAG_SOM_LEFTMOST}
-            .build()
-            .unwrap();
+        let db: VectoredDatabase =
+            pattern!{"test", flags => CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_SOM_LEFTMOST}
+                .build()
+                .unwrap();
         let mut s = RawScratch::alloc(&db).unwrap();
         let matches = RefCell::new(Vec::new());
         let data = vec!["foo", "test", "bar"];
@@ -411,9 +413,10 @@ pub mod tests {
 
     #[test]
     fn test_streaming_scan() {
-        let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS | HS_FLAG_SOM_LEFTMOST}
-            .build()
-            .unwrap();
+        let db: StreamingDatabase =
+            pattern!{"test", flags => CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_SOM_LEFTMOST}
+                .build()
+                .unwrap();
 
         let mut s = RawScratch::alloc(&db).unwrap();
         let stream = db.open_stream(0).unwrap();

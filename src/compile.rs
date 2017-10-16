@@ -9,12 +9,12 @@ use std::result::Result as StdResult;
 use regex_syntax;
 
 use raw::*;
-use constants::*;
+use constants::{CompileFlags, CompileMode, ExpressionExtFlags};
 use api::*;
 use common::RawDatabase;
 use errors::{Error, RawCompileErrorPtr, Result};
 
-const HS_MODE_SOM_HORIZON_DEFAULT: CompileMode = HS_MODE_SOM_HORIZON_SMALL;
+const HS_MODE_SOM_HORIZON_DEFAULT: CompileMode = CompileMode::HS_MODE_SOM_HORIZON_SMALL;
 
 impl Default for CompileFlags {
     fn default() -> Self {
@@ -24,25 +24,25 @@ impl Default for CompileFlags {
 
 impl fmt::Display for CompileFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.contains(HS_FLAG_CASELESS) {
+        if self.contains(CompileFlags::HS_FLAG_CASELESS) {
             write!(f, "i")?;
         }
-        if self.contains(HS_FLAG_MULTILINE) {
+        if self.contains(CompileFlags::HS_FLAG_MULTILINE) {
             write!(f, "m")?;
         }
-        if self.contains(HS_FLAG_DOTALL) {
+        if self.contains(CompileFlags::HS_FLAG_DOTALL) {
             write!(f, "s")?;
         }
-        if self.contains(HS_FLAG_SINGLEMATCH) {
+        if self.contains(CompileFlags::HS_FLAG_SINGLEMATCH) {
             write!(f, "H")?;
         }
-        if self.contains(HS_FLAG_ALLOWEMPTY) {
+        if self.contains(CompileFlags::HS_FLAG_ALLOWEMPTY) {
             write!(f, "V")?;
         }
-        if self.contains(HS_FLAG_UTF8) {
+        if self.contains(CompileFlags::HS_FLAG_UTF8) {
             write!(f, "8")?;
         }
-        if self.contains(HS_FLAG_UCP) {
+        if self.contains(CompileFlags::HS_FLAG_UCP) {
             write!(f, "W")?;
         }
         Ok(())
@@ -57,13 +57,13 @@ impl FromStr for CompileFlags {
 
         for c in s.chars() {
             match c {
-                'i' => flags |= HS_FLAG_CASELESS,
-                'm' => flags |= HS_FLAG_MULTILINE,
-                's' => flags |= HS_FLAG_DOTALL,
-                'H' => flags |= HS_FLAG_SINGLEMATCH,
-                'V' => flags |= HS_FLAG_ALLOWEMPTY,
-                '8' => flags |= HS_FLAG_UTF8,
-                'W' => flags |= HS_FLAG_UCP,
+                'i' => flags |= CompileFlags::HS_FLAG_CASELESS,
+                'm' => flags |= CompileFlags::HS_FLAG_MULTILINE,
+                's' => flags |= CompileFlags::HS_FLAG_DOTALL,
+                'H' => flags |= CompileFlags::HS_FLAG_SINGLEMATCH,
+                'V' => flags |= CompileFlags::HS_FLAG_ALLOWEMPTY,
+                '8' => flags |= CompileFlags::HS_FLAG_UTF8,
+                'W' => flags |= CompileFlags::HS_FLAG_UCP,
                 _ => bail!("invalid compile flag: {}", c),
             }
         }
@@ -94,18 +94,17 @@ pub struct ExpressionExt {
 impl ExpressionExt {
     fn to_raw(&self) -> hs_expr_ext_t {
         let flags = self.min_offset.map_or(ExpressionExtFlags::empty(), |_| {
-            HS_EXT_FLAG_MIN_OFFSET
+            ExpressionExtFlags::HS_EXT_FLAG_MIN_OFFSET
         }) |
             self.max_offset.map_or(ExpressionExtFlags::empty(), |_| {
-                HS_EXT_FLAG_MAX_OFFSET
+                ExpressionExtFlags::HS_EXT_FLAG_MAX_OFFSET
             }) |
             self.min_length.map_or(ExpressionExtFlags::empty(), |_| {
-                HS_EXT_FLAG_MIN_LENGTH
+                ExpressionExtFlags::HS_EXT_FLAG_MIN_LENGTH
             }) |
-            self.edit_distance.map_or(
-                ExpressionExtFlags::empty(),
-                |_| HS_EXT_FLAG_EDIT_DISTANCE,
-            );
+            self.edit_distance.map_or(ExpressionExtFlags::empty(), |_| {
+                ExpressionExtFlags::HS_EXT_FLAG_EDIT_DISTANCE
+            });
 
         hs_expr_ext_t {
             flags: flags.bits(),
@@ -308,7 +307,7 @@ where
         ext: Option<&ExpressionExt>,
         platform: Option<&PlatformInfo>,
     ) -> Result<Self> {
-        let mode = if T::mode() == HS_MODE_STREAM && flags.contains(HS_FLAG_SOM_LEFTMOST) {
+        let mode = if T::mode() == CompileMode::HS_MODE_STREAM && flags.contains(CompileFlags::HS_FLAG_SOM_LEFTMOST) {
             T::mode() | HS_MODE_SOM_HORIZON_DEFAULT
         } else {
             T::mode()
@@ -403,9 +402,9 @@ impl<'a, D: Database<DatabaseType = T> + From<RawDatabase<T>>, T: DatabaseType> 
     // which is passed into the match callback to identify the pattern that has matched.
     ///
     fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<D> {
-        let mode = if T::mode() == HS_MODE_STREAM &&
+        let mode = if T::mode() == CompileMode::HS_MODE_STREAM &&
             self.iter().any(|pattern| {
-                pattern.flags.contains(HS_FLAG_SOM_LEFTMOST)
+                pattern.flags.contains(CompileFlags::HS_FLAG_SOM_LEFTMOST)
             })
         {
             T::mode() | HS_MODE_SOM_HORIZON_DEFAULT
@@ -493,18 +492,21 @@ pub mod tests {
 
     #[test]
     fn test_compile_flags() {
-        let flags = HS_FLAG_CASELESS | HS_FLAG_DOTALL;
+        let flags = CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_DOTALL;
 
-        assert!(flags.contains(HS_FLAG_CASELESS));
-        assert!(!flags.contains(HS_FLAG_MULTILINE));
-        assert!(flags.contains(HS_FLAG_DOTALL));
+        assert!(flags.contains(CompileFlags::HS_FLAG_CASELESS));
+        assert!(!flags.contains(CompileFlags::HS_FLAG_MULTILINE));
+        assert!(flags.contains(CompileFlags::HS_FLAG_DOTALL));
         assert_eq!(flags.to_string(), "is");
 
-        assert_eq!(flags, HS_FLAG_CASELESS | HS_FLAG_DOTALL);
+        assert_eq!(
+            flags,
+            CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_DOTALL
+        );
 
         assert_eq!(
             "ism".parse::<CompileFlags>().unwrap(),
-            flags | HS_FLAG_MULTILINE
+            flags | CompileFlags::HS_FLAG_MULTILINE
         );
         assert_matches!(
             "test".parse::<CompileFlags>().err().unwrap(),
@@ -538,13 +540,13 @@ pub mod tests {
         let p: Pattern = "/test/i".parse().unwrap();
 
         assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, HS_FLAG_CASELESS);
+        assert_eq!(p.flags, CompileFlags::HS_FLAG_CASELESS);
         assert_eq!(p.id, None);
 
         let p: Pattern = "3:/test/i".parse().unwrap();
 
         assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, HS_FLAG_CASELESS);
+        assert_eq!(p.flags, CompileFlags::HS_FLAG_CASELESS);
         assert_eq!(p.id, Some(3));
 
         let p: Pattern = "test/i".parse().unwrap();
@@ -556,7 +558,7 @@ pub mod tests {
         let p: Pattern = "/t/e/s/t/i".parse().unwrap();
 
         assert_eq!(p.expression, "t/e/s/t");
-        assert_eq!(p.flags, HS_FLAG_CASELESS);
+        assert_eq!(p.flags, CompileFlags::HS_FLAG_CASELESS);
         assert_eq!(p.id, None);
     }
 
@@ -583,10 +585,10 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build_with_flags() {
-        let p = &pattern!{"test", flags => HS_FLAG_CASELESS};
+        let p = &pattern!{"test", flags => CompileFlags::HS_FLAG_CASELESS};
 
         assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, HS_FLAG_CASELESS);
+        assert_eq!(p.flags, CompileFlags::HS_FLAG_CASELESS);
         assert_eq!(p.id, None);
 
         let db: BlockDatabase = p.build().unwrap();
@@ -603,7 +605,7 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build_with_flags() {
-        let db: BlockDatabase = patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS | HS_FLAG_DOTALL)
+        let db: BlockDatabase = patterns!(["test", "foo", "bar"], flags => CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_DOTALL)
             .build()
             .unwrap();
 
