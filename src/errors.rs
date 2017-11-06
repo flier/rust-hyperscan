@@ -59,6 +59,8 @@ pub enum HsError {
     ScratchInUse,
     /// Unsupported CPU architecture.
     UnsupportedArch,
+    /// Provided buffer was too small.
+    InsufficientSpace,
     /// Unknown error code
     Failed(i32),
 }
@@ -91,25 +93,34 @@ impl fmt::Display for HsError {
             HsError::NoMem => write!(f, "a memory allocation failed."),
             HsError::ScanTerminated => write!(f, "the engine was terminated by callback."),
             HsError::CompilerError => write!(f, "the pattern compiler failed"),
-            HsError::DbVersionError => write!(
-                f,
-                "the given database was built for a different version of Hyperscan."
-            ),
+            HsError::DbVersionError => {
+                write!(
+                    f,
+                    "the given database was built for a different version of Hyperscan."
+                )
+            }
             HsError::DbPlatformError => write!(f, "the given database was built for a different platform."),
-            HsError::DbModeError => write!(
-                f,
-                "the given database was built for a different mode of operation."
-            ),
-            HsError::BadAlign => write!(
-                f,
-                "a parameter passed to this function was not correctly aligned."
-            ),
-            HsError::BadAlloc => write!(
-                f,
-                "the memory allocator did not correctly return memory suitably aligned."
-            ),
+            HsError::DbModeError => {
+                write!(
+                    f,
+                    "the given database was built for a different mode of operation."
+                )
+            }
+            HsError::BadAlign => {
+                write!(
+                    f,
+                    "a parameter passed to this function was not correctly aligned."
+                )
+            }
+            HsError::BadAlloc => {
+                write!(
+                    f,
+                    "the memory allocator did not correctly return memory suitably aligned."
+                )
+            }
             HsError::ScratchInUse => write!(f, "the scratch region was already in use."),
             HsError::UnsupportedArch => write!(f, "unsupported CPU architecture."),
+            HsError::InsufficientSpace => write!(f, "Provided buffer was too small."),
             HsError::Failed(err) => write!(f, "internal operation failed, error code {}.", err),
         }
     }

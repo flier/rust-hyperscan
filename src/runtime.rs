@@ -5,6 +5,7 @@ use std::os::raw::c_uint;
 
 use raw::*;
 use api::*;
+use constants::*;
 use errors::Result;
 use common::{BlockDatabase, StreamingDatabase, VectoredDatabase};
 
@@ -227,6 +228,79 @@ impl StreamingScanner<RawStream, RawScratch> for StreamingDatabase {
     }
 }
 
+impl StreamingDatabase {
+    /// Creates a compressed representation of the provided stream in the buffer provided.
+    pub fn compress_stream(&self, stream: &RawStream) -> Result<Vec<u8>> {
+        let mut buf = vec![0u8; self.stream_size()?];
+        let mut size = 0;
+
+        unsafe {
+            check_hs_error!(match hs_compress_stream(
+                stream.as_ptr(),
+                buf.as_mut_ptr() as *mut i8,
+                buf.len(),
+                &mut size,
+            ) {
+                HS_INSUFFICIENT_SPACE => {
+                    buf.resize(size, 0);
+
+                    hs_compress_stream(
+                        stream.as_ptr(),
+                        buf.as_mut_ptr() as *mut i8,
+                        buf.len(),
+                        &mut size,
+                    )
+                }
+                result => result,
+            })
+        }
+
+        buf.truncate(size);
+
+        Ok(buf)
+    }
+
+    /// Decompresses a compressed representation created by `StreamingDatabase::compress_stream()` into a new stream.
+    pub fn expand_stream(&self, buf: &[u8]) -> Result<RawStream> {
+        let mut stream: RawStreamPtr = ptr::null_mut();
+
+        unsafe {
+            check_hs_error!(hs_expand_stream(
+                self.as_ptr(),
+                &mut stream,
+                buf.as_ptr() as *const i8,
+                buf.len(),
+            ));
+        }
+
+        Ok(RawStream(stream))
+    }
+
+    /// Decompresses a compressed representation created by `StreamingDatabase::compress_stream()` on top of the 'to' stream.
+    /// The 'to' stream will first be reset (reporting any EOD matches).
+    pub fn reset_and_expand_stream<'a, S: Scratch, D>(
+        &self,
+        stream: &'a mut RawStream,
+        buf: &[u8],
+        scratch: &mut S,
+        callback: Option<MatchEventCallback<D>>,
+        context: Option<&D>,
+    ) -> Result<&'a RawStream> {
+        unsafe {
+            check_hs_error!(hs_reset_and_expand_stream(
+                stream.as_mut_ptr(),
+                buf.as_ptr() as *const i8,
+                buf.len(),
+                scratch.as_mut_ptr(),
+                mem::transmute(callback),
+                mem::transmute(context),
+            ));
+        }
+
+        Ok(stream)
+    }
+}
+
 /// A pattern matching state can be maintained across multiple blocks of target data
 pub struct RawStream(RawStreamPtr);
 
@@ -240,6 +314,12 @@ impl AsPtr for RawStream {
     type Type = RawStreamType;
 
     fn as_ptr(&self) -> *const Self::Type {
+        self.0
+    }
+}
+
+impl AsMutPtr for RawStream {
+    fn as_mut_ptr(&mut self) -> *mut Self::Type {
         self.0
     }
 }
@@ -441,5 +521,66 @@ pub mod tests {
             .unwrap();
 
         assert_eq!(matches.into_inner(), vec![(3, 7)]);
+    }
+
+    #[test]
+    fn test_streaming_compress() {
+        let db: StreamingDatabase =
+            pattern!{"test", flags => CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_SOM_LEFTMOST}
+                .build()
+                .unwrap();
+
+        let stream = db.open_stream(0).unwrap();
+        let mut s = RawScratch::alloc(&db).unwrap();
+
+        let buf = db.compress_stream(&stream).unwrap();
+
+        assert!(!buf.is_empty());
+        assert!(buf.len() <= db.stream_size().unwrap());
+
+        let data = vec!["foo", "test", "bar"];
+
+        extern "C" fn callback(_id: u32, from: u64, to: u64, _flags: u32, matches: &RefCell<Vec<(u64, u64)>>) -> u32 {
+            (*matches.borrow_mut()).push((from, to));
+
+            0
+        }
+
+        {
+            let stream2 = db.expand_stream(&buf).unwrap();
+            let matches = RefCell::new(Vec::new());
+
+            for d in &data {
+                stream2
+                    .scan(d, 0, &mut s, Some(callback), Some(&matches))
+                    .unwrap();
+            }
+
+            stream2
+                .close(&mut s, Some(callback), Some(&matches))
+                .unwrap();
+
+            assert_eq!(matches.into_inner(), vec![(3, 7)]);
+        }
+
+        {
+            let mut stream3 = db.open_stream(0).unwrap();
+            let matches = RefCell::new(Vec::new());
+
+            db.reset_and_expand_stream(&mut stream3, &buf, &mut s, Some(callback), Some(&matches))
+                .unwrap();
+
+            for d in &data {
+                stream3
+                    .scan(d, 0, &mut s, Some(callback), Some(&matches))
+                    .unwrap();
+            }
+
+            stream3
+                .close(&mut s, Some(callback), Some(&matches))
+                .unwrap();
+
+            assert_eq!(matches.into_inner(), vec![(3, 7)]);
+        }
     }
 }

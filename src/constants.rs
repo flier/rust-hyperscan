@@ -65,6 +65,17 @@ pub const HS_SCRATCH_IN_USE: HsError = -10;
 /// (SSSE3).
 pub const HS_ARCH_ERROR: HsError = -11;
 
+///
+/// Provided buffer was too small.
+///
+/// This error indicates that there was insufficient space in the buffer. The
+/// call should be repeated with a larger provided buffer.
+///
+/// Note: in this situation, it is normal for the amount of space required to be
+/// returned in the same manner as the used space would have been returned if the
+/// call was successful.
+pub const HS_INSUFFICIENT_SPACE: HsError = -12;
+
 bitflags! {
     #[doc="Compile mode flags"]
     pub struct CompileMode: u32 {
