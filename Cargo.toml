@@ -13,6 +13,7 @@ keywords = ["regex", "hyperscan", "streaming"]
 
 [features]
 default = ["bench_scan"]
+gen = ["bindgen"]
 bench_parse = []
 bench_compile = []
 bench_scan = []
