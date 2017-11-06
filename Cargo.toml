@@ -13,7 +13,6 @@ keywords = ["regex", "hyperscan", "streaming"]
 
 [features]
 default = ["bench_scan"]
-gen = ["bindgen"]
 bench_parse = []
 bench_compile = []
 bench_scan = []
@@ -34,7 +33,7 @@ log = "0.3"
 env_logger = "0.4"
 pkg-config = "0.3"
 
-bindgen = { version = "0.30", optional = true }
+bindgen = { version = "0.31", optional = true }
 
 [dev-dependencies]
 pretty_env_logger = "0.1"
@@ -42,7 +41,7 @@ matches = "0.1"
 regex = "0.2"
 getopts = "0.2"
 pcap = "0.7"
-pnet = "0.19"
+pnet = "0.20"
 byteorder = "1.1"
 lazy_static = "0.2"
 rand = "0.3"
