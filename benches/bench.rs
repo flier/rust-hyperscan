@@ -51,7 +51,9 @@ mod bench {
             let p: Pattern = r.parse().unwrap();
             let platform = PlatformInfo::populate().ok();
 
-            b.iter(|| { let _: RawDatabase<T> = p.build_for_platform(platform.as_ref()).unwrap(); })
+            b.iter(|| {
+                let _: RawDatabase<T> = p.build_for_platform(platform.as_ref()).unwrap();
+            })
         }
 
         #[cfg(feature = "bench_scan")]
@@ -67,7 +69,8 @@ mod bench {
                 let n = black_box(times);
 
                 (0..n).fold(0, |_, _| {
-                    let _ = db.scan(data, 0, &mut s, Some(on_matched), Some(&matched)).unwrap();
+                    let _ = db.scan(data, 0, &mut s, Some(on_matched), Some(&matched))
+                        .unwrap();
                     0
                 });
 
@@ -95,9 +98,10 @@ mod bench {
             let n = black_box(times);
 
             b.iter(|| {
-                assert_eq!((0..n).fold(0, |matched, _| {
-                    matched + r.find_iter(data).count()
-                }), n);
+                assert_eq!(
+                    (0..n).fold(0, |matched, _| matched + r.find_iter(data).count()),
+                    n
+                );
 
                 bytes += (data.len() * times) as u64;
             });

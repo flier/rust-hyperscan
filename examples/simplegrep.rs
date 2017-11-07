@@ -35,10 +35,10 @@ use std::path::Path;
 
 use hyperscan::*;
 
-/**
- * Fill a data buffer from the given filename, returning it and filling @a
- * length with its length. Returns NULL on failure.
- */
+//
+// Fill a data buffer from the given filename, returning it and filling @a
+// length with its length. Returns NULL on failure.
+//
 fn read_input_data(input_filename: &str) -> Result<String, io::Error> {
     let mut f = File::open(input_filename)?;
     let mut buf = String::new();
@@ -146,7 +146,8 @@ fn main() {
         &mut scratch,
         Some(event_handler),
         Some(&pattern),
-    ) {
+    )
+    {
         write!(
             io::stderr(),
             "ERROR: Unable to scan input buffer. Exiting. {}\n",
