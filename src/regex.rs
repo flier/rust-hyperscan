@@ -329,6 +329,7 @@ impl Regex {
 /// The lifetime parameter 't refers to the lifetime of the matched text.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Match<'t> {
+    id: u32,
     text: &'t str,
     start: usize,
     end: usize,
@@ -338,6 +339,7 @@ impl<'t> Match<'t> {
     /// Creates a new match from the given haystack.
     fn new(text: &'t str) -> Match<'t> {
         Match {
+            id: 0,
             text: text,
             start: 0,
             end: 0,
@@ -354,13 +356,19 @@ impl<'t> Match<'t> {
         self
     }
 
-    extern "C" fn short_matched(_id: u32, from: u64, to: u64, _flags: u32, m: &RefCell<Match>) -> u32 {
+    extern "C" fn short_matched(id: u32, from: u64, to: u64, _flags: u32, m: &RefCell<Match>) -> u32 {
         let mut m = m.borrow_mut();
 
+        (*m).id = id;
         (*m).start = from as usize;
         (*m).end = to as usize;
 
         1
+    }
+
+    /// Returns the ID number of the expression that matched.
+    pub fn id(&self) -> u32 {
+        self.id
     }
 
     /// Returns the starting byte offset of the match in the haystack.
