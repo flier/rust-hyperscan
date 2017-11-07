@@ -533,12 +533,8 @@ pub mod tests {
         let stream = db.open_stream(0).unwrap();
         let mut s = RawScratch::alloc(&db).unwrap();
 
-        let buf = db.compress_stream(&stream).unwrap();
-
-        assert!(!buf.is_empty());
-        assert!(buf.len() <= db.stream_size().unwrap());
-
-        let data = vec!["foo", "test", "bar"];
+        let data = vec!["123t", "es", "t456"];
+        let matches = RefCell::new(Vec::new());
 
         extern "C" fn callback(_id: u32, from: u64, to: u64, _flags: u32, matches: &RefCell<Vec<(u64, u64)>>) -> u32 {
             (*matches.borrow_mut()).push((from, to));
@@ -546,11 +542,19 @@ pub mod tests {
             0
         }
 
+        stream
+            .scan(&data[0], 0, &mut s, Some(callback), Some(&matches))
+            .unwrap();
+
+        let buf = db.compress_stream(&stream).unwrap();
+
+        assert!(!buf.is_empty());
+        assert!(buf.len() <= db.stream_size().unwrap());
+
         {
             let stream2 = db.expand_stream(&buf).unwrap();
-            let matches = RefCell::new(Vec::new());
 
-            for d in &data {
+            for d in &data[1..] {
                 stream2
                     .scan(d, 0, &mut s, Some(callback), Some(&matches))
                     .unwrap();
@@ -560,17 +564,18 @@ pub mod tests {
                 .close(&mut s, Some(callback), Some(&matches))
                 .unwrap();
 
-            assert_eq!(matches.into_inner(), vec![(3, 7)]);
+            assert_eq!(matches.borrow().clone(), vec![(3, 7)]);
         }
+
+        matches.borrow_mut().clear();
 
         {
             let mut stream3 = db.open_stream(0).unwrap();
-            let matches = RefCell::new(Vec::new());
 
             db.reset_and_expand_stream(&mut stream3, &buf, &mut s, Some(callback), Some(&matches))
                 .unwrap();
 
-            for d in &data {
+            for d in &data[1..] {
                 stream3
                     .scan(d, 0, &mut s, Some(callback), Some(&matches))
                     .unwrap();
@@ -580,7 +585,7 @@ pub mod tests {
                 .close(&mut s, Some(callback), Some(&matches))
                 .unwrap();
 
-            assert_eq!(matches.into_inner(), vec![(3, 7)]);
+            assert_eq!(matches.borrow().clone(), vec![(3, 7)]);
         }
     }
 }
