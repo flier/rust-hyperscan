@@ -25,12 +25,19 @@ fn find_hyperscan() -> Library {
             link_paths: vec![From::from(format!("{}/lib", prefix))],
             include_paths: vec![From::from(format!("{}/include", prefix))],
         }
-    } else if let Ok(pkg_config::Library { libs, link_paths, include_paths, .. }) =
-        pkg_config::Config::new().statik(true).probe("libhs") {
-        debug!("building with Hyperscan @ libs={:?}, link_paths={:?}, include_paths={:?}",
-               libs,
-               link_paths,
-               include_paths);
+    } else if let Ok(pkg_config::Library {
+                         libs,
+                         link_paths,
+                         include_paths,
+                         ..
+                     }) = pkg_config::Config::new().statik(true).probe("libhs")
+    {
+        debug!(
+            "building with Hyperscan @ libs={:?}, link_paths={:?}, include_paths={:?}",
+            libs,
+            link_paths,
+            include_paths
+        );
 
         Library {
             libs: libs,
@@ -38,7 +45,7 @@ fn find_hyperscan() -> Library {
             include_paths: include_paths,
         }
     } else {
-        panic!("please install hyperscan from https://github.com/01org/hyperscan")
+        panic!("please install hyperscan from https://github.com/intel/hyperscan")
     }
 }
 
@@ -51,6 +58,8 @@ fn generate_binding(hyperscan_include_path: &str, out_file: &Path) {
         .clang_arg("-xc++")
         .clang_arg("-std=c++11")
         .whitelist_function("^hs_.*")
+        .link_static("hs")
+        .link_static("hs_runtime")
         .generate()
         .expect("Fail to generate bindings")
         .write_to_file(out_file)
@@ -61,7 +70,11 @@ fn generate_binding(hyperscan_include_path: &str, out_file: &Path) {
 
 #[cfg(not(feature = "gen"))]
 fn generate_binding(_: &str, out_file: &Path) {
-    fs::copy("src/raw_bindgen.rs", out_file).expect("fail to copy bindings");
+    if cfg!(any(target_os = "macos", target_os = "freebsd")) {
+        fs::copy("src/raw_macos.rs", out_file).expect("fail to copy bindings");
+    } else {
+        fs::copy("src/raw_linux.rs", out_file).expect("fail to copy bindings");
+    }
 }
 
 fn main() {
@@ -88,7 +101,9 @@ fn main() {
     }
 
     for link_path in libhs.link_paths {
-        println!("cargo:rustc-link-search=native={}",
-                 link_path.to_str().unwrap());
+        println!(
+            "cargo:rustc-link-search=native={}",
+            link_path.to_str().unwrap()
+        );
     }
 }
