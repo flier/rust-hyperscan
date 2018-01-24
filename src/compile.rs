@@ -114,26 +114,27 @@ impl Pattern {
     pub fn parse(s: &str) -> Result<Pattern, Error> {
         unsafe {
             let (id, expr) = match s.find(':') {
-                Some(off) => (try!(s.slice_unchecked(0, off).parse()), s.slice_unchecked(off + 1, s.len())),
+                Some(off) => (
+                    try!(s.slice_unchecked(0, off).parse()),
+                    s.slice_unchecked(off + 1, s.len()),
+                ),
                 None => (0, s),
             };
 
             let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
-                (true, Some(end)) if end > 0 => {
-                    Pattern {
-                        expression: String::from(expr.slice_unchecked(1, end)),
-                        flags: try!(CompileFlags::parse(expr.slice_unchecked(end + 1, expr.len()))),
-                        id: id,
-                    }
-                }
+                (true, Some(end)) if end > 0 => Pattern {
+                    expression: String::from(expr.slice_unchecked(1, end)),
+                    flags: try!(CompileFlags::parse(
+                        expr.slice_unchecked(end + 1, expr.len())
+                    )),
+                    id: id,
+                },
 
-                _ => {
-                    Pattern {
-                        expression: String::from(expr),
-                        flags: CompileFlags::default(),
-                        id: id,
-                    }
-                }
+                _ => Pattern {
+                    expression: String::from(expr),
+                    flags: CompileFlags::default(),
+                    id: id,
+                },
             };
 
             debug!("pattern `{}` parsed to `{}`", s, pattern);
@@ -146,11 +147,13 @@ impl Pattern {
 impl fmt::Display for Pattern {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "{}:/{}/{}",
-               self.id,
-               regex_syntax::escape(self.expression.as_str()),
-               self.flags)
+        write!(
+            f,
+            "{}:/{}/{}",
+            self.id,
+            regex_syntax::escape(self.expression.as_str()),
+            self.flags
+        )
     }
 }
 
@@ -170,11 +173,15 @@ impl Expression for Pattern {
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(hs_expression_info(expr.as_bytes_with_nul().as_ptr() as *const i8,
-                                                    self.flags.0,
-                                                    &mut *info,
-                                                    &mut err),
-                                 err);
+            check_compile_error!(
+                hs_expression_info(
+                    expr.as_bytes_with_nul().as_ptr() as *const i8,
+                    self.flags.0,
+                    &mut *info,
+                    &mut err
+                ),
+                err
+            );
 
             let info = ExpressionInfo {
                 min_width: info.as_ref().min_width as usize,
@@ -241,20 +248,26 @@ impl<T: Type> RawDatabase<T> {
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(hs_compile(expr.as_bytes_with_nul().as_ptr() as *const i8,
-                                            flags,
-                                            T::mode(),
-                                            platform.as_ptr(),
-                                            &mut db,
-                                            &mut err),
-                                 err);
+            check_compile_error!(
+                hs_compile(
+                    expr.as_bytes_with_nul().as_ptr() as *const i8,
+                    flags,
+                    T::mode(),
+                    platform.as_ptr(),
+                    &mut db,
+                    &mut err
+                ),
+                err
+            );
         }
 
-        debug!("pattern `/{}/{}` compiled to {} database {:p}",
-               expression,
-               CompileFlags(flags),
-               T::name(),
-               db);
+        debug!(
+            "pattern `/{}/{}` compiled to {} database {:p}",
+            expression,
+            CompileFlags(flags),
+            T::name(),
+            db
+        );
 
         Ok(RawDatabase::from_raw(db))
     }
@@ -303,21 +316,27 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
         unsafe {
-            check_compile_error!(hs_compile_multi(ptrs.as_ptr(),
-                                                  flags.as_ptr(),
-                                                  ids.as_ptr(),
-                                                  self.len() as u32,
-                                                  T::mode(),
-                                                  platform.as_ptr(),
-                                                  &mut db,
-                                                  &mut err),
-                                 err);
+            check_compile_error!(
+                hs_compile_multi(
+                    ptrs.as_ptr(),
+                    flags.as_ptr(),
+                    ids.as_ptr(),
+                    self.len() as u32,
+                    T::mode(),
+                    platform.as_ptr(),
+                    &mut db,
+                    &mut err
+                ),
+                err
+            );
         }
 
-        debug!("patterns [{}] compiled to {} database {:p}",
-               Vec::from_iter(self.iter().map(|p| format!("`{}`", p))).join(", "),
-               T::name(),
-               db);
+        debug!(
+            "patterns [{}] compiled to {} database {:p}",
+            Vec::from_iter(self.iter().map(|p| format!("`{}`", p))).join(", "),
+            T::name(),
+            db
+        );
 
         Ok(RawDatabase::from_raw(db))
     }
@@ -336,7 +355,7 @@ pub mod tests {
 
     #[test]
     fn test_compile_flags() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let mut flags = CompileFlags(HS_FLAG_CASELESS | HS_FLAG_DOTALL);
 
@@ -346,8 +365,10 @@ pub mod tests {
         assert!(flags.is_set(HS_FLAG_DOTALL));
         assert_eq!(format!("{}", flags), "is");
 
-        assert_eq!(*flags.set(HS_FLAG_MULTILINE),
-                   CompileFlags(HS_FLAG_CASELESS | HS_FLAG_MULTILINE | HS_FLAG_DOTALL));
+        assert_eq!(
+            *flags.set(HS_FLAG_MULTILINE),
+            CompileFlags(HS_FLAG_CASELESS | HS_FLAG_MULTILINE | HS_FLAG_DOTALL)
+        );
 
         assert_eq!(CompileFlags::parse("ism").unwrap(), flags);
         assert!(CompileFlags::parse("test").is_err());
@@ -355,7 +376,7 @@ pub mod tests {
 
     #[test]
     fn test_database_compile() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db = BlockDatabase::compile("test", 0, &PlatformInfo::host()).unwrap();
 
@@ -366,7 +387,7 @@ pub mod tests {
 
     #[test]
     fn test_pattern() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let p = Pattern::parse("test").unwrap();
 
@@ -408,7 +429,7 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let p = &pattern!{"test"};
 
@@ -431,7 +452,7 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build_with_flags() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let p = &pattern!{"test", flags => HS_FLAG_CASELESS};
 
@@ -446,7 +467,7 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db: BlockDatabase = patterns!(["test", "foo", "bar"]).build().unwrap();
 
@@ -455,7 +476,7 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build_with_flags() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db: BlockDatabase = patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS|HS_FLAG_DOTALL)
             .build()

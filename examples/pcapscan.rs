@@ -19,13 +19,13 @@
 // by the scheduler as a source of noise in the results.
 //
 //
+extern crate byteorder;
+extern crate env_logger;
 extern crate getopts;
+extern crate hyperscan;
+extern crate log;
 extern crate pcap;
 extern crate pnet;
-extern crate byteorder;
-extern crate log;
-extern crate env_logger;
-extern crate hyperscan;
 
 use std::fmt;
 use std::env;
@@ -34,7 +34,7 @@ use std::error;
 use std::process::exit;
 use std::path::Path;
 use std::io;
-use std::io::{Write, BufRead};
+use std::io::{BufRead, Write};
 use std::fs::File;
 use std::iter::Iterator;
 use std::collections::HashMap;
@@ -43,14 +43,14 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use getopts::Options;
 use pnet::packet::{Packet, PrimitiveValues};
-use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
+use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::udp::UdpPacket;
 use byteorder::{BigEndian, ReadBytesExt};
 
-use hyperscan::{Pattern, Patterns, Database, DatabaseBuilder, StreamingDatabase, BlockDatabase, RawScratch, Scratch,
-                ScratchAllocator, BlockScanner, StreamingScanner, Stream, RawStream};
+use hyperscan::{BlockDatabase, BlockScanner, Database, DatabaseBuilder, Pattern, Patterns, RawScratch, RawStream,
+                Scratch, ScratchAllocator, Stream, StreamingDatabase, StreamingScanner};
 
 #[derive(Debug)]
 enum Error {
@@ -121,10 +121,15 @@ fn databases_from_file(filename: &str) -> Result<(StreamingDatabase, BlockDataba
     // do the actual file reading and string handling
     let patterns = try!(parse_file(filename));
 
-    println!("Compiling Hyperscan databases with {} patterns.",
-             patterns.len());
+    println!(
+        "Compiling Hyperscan databases with {} patterns.",
+        patterns.len()
+    );
 
-    Ok((build_database!(patterns, "streaming"), build_database!(patterns, "block")))
+    Ok((
+        build_database!(patterns, "streaming"),
+        build_database!(patterns, "block"),
+    ))
 }
 
 fn parse_file(filename: &str) -> Result<Patterns, io::Error> {
@@ -317,10 +322,12 @@ impl Benchmark {
 
     fn reset_streams(&mut self) {
         for ref stream in &self.streams {
-            if let Err(err) = stream.reset(0,
-                                           &self.scratch,
-                                           Some(Self::on_match),
-                                           Some(&self.match_count)) {
+            if let Err(err) = stream.reset(
+                0,
+                &self.scratch,
+                Some(Self::on_match),
+                Some(&self.match_count),
+            ) {
                 println!("ERROR: Unable to reset stream. Exiting. {}", err);
             }
         }
@@ -332,11 +339,13 @@ impl Benchmark {
         for (i, ref packet) in self.packets.iter().enumerate() {
             let ref stream = self.streams[self.stream_ids[i]];
 
-            if let Err(err) = stream.scan(packet.as_ref().as_slice(),
-                                          0,
-                                          &self.scratch,
-                                          Some(Self::on_match),
-                                          Some(&self.match_count)) {
+            if let Err(err) = stream.scan(
+                packet.as_ref().as_slice(),
+                0,
+                &self.scratch,
+                Some(Self::on_match),
+                Some(&self.match_count),
+            ) {
                 println!("ERROR: Unable to scan packet. Exiting. {}", err)
             }
         }
@@ -346,12 +355,13 @@ impl Benchmark {
     // through Hyperscan using the block-mode interface.
     fn scan_block(&mut self) {
         for ref packet in &self.packets {
-            if let Err(err) = self.db_block
-                .scan(packet.as_ref().as_slice(),
-                      0,
-                      &self.scratch,
-                      Some(Self::on_match),
-                      Some(&self.match_count)) {
+            if let Err(err) = self.db_block.scan(
+                packet.as_ref().as_slice(),
+                0,
+                &self.scratch,
+                Some(Self::on_match),
+                Some(&self.match_count),
+            ) {
                 println!("ERROR: Unable to scan packet. Exiting. {}", err)
             }
         }
@@ -363,39 +373,51 @@ impl Benchmark {
         let num_streams = self.stream_map.len();
         let num_bytes = self.bytes();
 
-        println!("{} packets in {} streams, totalling {} bytes.",
-                 num_packets,
-                 num_streams,
-                 num_bytes);
-        println!("Average packet length: {} bytes.",
-                 num_bytes / if num_packets > 0 { num_packets } else { 1 });
-        println!("Average stream length: {} bytes.",
-                 num_bytes / if num_streams > 0 { num_streams } else { 1 });
+        println!(
+            "{} packets in {} streams, totalling {} bytes.",
+            num_packets,
+            num_streams,
+            num_bytes
+        );
+        println!(
+            "Average packet length: {} bytes.",
+            num_bytes / if num_packets > 0 { num_packets } else { 1 }
+        );
+        println!(
+            "Average stream length: {} bytes.",
+            num_bytes / if num_streams > 0 { num_streams } else { 1 }
+        );
         println!("");
 
         match self.db_streaming.database_size() {
             Ok(size) => {
-                println!("Streaming mode Hyperscan database size    : {} bytes.",
-                         size);
+                println!(
+                    "Streaming mode Hyperscan database size    : {} bytes.",
+                    size
+                );
             }
-            Err(err) => {
-                println!("Error getting streaming mode Hyperscan database size, {}",
-                         err)
-            }
+            Err(err) => println!(
+                "Error getting streaming mode Hyperscan database size, {}",
+                err
+            ),
         }
 
         match self.db_block.database_size() {
             Ok(size) => {
-                println!("Block mode Hyperscan database size        : {} bytes.",
-                         size);
+                println!(
+                    "Block mode Hyperscan database size        : {} bytes.",
+                    size
+                );
             }
             Err(err) => println!("Error getting block mode Hyperscan database size, {}", err),
         }
 
         match self.db_streaming.stream_size() {
             Ok(size) => {
-                println!("Streaming mode Hyperscan stream state size: {} bytes (per stream).",
-                         size);
+                println!(
+                    "Streaming mode Hyperscan stream state size: {} bytes (per stream).",
+                    size
+                );
             }
             Err(err) => println!("Error getting stream state size, {}", err),
         }
@@ -405,7 +427,7 @@ impl Benchmark {
 // Main entry point.
 #[allow(unused_must_use)]
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
 
     // Process command line arguments.
     let args: Vec<String> = env::args().collect();
@@ -429,18 +451,18 @@ fn main() {
     };
 
     let repeat_count: usize = match matches.opt_str("n") {
-        Some(s) => {
-            match s.parse() {
-                Ok(n) => n,
-                Err(err) => {
-                    write!(io::stderr(),
-                           "ERROR: Unable to parse repeats `{}`: {}\n",
-                           s,
-                           err);
-                    exit(-1);
-                }
+        Some(s) => match s.parse() {
+            Ok(n) => n,
+            Err(err) => {
+                write!(
+                    io::stderr(),
+                    "ERROR: Unable to parse repeats `{}`: {}\n",
+                    s,
+                    err
+                );
+                exit(-1);
             }
-        }
+        },
         None => 1,
     };
 
@@ -458,9 +480,11 @@ fn main() {
     let (db_streaming, db_block) = match databases_from_file(pattern_file) {
         Ok((db_streaming, db_block)) => (db_streaming, db_block),
         Err(err) => {
-            write!(io::stderr(),
-                   "ERROR: Unable to parse and compile patterns: {}\n",
-                   err);
+            write!(
+                io::stderr(),
+                "ERROR: Unable to parse and compile patterns: {}\n",
+                err
+            );
             exit(-1);
         }
     };
@@ -471,9 +495,11 @@ fn main() {
     println!("PCAP input file: {}", pcap_file);
 
     if let Err(err) = bench.read_streams(pcap_file) {
-        write!(io::stderr(),
-               "Unable to read packets from PCAP file. Exiting. {}\n",
-               err);
+        write!(
+            io::stderr(),
+            "Unable to read packets from PCAP file. Exiting. {}\n",
+            err
+        );
         exit(-1);
     }
 
@@ -537,19 +563,27 @@ fn main() {
     println!("\nStreaming mode:\n");
     println!("  Total matches: {}", matches_stream);
     println!("  Match rate:    {:.4} matches/kilobyte", match_rate_stream);
-    println!("  Throughput (with stream overhead): {:.2} megabits/sec",
-             tput_stream_overhead / 1000000.0);
-    println!("  Throughput (no stream overhead):   {:.2} megabits/sec",
-             tput_stream_scanning / 1000000.0);
+    println!(
+        "  Throughput (with stream overhead): {:.2} megabits/sec",
+        tput_stream_overhead / 1000000.0
+    );
+    println!(
+        "  Throughput (no stream overhead):   {:.2} megabits/sec",
+        tput_stream_scanning / 1000000.0
+    );
 
     println!("\nBlock mode:\n");
     println!("  Total matches: {}", matches_block);
     println!("  Match rate:    {:.4} matches/kilobyte", match_rate_block);
-    println!("  Throughput:    {:.2} megabits/sec",
-             tput_block_scanning / 1000000.0);
+    println!(
+        "  Throughput:    {:.2} megabits/sec",
+        tput_block_scanning / 1000000.0
+    );
 
     if bytes < (2 * 1024 * 1024) {
-        println!("\nWARNING: Input PCAP file is less than 2MB in size.\n
-                  This test may have been too short to calculate accurate results.");
+        println!(
+            "\nWARNING: Input PCAP file is less than 2MB in size.\n
+                  This test may have been too short to calculate accurate results."
+        );
     }
 }

@@ -1,8 +1,8 @@
-#[macro_use]
-extern crate log;
-extern crate env_logger;
 #[cfg(feature = "gen")]
 extern crate bindgen;
+extern crate env_logger;
+#[macro_use]
+extern crate log;
 extern crate pkg_config;
 
 #[cfg(not(feature = "gen"))]
@@ -25,12 +25,19 @@ fn find_hyperscan() -> Library {
             link_paths: vec![From::from(format!("{}/lib", prefix))],
             include_paths: vec![From::from(format!("{}/include", prefix))],
         }
-    } else if let Ok(pkg_config::Library { libs, link_paths, include_paths, .. }) =
-        pkg_config::Config::new().statik(true).probe("libhs") {
-        debug!("building with Hyperscan @ libs={:?}, link_paths={:?}, include_paths={:?}",
-               libs,
-               link_paths,
-               include_paths);
+    } else if let Ok(pkg_config::Library {
+        libs,
+        link_paths,
+        include_paths,
+        ..
+    }) = pkg_config::Config::new().statik(true).probe("libhs")
+    {
+        debug!(
+            "building with Hyperscan @ libs={:?}, link_paths={:?}, include_paths={:?}",
+            libs,
+            link_paths,
+            include_paths
+        );
 
         Library {
             libs: libs,
@@ -66,7 +73,7 @@ fn generate_binding(_: &str, out_file: &Path) {
 }
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
 
     let libhs = find_hyperscan();
 
@@ -89,7 +96,9 @@ fn main() {
     }
 
     for link_path in libhs.link_paths {
-        println!("cargo:rustc-link-search=native={}",
-                 link_path.to_str().unwrap());
+        println!(
+            "cargo:rustc-link-search=native={}",
+            link_path.to_str().unwrap()
+        );
     }
 }

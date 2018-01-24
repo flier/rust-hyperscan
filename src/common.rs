@@ -269,9 +269,8 @@ pub mod tests {
     const DATABASE_SIZE: usize = 872;
 
     pub fn validate_database_info(info: &str) -> (Vec<u8>, Option<String>, Option<String>) {
-        if let Some(captures) = Regex::new(
-            r"^Version:\s(\d\.\d\.\d)\sFeatures:\s+(\w+)?\sMode:\s(\w+)$",
-        ).unwrap()
+        if let Some(captures) = Regex::new(r"^Version:\s(\d\.\d\.\d)\sFeatures:\s+(\w+)?\sMode:\s(\w+)$")
+            .unwrap()
             .captures(info)
         {
             let version = captures
@@ -318,7 +317,7 @@ pub mod tests {
 
     #[test]
     fn test_database() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db = BlockDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
@@ -335,7 +334,7 @@ pub mod tests {
 
     #[test]
     fn test_database_serialize() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db = StreamingDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
@@ -355,7 +354,7 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db = VectoredDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
@@ -368,7 +367,7 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize_at() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db = BlockDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 

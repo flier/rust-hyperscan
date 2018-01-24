@@ -7,7 +7,7 @@ use std::ops::{Deref, DerefMut};
 use raw::*;
 use api::*;
 use errors::Error;
-use common::{RawDatabase, BlockDatabase, VectoredDatabase, StreamingDatabase};
+use common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
 
 /// A large enough region of scratch space to support a given database.
 ///
@@ -170,7 +170,6 @@ impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self, Error> {
-
         let mut ptrs = Vec::with_capacity(data.len());
         let mut lens = Vec::with_capacity(data.len());
 
@@ -317,7 +316,6 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
         callback: Option<MatchEventCallback<D>>,
         context: Option<&D>,
     ) -> Result<&Self, Error> {
-
         let bytes = data.as_bytes();
 
         unsafe {
@@ -354,7 +352,7 @@ pub mod tests {
 
     #[test]
     fn test_scratch() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db: BlockDatabase = pattern!{"test"}.build().unwrap();
 
@@ -379,7 +377,7 @@ pub mod tests {
 
     #[test]
     fn test_block_scan() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
             .build()
@@ -408,7 +406,7 @@ pub mod tests {
 
     #[test]
     fn test_vectored_scan() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
             .build()
@@ -439,7 +437,7 @@ pub mod tests {
 
     #[test]
     fn test_streaming_scan() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
 
         let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}.build().unwrap();
 
