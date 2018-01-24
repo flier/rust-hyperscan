@@ -11,7 +11,7 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 	brew install tree
 	brew install llvm
 else
-	mkdir $HOME/bin
+	mkdir -p $HOME/bin
 
 	ln -s /usr/bin/g++-4.8 $HOME/bin/g++
 	ln -s /usr/bin/gcc-4.8 $HOME/bin/gcc
