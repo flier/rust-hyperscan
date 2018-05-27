@@ -1,6 +1,6 @@
 [package]
 name = "hyperscan"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Flier Lu <flier.lu@gmail.com>"]
 build = "build.rs"
 description = "Hyperscan bindings for Rust with Multiple Pattern and Streaming Scan"
