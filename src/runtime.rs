@@ -10,14 +10,10 @@ use errors::Result;
 use raw::*;
 
 /// A large enough region of scratch space to support a given database.
-///
+#[derive(Debug)]
 pub struct RawScratch(RawScratchPtr);
 
-impl fmt::Debug for RawScratch {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RawScratch({:p})", self.0)
-    }
-}
+unsafe impl Send for RawScratch {}
 
 impl RawScratch {
     /// Allocate a "scratch" space for use by Hyperscan.
@@ -35,7 +31,7 @@ impl RawScratch {
             check_hs_error!(hs_alloc_scratch(db.as_ptr(), &mut s));
         }
 
-        trace!("allocated scratch at {:p} for {:?}", s, db,);
+        trace!("allocate scratch at {:p} for {:?}", s, db,);
 
         Ok(RawScratch(s))
     }
@@ -46,7 +42,7 @@ impl Drop for RawScratch {
         unsafe {
             assert_hs_error!(hs_free_scratch(self.0));
 
-            trace!("freed scratch at {:p}", self.0);
+            trace!("free scratch at {:p}", self.0);
 
             self.0 = ptr::null_mut();
         }
