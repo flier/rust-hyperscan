@@ -21,28 +21,28 @@ bench_all = ["bench_parse", "bench_compile", "bench_scan"]
 
 [dependencies]
 libc = "0.2"
-log = "0.3"
+log = "0.4"
 error-chain = "0.11"
 bitflags = "1.0"
-hexplay = "*"
-regex-syntax = "0.4"
+hexplay = "0.2"
+regex-syntax = "0.6"
 
-clippy = {version = "*", optional = true}
+clippy = {version = "0.0.206", optional = true}
 
 [build-dependencies]
-log = "0.3"
-env_logger = "0.4"
+log = "0.4"
+env_logger = "0.5"
 pkg-config = "0.3"
 
-bindgen = { version = "0.31", optional = true }
+bindgen = { version = "0.37", optional = true }
 
 [dev-dependencies]
-pretty_env_logger = "0.1"
+pretty_env_logger = "0.2"
 matches = "0.1"
-regex = "0.2"
+regex = "1.0"
 getopts = "0.2"
 pcap = "0.7"
-pnet = "0.20"
-byteorder = "1.1"
-lazy_static = "0.2"
-rand = "0.3"
+pnet = "0.21"
+byteorder = "1.2"
+lazy_static = "1.0"
+rand = "0.5"
