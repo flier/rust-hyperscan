@@ -1,78 +1,52 @@
-use std::fmt;
-use std::string::ToString;
 use std::ffi::CStr;
+use std::result::Result as StdResult;
+
+use failure::Error;
 
 use constants::*;
 use raw::*;
 
-error_chain! {
-    foreign_links {
-        ParseError(::std::num::ParseIntError) #[doc="An error which can be returned when parsing an integer."];
+pub type Result<T> = StdResult<T, Error>;
 
-        NulError(::std::ffi::NulError);
-
-        Utf8Error(::std::str::Utf8Error);
-    }
-
-    errors {
-        HsError(err: HsError) {
-            description("hyperscan error")
-            display("hyperscan error, {}", err)
-        }
-
-        CompileError(err: CompileError) {
-            description("compile error")
-            display("compile expression #{} failed, {}", err.expression(), err.message())
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Fail)]
 pub enum HsError {
-    Success,
-    /// A parameter passed to this function was invalid.
+    #[fail(display = "A parameter passed to this function was invalid")]
     Invalid,
-    /// A memory allocation failed.
-    NoMem,
-    /// The engine was terminated by callback.
-    ///
-    /// This return value indicates that the target buffer was partially scanned,
-    /// but that the callback function requested that scanning cease after a match was located.
+    #[fail(display = "A memory allocation failed.")]
+    NoMemory,
+    #[fail(display = "The engine was terminated by callback.")]
     ScanTerminated,
-    /// The pattern compiler failed with more detail.
-    CompilerError,
-    /// The given database was built for a different version of Hyperscan.
+    #[fail(display = "The pattern compiler failed with more detail, #{} {}.", _0, _1)]
+    CompilerError(usize, String),
+    #[fail(display = "The given database was built for a different version of Hyperscan.")]
     DbVersionError,
-    /// The given database was built for a different platform (i.e., CPU type).
+    #[fail(display = "The given database was built for a different platform (i.e., CPU type).")]
     DbPlatformError,
-    /// The given database was built for a different mode of operation.
-    /// This error is returned when streaming calls are used
-    /// with a block or vectored database and vice versa.
+    #[fail(display = "The given database was built for a different mode of operation.")]
     DbModeError,
-    /// A parameter passed to this function was not correctly aligned.
+    #[fail(display = "A parameter passed to this function was not correctly aligned.")]
     BadAlign,
-    /// The memory allocator (either malloc() or the allocator set with hs_set_allocator())
-    /// did not correctly return memory suitably aligned
-    /// for the largest representable data type on this platform.
+    #[fail(display = "The memory allocator did not correctly return memory suitably aligned")]
     BadAlloc,
-    /// The scratch region was already in use.
+    #[fail(display = "The scratch region was already in use.")]
     ScratchInUse,
-    /// Unsupported CPU architecture.
+    #[fail(display = "Unsupported CPU architecture.")]
     UnsupportedArch,
-    /// Provided buffer was too small.
+    #[fail(display = "Provided buffer was too small.")]
     InsufficientSpace,
-    /// Unknown error code
+    #[fail(display = "Unknown error code: {}", _0)]
     Failed(i32),
 }
 
 impl From<i32> for HsError {
     fn from(result: i32) -> Self {
         match result {
-            HS_SUCCESS => HsError::Success,
+            HS_SUCCESS => {
+                unreachable!();
+            }
             HS_INVALID => HsError::Invalid,
-            HS_NOMEM => HsError::NoMem,
+            HS_NOMEM => HsError::NoMemory,
             HS_SCAN_TERMINATED => HsError::ScanTerminated,
-            HS_COMPILER_ERROR => HsError::CompilerError,
             HS_DB_VERSION_ERROR => HsError::DbVersionError,
             HS_DB_PLATFORM_ERROR => HsError::DbPlatformError,
             HS_DB_MODE_ERROR => HsError::DbModeError,
@@ -80,62 +54,35 @@ impl From<i32> for HsError {
             HS_BAD_ALLOC => HsError::BadAlloc,
             HS_SCRATCH_IN_USE => HsError::ScratchInUse,
             HS_ARCH_ERROR => HsError::UnsupportedArch,
+            HS_INSUFFICIENT_SPACE => HsError::InsufficientSpace,
             err => HsError::Failed(err),
         }
     }
 }
 
-impl fmt::Display for HsError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            HsError::Success => write!(f, "the engine completed normally."),
-            HsError::Invalid => write!(f, "a parameter passed to this function was invalid."),
-            HsError::NoMem => write!(f, "a memory allocation failed."),
-            HsError::ScanTerminated => write!(f, "the engine was terminated by callback."),
-            HsError::CompilerError => write!(f, "the pattern compiler failed"),
-            HsError::DbVersionError => {
-                write!(
-                    f,
-                    "the given database was built for a different version of Hyperscan."
-                )
-            }
-            HsError::DbPlatformError => write!(f, "the given database was built for a different platform."),
-            HsError::DbModeError => {
-                write!(
-                    f,
-                    "the given database was built for a different mode of operation."
-                )
-            }
-            HsError::BadAlign => {
-                write!(
-                    f,
-                    "a parameter passed to this function was not correctly aligned."
-                )
-            }
-            HsError::BadAlloc => {
-                write!(
-                    f,
-                    "the memory allocator did not correctly return memory suitably aligned."
-                )
-            }
-            HsError::ScratchInUse => write!(f, "the scratch region was already in use."),
-            HsError::UnsupportedArch => write!(f, "unsupported CPU architecture."),
-            HsError::InsufficientSpace => write!(f, "Provided buffer was too small."),
-            HsError::Failed(err) => write!(f, "internal operation failed, error code {}.", err),
+macro_rules! check_hs_error {
+    ($result:expr) => {
+        if $result != $crate::HS_SUCCESS {
+            return Err($crate::errors::HsError::from($result).into());
         }
-    }
+    };
 }
 
-macro_rules! check_hs_error {
-    ($result:expr) => (if $result != $crate::HS_SUCCESS {
-        bail!($crate::errors::ErrorKind::HsError($result.into()))
-    })
+macro_rules! check_scan_error {
+    ($result:expr) => {
+        match $result {
+            $crate::HS_SUCCESS | $crate::HS_SCAN_TERMINATED => {}
+            _ => return Err($crate::errors::HsError::from($result).into()),
+        }
+    };
 }
 
 macro_rules! assert_hs_error {
-    ($expr:expr) => (if $expr != $crate::HS_SUCCESS {
-        panic!("panic, err={}", $expr);
-    })
+    ($expr:expr) => {
+        if $expr != $crate::HS_SUCCESS {
+            panic!("panic, err={}", $expr);
+        }
+    };
 }
 
 pub type RawCompileErrorPtr = *mut hs_compile_error_t;
@@ -145,6 +92,7 @@ pub type RawCompileErrorPtr = *mut hs_compile_error_t;
 pub struct CompileError(RawCompileErrorPtr);
 
 unsafe impl Send for CompileError {}
+unsafe impl Sync for CompileError {}
 
 impl CompileError {
     pub fn expression(&self) -> usize {
@@ -172,19 +120,16 @@ impl From<*mut hs_compile_error_t> for CompileError {
 
 macro_rules! check_compile_error {
     ($result:expr, $err:ident) => {
-        if $crate::HS_SUCCESS != $result {
-            match $result {
-                $crate::HS_COMPILER_ERROR => {
-                    let err: $crate::errors::CompileError = $err.into();
+        match $result {
+            $crate::HS_SUCCESS => {}
+            $crate::HS_COMPILER_ERROR => {
+                let err = $crate::errors::CompileError::from($err);
 
-                    trace!("compile expression #{} failed, {}", err.expression(), err.message());
+                trace!("compile expression #{} failed, {}", err.expression(), err.message());
 
-                    bail!($crate::errors::ErrorKind::CompileError(err))
-                },
-                _ => {
-                    bail!($crate::errors::ErrorKind::HsError($result.into()))
-                },
+                return Err($crate::errors::HsError::CompilerError(err.expression(), err.message()).into());
             }
+            _ => return Err($crate::errors::HsError::from($result).into()),
         }
-    }
+    };
 }

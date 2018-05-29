@@ -22,7 +22,7 @@ bench_all = ["bench_parse", "bench_compile", "bench_scan"]
 [dependencies]
 libc = "0.2"
 log = "0.4"
-error-chain = "0.11"
+failure = "0.1"
 bitflags = "1.0"
 hexplay = "0.2"
 regex-syntax = "0.6"
@@ -38,7 +38,6 @@ bindgen = { version = "0.37", optional = true }
 
 [dev-dependencies]
 pretty_env_logger = "0.2"
-matches = "0.1"
 regex = "1.0"
 getopts = "0.2"
 pcap = "0.7"

@@ -21,8 +21,7 @@
 //
 
 extern crate byteorder;
-#[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate getopts;
 extern crate hyperscan;
 extern crate log;
@@ -39,10 +38,12 @@ use std::iter::Iterator;
 use std::net::SocketAddrV4;
 use std::path::Path;
 use std::process::exit;
+use std::result::Result as StdResult;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use byteorder::{BigEndian, ReadBytesExt};
+use failure::Error;
 use getopts::Options;
 use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
 use pnet::packet::ip::IpNextHeaderProtocols;
@@ -53,19 +54,10 @@ use pnet::packet::{Packet, PrimitiveValues};
 use hyperscan::{BlockDatabase, BlockScanner, Database, DatabaseBuilder, Pattern, Patterns, RawScratch, RawStream,
                 Scratch, ScratchAllocator, Stream, StreamingDatabase, StreamingScanner};
 
-error_chain! {
-    links {
-        HyperscanError(hyperscan::errors::Error, hyperscan::errors::ErrorKind);
-    }
-
-    foreign_links {
-        IoError(::std::io::Error);
-        PcapError(::pcap::Error);
-    }
-}
-
 const NANOS_PER_MILLI: u32 = 1_000_000;
 const MILLIS_PER_SEC: u64 = 1_000;
+
+type Result<T> = StdResult<T, Error>;
 
 trait Milliseconds {
     fn ms(&self) -> usize;

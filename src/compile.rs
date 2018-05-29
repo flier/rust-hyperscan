@@ -1,18 +1,19 @@
-use std::ptr;
-use std::fmt;
-use std::os::raw::c_uint;
-use std::str::FromStr;
 use std::ffi::CString;
+use std::fmt;
 use std::iter::FromIterator;
+use std::os::raw::c_uint;
+use std::ptr;
 use std::result::Result as StdResult;
+use std::str::FromStr;
 
+use failure::Error;
 use regex_syntax;
 
-use raw::*;
-use constants::{CompileFlags, CompileMode, ExpressionExtFlags};
 use api::*;
 use common::RawDatabase;
-use errors::{Error, RawCompileErrorPtr, Result};
+use constants::{CompileFlags, CompileMode, ExpressionExtFlags};
+use errors::{RawCompileErrorPtr, Result};
+use raw::*;
 
 const HS_MODE_SOM_HORIZON_DEFAULT: CompileMode = CompileMode::HS_MODE_SOM_HORIZON_SMALL;
 
@@ -95,16 +96,13 @@ impl ExpressionExt {
     fn to_raw(&self) -> hs_expr_ext_t {
         let flags = self.min_offset.map_or(ExpressionExtFlags::empty(), |_| {
             ExpressionExtFlags::HS_EXT_FLAG_MIN_OFFSET
-        }) |
-            self.max_offset.map_or(ExpressionExtFlags::empty(), |_| {
-                ExpressionExtFlags::HS_EXT_FLAG_MAX_OFFSET
-            }) |
-            self.min_length.map_or(ExpressionExtFlags::empty(), |_| {
-                ExpressionExtFlags::HS_EXT_FLAG_MIN_LENGTH
-            }) |
-            self.edit_distance.map_or(ExpressionExtFlags::empty(), |_| {
-                ExpressionExtFlags::HS_EXT_FLAG_EDIT_DISTANCE
-            });
+        }) | self.max_offset.map_or(ExpressionExtFlags::empty(), |_| {
+            ExpressionExtFlags::HS_EXT_FLAG_MAX_OFFSET
+        }) | self.min_length.map_or(ExpressionExtFlags::empty(), |_| {
+            ExpressionExtFlags::HS_EXT_FLAG_MIN_LENGTH
+        }) | self.edit_distance.map_or(ExpressionExtFlags::empty(), |_| {
+            ExpressionExtFlags::HS_EXT_FLAG_EDIT_DISTANCE
+        });
 
         hs_expr_ext_t {
             flags: flags.bits(),
@@ -140,12 +138,7 @@ impl fmt::Display for Pattern {
                 self.flags
             )
         } else {
-            write!(
-                f,
-                "/{}/{}",
-                regex_syntax::escape(self.expression.as_str()),
-                self.flags
-            )
+            write!(f, "/{}/{}", regex_syntax::escape(self.expression.as_str()), self.flags)
         }
     }
 }
@@ -229,7 +222,7 @@ pub type Patterns = Vec<Pattern>;
 /// Define `Pattern` with flags
 #[macro_export]
 macro_rules! pattern {
-    ( $expr:expr ) => {{
+    ($expr:expr) => {{
         $crate::Pattern {
             expression: $expr.into(),
             flags: CompileFlags::default(),
@@ -237,7 +230,7 @@ macro_rules! pattern {
             ext: None,
         }
     }};
-    ( $expr:expr, flags => $flags:expr ) => {{
+    ($expr:expr,flags => $flags:expr) => {{
         $crate::Pattern {
             expression: $expr.into(),
             flags: $flags.into(),
@@ -245,7 +238,7 @@ macro_rules! pattern {
             ext: None,
         }
     }};
-    ( $expr:expr, flags => $flags:expr, id => $id:expr ) => {{
+    ($expr:expr,flags => $flags:expr,id => $id:expr) => {{
         $crate::Pattern {
             expression: $expr.into(),
             flags: $flags.into(),
@@ -253,14 +246,14 @@ macro_rules! pattern {
             ext: None,
         }
     }};
-    ( $expr:expr, flags => $flags:expr, id => $id:expr, ext => $ext:expr ) => {{
+    ($expr:expr,flags => $flags:expr,id => $id:expr,ext => $ext:expr) => {{
         $crate::Pattern {
             expression: $expr.into(),
             flags: $flags.into(),
             id: Some($id),
             ext: $ext,
         }
-    }}
+    }};
 }
 
 /// Define multi `Pattern` with flags and ID
@@ -402,10 +395,9 @@ impl<'a, D: Database<DatabaseType = T> + From<RawDatabase<T>>, T: DatabaseType> 
     // which is passed into the match callback to identify the pattern that has matched.
     ///
     fn build_for_platform(&self, platform: Option<&PlatformInfo>) -> Result<D> {
-        let mode = if T::mode() == CompileMode::HS_MODE_STREAM &&
-            self.iter().any(|pattern| {
-                pattern.flags.contains(CompileFlags::HS_FLAG_SOM_LEFTMOST)
-            })
+        let mode = if T::mode() == CompileMode::HS_MODE_STREAM
+            && self.iter()
+                .any(|pattern| pattern.flags.contains(CompileFlags::HS_FLAG_SOM_LEFTMOST))
         {
             T::mode() | HS_MODE_SOM_HORIZON_DEFAULT
         } else {
@@ -484,9 +476,8 @@ pub mod tests {
     use std::ptr;
 
     use super::super::*;
-    use errors::{Error, ErrorKind};
-    use raw::AsPtr;
     use common::tests::*;
+    use raw::AsPtr;
 
     const DATABASE_SIZE: usize = 2664;
 
@@ -499,18 +490,11 @@ pub mod tests {
         assert!(flags.contains(CompileFlags::HS_FLAG_DOTALL));
         assert_eq!(flags.to_string(), "is");
 
-        assert_eq!(
-            flags,
-            CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_DOTALL
-        );
+        assert_eq!(flags, CompileFlags::HS_FLAG_CASELESS | CompileFlags::HS_FLAG_DOTALL);
 
         assert_eq!(
             "ism".parse::<CompileFlags>().unwrap(),
             flags | CompileFlags::HS_FLAG_MULTILINE
-        );
-        assert_matches!(
-            "test".parse::<CompileFlags>().err().unwrap(),
-            Error(ErrorKind::Msg(_), _)
         );
     }
 

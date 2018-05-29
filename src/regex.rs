@@ -7,6 +7,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::borrow::Cow;
 
+use failure::Error;
 use hexplay::HexViewBuilder;
 
 use api::{BlockScanner, DatabaseBuilder, ScratchAllocator};
@@ -14,7 +15,7 @@ use common::BlockDatabase;
 use compile::Pattern;
 use runtime::RawScratch;
 use constants::CompileFlags;
-use errors::{Error, ErrorKind, HsError, Result};
+use errors::{Result};
 
 /// A compiled regular expression for matching Unicode strings.
 ///
@@ -299,8 +300,7 @@ impl Regex {
             Some(Match::short_matched),
             Some(&m),
         ) {
-            Ok(_) |
-            Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
+            Ok(_) => {
                 if m.borrow().is_matched() {
                     Some(m.into_inner().seek(start))
                 } else {
@@ -433,8 +433,7 @@ impl<'r, 't> Iterator for Matches<'r, 't> {
                 Some(Match::short_matched),
                 Some(&m),
             ) {
-                Ok(_) |
-                Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {
+                Ok(_) => {
                     let m = m.into_inner();
 
                     if m.is_matched() {
@@ -762,8 +761,7 @@ impl RegexSet {
             Some(Self::matched),
             Some(&m),
         ) {
-            Ok(_) |
-            Err(Error(ErrorKind::HsError(HsError::ScanTerminated), _)) => {}
+            Ok(_)  => {}
             Err(err) => {
                 warn!("scan failed, {}", err);
             }

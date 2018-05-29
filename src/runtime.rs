@@ -144,7 +144,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for BlockDatabase {
         unsafe {
             let bytes = data.as_ref();
 
-            check_hs_error!(hs_scan(
+            check_scan_error!(hs_scan(
                 self.as_ptr(),
                 bytes.as_ptr() as *const i8,
                 bytes.len() as u32,
@@ -185,7 +185,7 @@ impl<T: AsRef<[u8]>, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
         }
 
         unsafe {
-            check_hs_error!(hs_scan_vector(
+            check_scan_error!(hs_scan_vector(
                 self.as_ptr(),
                 ptrs.as_slice().as_ptr() as *const *const i8,
                 lens.as_slice().as_ptr() as *const c_uint,
@@ -389,7 +389,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for RawStream {
         let bytes = data.as_ref();
 
         unsafe {
-            check_hs_error!(hs_scan_stream(
+            check_scan_error!(hs_scan_stream(
                 self.0,
                 bytes.as_ptr() as *const i8,
                 bytes.len() as u32,

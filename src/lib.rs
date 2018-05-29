@@ -165,33 +165,30 @@
 #[macro_use]
 extern crate bitflags;
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate hexplay;
 extern crate libc;
 #[macro_use]
 extern crate log;
 extern crate regex_syntax;
 
-pub mod raw;
 mod constants;
+mod raw;
 #[macro_use]
-pub mod errors;
+mod errors;
 mod api;
 mod common;
 #[macro_use]
 mod compile;
-mod runtime;
 pub mod regex;
+mod runtime;
 
-pub use constants::*;
 pub use api::*;
 pub use common::{valid_platform, version, Block, BlockDatabase, RawDatabase, StreamMode, Streaming, StreamingDatabase,
                  Vectored, VectoredDatabase};
 pub use compile::{DatabaseCompiler, Pattern, Patterns};
+pub use constants::*;
 pub use runtime::{RawScratch, RawStream};
 
-#[cfg(test)]
-#[macro_use]
-extern crate matches;
 #[cfg(test)]
 extern crate regex as re;
