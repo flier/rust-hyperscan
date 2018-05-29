@@ -1,3 +1,5 @@
+#![allow(non_camel_case_types)]
+
 pub type HsError = i32;
 
 /// The engine completed normally.
@@ -146,61 +148,62 @@ bitflags! {
 }
 
 /// Tuning flags
-pub type TuneFamily = u32;
+#[repr(u32)]
+pub enum TuneFamily {
+    /// Tuning Parameter - Generic
+    ///
+    /// This indicates that the compiled database should not be tuned for any
+    /// particular target platform.
+    HS_TUNE_FAMILY_GENERIC = 0,
 
-/// Tuning Parameter - Generic
-///
-/// This indicates that the compiled database should not be tuned for any
-/// particular target platform.
-pub const HS_TUNE_FAMILY_GENERIC: TuneFamily = 0;
+    /// Tuning Parameter - Intel(R) microarchitecture code name Sandy Bridge
+    ///
+    /// This indicates that the compiled database should be tuned for the
+    /// Sandy Bridge microarchitecture.
+    HS_TUNE_FAMILY_SNB = 1,
 
-/// Tuning Parameter - Intel(R) microarchitecture code name Sandy Bridge
-///
-/// This indicates that the compiled database should be tuned for the
-/// Sandy Bridge microarchitecture.
-pub const HS_TUNE_FAMILY_SNB: TuneFamily = 1;
+    /// Tuning Parameter - Intel(R) microarchitecture code name Ivy Bridge
+    ///
+    /// This indicates that the compiled database should be tuned for the
+    /// Ivy Bridge microarchitecture.
+    HS_TUNE_FAMILY_IVB = 2,
 
-/// Tuning Parameter - Intel(R) microarchitecture code name Ivy Bridge
-///
-/// This indicates that the compiled database should be tuned for the
-/// Ivy Bridge microarchitecture.
-pub const HS_TUNE_FAMILY_IVB: TuneFamily = 2;
+    /// Tuning Parameter - Intel(R) microarchitecture code name Haswell
+    ///
+    /// This indicates that the compiled database should be tuned for the
+    /// Haswell microarchitecture.
+    HS_TUNE_FAMILY_HSW = 3,
 
-/// Tuning Parameter - Intel(R) microarchitecture code name Haswell
-///
-/// This indicates that the compiled database should be tuned for the
-/// Haswell microarchitecture.
-pub const HS_TUNE_FAMILY_HSW: TuneFamily = 3;
+    /// Tuning Parameter - Intel(R) microarchitecture code name Silvermont
+    ///
+    /// This indicates that the compiled database should be tuned for the
+    /// Silvermont microarchitecture.
+    HS_TUNE_FAMILY_SLM = 4,
 
-/// Tuning Parameter - Intel(R) microarchitecture code name Silvermont
-///
-/// This indicates that the compiled database should be tuned for the
-/// Silvermont microarchitecture.
-pub const HS_TUNE_FAMILY_SLM: TuneFamily = 4;
+    /// Tuning Parameter - Intel(R) microarchitecture code name Broadwell
+    ///
+    /// This indicates that the compiled database should be tuned for the
+    /// Broadwell microarchitecture.
+    HS_TUNE_FAMILY_BDW = 5,
 
-/// Tuning Parameter - Intel(R) microarchitecture code name Broadwell
-///
-/// This indicates that the compiled database should be tuned for the
-/// Broadwell microarchitecture.
-pub const HS_TUNE_FAMILY_BDW: TuneFamily = 5;
+    /// Tuning Parameter - Intel(R) microarchitecture code name Skylake
+    ///
+    /// This indicates that the compiled database should be tuned for the
+    /// Skylake microarchitecture.
+    HS_TUNE_FAMILY_SKL = 6,
 
-/// Tuning Parameter - Intel(R) microarchitecture code name Skylake
-///
-/// This indicates that the compiled database should be tuned for the
-/// Skylake microarchitecture.
-pub const HS_TUNE_FAMILY_SKL: TuneFamily = 6;
+    /// Tuning Parameter - Intel(R) microarchitecture code name Skylake Server
+    ///
+    /// This indicates that the compiled database should be tuned for the
+    /// Skylake Server microarchitecture.
+    HS_TUNE_FAMILY_SKX = 7,
 
-/// Tuning Parameter - Intel(R) microarchitecture code name Skylake Server
-///
-/// This indicates that the compiled database should be tuned for the
-/// Skylake Server microarchitecture.
-pub const HS_TUNE_FAMILY_SKX: TuneFamily = 7;
-
-/// Tuning Parameter - Intel(R) microarchitecture code name Goldmont
-///
-/// This indicates that the compiled database should be tuned for the
-/// Goldmont microarchitecture.
-pub const HS_TUNE_FAMILY_GLM: TuneFamily = 8;
+    /// Tuning Parameter - Intel(R) microarchitecture code name Goldmont
+    ///
+    /// This indicates that the compiled database should be tuned for the
+    /// Goldmont microarchitecture.
+    HS_TUNE_FAMILY_GLM = 8,
+}
 
 bitflags! {
     #[doc="Expression extension use the flags to indicate which fields are used."]
@@ -216,5 +219,8 @@ bitflags! {
 
         #[doc="Flag indicating that the hs_expr_ext::edit_distance field is used."]
         const HS_EXT_FLAG_EDIT_DISTANCE = 8;
+
+        #[doc="Flag indicating that the hs_expr_ext::hamming_distance field is used."]
+        const HS_EXT_FLAG_HAMMING_DISTANCE = 16;
     }
 }

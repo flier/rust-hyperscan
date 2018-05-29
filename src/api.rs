@@ -99,7 +99,7 @@ impl PlatformInfo {
 
     pub fn new(tune: TuneFamily, cpu_features: CpuFeatures) -> PlatformInfo {
         PlatformInfo(RawPlatformInfoType {
-            tune: tune,
+            tune: tune as u32,
             cpu_features: cpu_features.bits(),
             reserved1: 0,
             reserved2: 0,

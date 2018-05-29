@@ -53,11 +53,11 @@ fn generate_binding(hyperscan_include_path: &str, out_file: &Path) {
 
     bindgen::builder()
         .header(format!("{}/hs.h", hyperscan_include_path))
+        .generate_comments(true)
         .clang_arg("-xc++")
         .clang_arg("-std=c++11")
         .whitelist_function("^hs_.*")
-        .link_static("hs")
-        .link_static("hs_runtime")
+        .rustfmt_bindings(true)
         .generate()
         .expect("Fail to generate bindings")
         .write_to_file(out_file)
@@ -69,9 +69,9 @@ fn generate_binding(hyperscan_include_path: &str, out_file: &Path) {
 #[cfg(not(feature = "gen"))]
 fn generate_binding(_: &str, out_file: &Path) {
     if cfg!(any(target_os = "macos", target_os = "freebsd")) {
-        fs::copy("src/raw_macos.rs", out_file).expect("fail to copy bindings");
+        fs::copy("src/macos/raw.rs", out_file).expect("fail to copy bindings");
     } else {
-        fs::copy("src/raw_linux.rs", out_file).expect("fail to copy bindings");
+        fs::copy("src/linux/raw.rs", out_file).expect("fail to copy bindings");
     }
 }
 
@@ -81,7 +81,7 @@ fn main() {
     let libhs = find_hyperscan();
 
     let out_dir = env::var("OUT_DIR").unwrap();
-    let out_file = Path::new(&out_dir).join("raw_bindgen.rs");
+    let out_file = Path::new(&out_dir).join("raw.rs");
 
     generate_binding(libhs.include_paths[0].to_str().unwrap(), &out_file);
 

@@ -90,19 +90,30 @@ pub struct ExpressionExt {
 
     /// Allow patterns to approximately match within this edit distance.
     pub edit_distance: Option<u32>,
+
+    /// Allow patterns to approximately match within this Hamming distance.
+    pub hamming_distance: Option<u32>,
 }
 
 impl ExpressionExt {
     fn to_raw(&self) -> hs_expr_ext_t {
-        let flags = self.min_offset.map_or(ExpressionExtFlags::empty(), |_| {
-            ExpressionExtFlags::HS_EXT_FLAG_MIN_OFFSET
-        }) | self.max_offset.map_or(ExpressionExtFlags::empty(), |_| {
-            ExpressionExtFlags::HS_EXT_FLAG_MAX_OFFSET
-        }) | self.min_length.map_or(ExpressionExtFlags::empty(), |_| {
-            ExpressionExtFlags::HS_EXT_FLAG_MIN_LENGTH
-        }) | self.edit_distance.map_or(ExpressionExtFlags::empty(), |_| {
-            ExpressionExtFlags::HS_EXT_FLAG_EDIT_DISTANCE
-        });
+        let mut flags = ExpressionExtFlags::empty();
+
+        if self.min_offset.is_some() {
+            flags |= ExpressionExtFlags::HS_EXT_FLAG_MIN_OFFSET;
+        }
+        if self.max_offset.is_some() {
+            flags |= ExpressionExtFlags::HS_EXT_FLAG_MAX_OFFSET;
+        }
+        if self.min_length.is_some() {
+            flags |= ExpressionExtFlags::HS_EXT_FLAG_MIN_LENGTH;
+        }
+        if self.edit_distance.is_some() {
+            flags |= ExpressionExtFlags::HS_EXT_FLAG_EDIT_DISTANCE;
+        }
+        if self.hamming_distance.is_some() {
+            flags |= ExpressionExtFlags::HS_EXT_FLAG_HAMMING_DISTANCE;
+        }
 
         hs_expr_ext_t {
             flags: flags.bits(),
@@ -110,6 +121,7 @@ impl ExpressionExt {
             max_offset: self.max_offset.unwrap_or_default(),
             min_length: self.min_length.unwrap_or_default(),
             edit_distance: self.edit_distance.unwrap_or_default(),
+            hamming_distance: self.hamming_distance.unwrap_or_default(),
         }
     }
 }
