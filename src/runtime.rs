@@ -1,13 +1,13 @@
 use std::fmt;
-use std::ptr;
 use std::mem;
 use std::os::raw::c_uint;
+use std::ptr;
 
-use raw::*;
 use api::*;
+use common::{BlockDatabase, StreamingDatabase, VectoredDatabase};
 use constants::*;
 use errors::Result;
-use common::{BlockDatabase, StreamingDatabase, VectoredDatabase};
+use raw::*;
 
 /// A large enough region of scratch space to support a given database.
 ///
@@ -35,11 +35,7 @@ impl RawScratch {
             check_hs_error!(hs_alloc_scratch(db.as_ptr(), &mut s));
         }
 
-        trace!(
-            "allocated scratch at {:p} for {:?}",
-            s,
-            db,
-        );
+        trace!("allocated scratch at {:p} for {:?}", s, db,);
 
         Ok(RawScratch(s))
     }
@@ -98,7 +94,6 @@ impl Scratch for RawScratch {
         Ok(size)
     }
 
-
     fn realloc<D>(&mut self, db: &D) -> Result<&Self>
     where
         D: AsPtr<Type = RawDatabaseType> + fmt::Debug,
@@ -107,11 +102,7 @@ impl Scratch for RawScratch {
             check_hs_error!(hs_alloc_scratch(db.as_ptr(), &mut self.0));
         }
 
-        trace!(
-            "reallocated scratch {:p} for {:?}",
-            self.0,
-            db,
-        );
+        trace!("reallocated scratch {:p} for {:?}", self.0, db,);
 
         Ok(self)
     }
@@ -235,24 +226,16 @@ impl StreamingDatabase {
         let mut size = 0;
 
         unsafe {
-            check_hs_error!(match hs_compress_stream(
-                stream.as_ptr(),
-                buf.as_mut_ptr() as *mut i8,
-                buf.len(),
-                &mut size,
-            ) {
-                HS_INSUFFICIENT_SPACE => {
-                    buf.resize(size, 0);
+            check_hs_error!(
+                match hs_compress_stream(stream.as_ptr(), buf.as_mut_ptr() as *mut i8, buf.len(), &mut size,) {
+                    HS_INSUFFICIENT_SPACE => {
+                        buf.resize(size, 0);
 
-                    hs_compress_stream(
-                        stream.as_ptr(),
-                        buf.as_mut_ptr() as *mut i8,
-                        buf.len(),
-                        &mut size,
-                    )
+                        hs_compress_stream(stream.as_ptr(), buf.as_mut_ptr() as *mut i8, buf.len(), &mut size)
+                    }
+                    result => result,
                 }
-                result => result,
-            })
+            )
         }
 
         buf.truncate(size);
@@ -400,11 +383,7 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for RawStream {
             ));
         }
 
-        trace!(
-            "stream scan {} bytes with stream at {:p}",
-            bytes.len(),
-            self.0
-        );
+        trace!("stream scan {} bytes with stream at {:p}", bytes.len(), self.0);
 
         Ok(self)
     }
@@ -412,8 +391,8 @@ impl<T: AsRef<[u8]>, S: Scratch> BlockScanner<T, S> for RawStream {
 
 #[cfg(test)]
 pub mod tests {
-    use std::ptr;
     use std::cell::RefCell;
+    use std::ptr;
 
     use super::super::*;
     use raw::AsPtr;
@@ -458,13 +437,8 @@ pub mod tests {
             0
         };
 
-        db.scan(
-            "foo test bar".as_bytes(),
-            0,
-            &mut s,
-            Some(callback),
-            Some(&matches),
-        ).unwrap();
+        db.scan("foo test bar".as_bytes(), 0, &mut s, Some(callback), Some(&matches))
+            .unwrap();
 
         assert_eq!(matches.into_inner(), vec![(4, 8)]);
     }
@@ -485,8 +459,7 @@ pub mod tests {
             0
         };
 
-        db.scan(&data, 0, &mut s, Some(callback), Some(&matches))
-            .unwrap();
+        db.scan(&data, 0, &mut s, Some(callback), Some(&matches)).unwrap();
 
         assert_eq!(matches.into_inner(), vec![(3, 7)]);
     }
@@ -511,14 +484,10 @@ pub mod tests {
         }
 
         for d in data {
-            stream
-                .scan(d, 0, &mut s, Some(callback), Some(&matches))
-                .unwrap();
+            stream.scan(d, 0, &mut s, Some(callback), Some(&matches)).unwrap();
         }
 
-        stream
-            .close(&mut s, Some(callback), Some(&matches))
-            .unwrap();
+        stream.close(&mut s, Some(callback), Some(&matches)).unwrap();
 
         assert_eq!(matches.into_inner(), vec![(3, 7)]);
     }
@@ -555,14 +524,10 @@ pub mod tests {
             let stream2 = db.expand_stream(&buf).unwrap();
 
             for d in &data[1..] {
-                stream2
-                    .scan(d, 0, &mut s, Some(callback), Some(&matches))
-                    .unwrap();
+                stream2.scan(d, 0, &mut s, Some(callback), Some(&matches)).unwrap();
             }
 
-            stream2
-                .close(&mut s, Some(callback), Some(&matches))
-                .unwrap();
+            stream2.close(&mut s, Some(callback), Some(&matches)).unwrap();
 
             assert_eq!(matches.borrow().clone(), vec![(3, 7)]);
         }
@@ -576,14 +541,10 @@ pub mod tests {
                 .unwrap();
 
             for d in &data[1..] {
-                stream3
-                    .scan(d, 0, &mut s, Some(callback), Some(&matches))
-                    .unwrap();
+                stream3.scan(d, 0, &mut s, Some(callback), Some(&matches)).unwrap();
             }
 
-            stream3
-                .close(&mut s, Some(callback), Some(&matches))
-                .unwrap();
+            stream3.close(&mut s, Some(callback), Some(&matches)).unwrap();
 
             assert_eq!(matches.borrow().clone(), vec![(3, 7)]);
         }

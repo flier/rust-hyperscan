@@ -13,13 +13,13 @@ extern crate test;
 
 #[cfg(test)]
 mod bench {
-    use std::sync::atomic::{Ordering, AtomicUsize};
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
-    use rand::{Rng, thread_rng};
     use hyperscan::*;
+    use rand::{thread_rng, Rng};
     use regex::Regex;
 
-    use test::{Bencher, black_box};
+    use test::{black_box, Bencher};
 
     const RE_SIMPLE: &str = "flier";
     const RE_EMAIL: &str = r"[\w\d._%+-]+@[\w\d.-]+\.[\w]{2,}";
@@ -29,7 +29,11 @@ mod bench {
 
     lazy_static! {
         static ref _4K_DATA: String = {
-            thread_rng().gen_ascii_chars().take(4096).chain(SHORT_DATA.chars()).collect()
+            thread_rng()
+                .gen_ascii_chars()
+                .take(4096)
+                .chain(SHORT_DATA.chars())
+                .collect()
         };
     }
 
@@ -43,7 +47,9 @@ mod bench {
     impl HsBencher {
         #[cfg(feature = "bench_parse")]
         fn bench_parse(b: &mut Bencher, r: &str) {
-            b.iter(|| { let _: Pattern = r.parse().unwrap(); })
+            b.iter(|| {
+                let _: Pattern = r.parse().unwrap();
+            })
         }
 
         #[cfg(feature = "bench_compile")]
@@ -69,8 +75,7 @@ mod bench {
                 let n = black_box(times);
 
                 (0..n).fold(0, |_, _| {
-                    let _ = db.scan(data, 0, &mut s, Some(on_matched), Some(&matched))
-                        .unwrap();
+                    let _ = db.scan(data, 0, &mut s, Some(on_matched), Some(&matched)).unwrap();
                     0
                 });
 
@@ -88,7 +93,9 @@ mod bench {
     impl RegexBencher {
         #[cfg(feature = "bench_compile")]
         fn bench_compile(b: &mut Bencher, r: &str) {
-            b.iter(|| { let _ = Regex::new(r).unwrap(); })
+            b.iter(|| {
+                let _ = Regex::new(r).unwrap();
+            })
         }
 
         #[cfg(feature = "bench_scan")]
@@ -98,10 +105,7 @@ mod bench {
             let n = black_box(times);
 
             b.iter(|| {
-                assert_eq!(
-                    (0..n).fold(0, |matched, _| matched + r.find_iter(data).count()),
-                    n
-                );
+                assert_eq!((0..n).fold(0, |matched, _| matched + r.find_iter(data).count()), n);
 
                 bytes += (data.len() * times) as u64;
             });

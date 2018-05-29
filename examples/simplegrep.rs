@@ -27,11 +27,11 @@
 extern crate hyperscan;
 
 use std::env;
+use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
-use std::fs::File;
-use std::process::exit;
 use std::path::Path;
+use std::process::exit;
 
 use hyperscan::*;
 
@@ -56,11 +56,7 @@ fn main() {
         write!(
             io::stderr(),
             "Usage: {} <pattern> <input file>\n",
-            Path::new(&args.next().unwrap())
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
+            Path::new(&args.next().unwrap()).file_name().unwrap().to_str().unwrap()
         );
         exit(-1);
     }
@@ -122,11 +118,7 @@ fn main() {
     let mut scratch = match database.alloc() {
         Ok(s) => s,
         Err(err) => {
-            write!(
-                io::stderr(),
-                "ERROR: Unable to allocate scratch space. {}\n",
-                err
-            );
+            write!(io::stderr(), "ERROR: Unable to allocate scratch space. {}\n", err);
             exit(-1);
         }
     };
@@ -146,13 +138,8 @@ fn main() {
         &mut scratch,
         Some(event_handler),
         Some(&pattern),
-    )
-    {
-        write!(
-            io::stderr(),
-            "ERROR: Unable to scan input buffer. Exiting. {}\n",
-            err
-        );
+    ) {
+        write!(io::stderr(), "ERROR: Unable to scan input buffer. Exiting. {}\n", err);
         exit(-1);
     }
 }

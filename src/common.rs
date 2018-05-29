@@ -1,18 +1,18 @@
-use std::ptr;
-use std::fmt;
+use std::borrow::Cow;
 use std::ffi::CStr;
+use std::fmt;
+use std::marker::PhantomData;
 use std::ops::Deref;
 use std::os::raw::c_char;
+use std::ptr;
 use std::slice;
-use std::borrow::Cow;
-use std::marker::PhantomData;
 
 use libc;
 
-use raw::*;
 use api::{Database, DatabaseType, RawDatabasePtr, RawDatabaseType, SerializableDatabase, SerializedDatabase};
 use constants::CompileMode;
 use errors::Result;
+use raw::*;
 
 /// Utility function for identifying this release version.
 pub fn version<'a>() -> Cow<'a, str> {
@@ -213,12 +213,7 @@ where
             check_hs_error!(hs_database_size(self.db, &mut size));
         }
 
-        debug!(
-            "database size of {} database {:p}: {}",
-            T::name(),
-            self.db,
-            size
-        );
+        debug!("database size of {} database {:p}: {}", T::name(), self.db, size);
 
         Ok(size)
     }
@@ -231,12 +226,7 @@ where
 
             let result = CStr::from_ptr(p).to_str()?.to_owned();
 
-            debug!(
-                "database info of {} database {:p}: {:?}",
-                T::name(),
-                self.db,
-                result
-            );
+            debug!("database info of {} database {:p}: {:?}", T::name(), self.db, result);
 
             libc::free(p as *mut libc::c_void);
 
@@ -325,12 +315,7 @@ where
         unsafe {
             check_hs_error!(hs_serialize_database(self.db, &mut bytes, &mut size));
 
-            debug!(
-                "serialized {} database {:p} to {} bytes",
-                T::name(),
-                self.db,
-                size
-            );
+            debug!("serialized {} database {:p} to {} bytes", T::name(), self.db, size);
         }
 
         Ok(RawSerializedDatabase::new(bytes as *mut u8, size))
@@ -421,9 +406,8 @@ pub mod tests {
     const DATABASE_SIZE: usize = 872;
 
     pub fn validate_database_info(info: &str) -> (Vec<u8>, Option<String>, Option<String>) {
-        if let Some(captures) = Regex::new(
-            r"^Version:\s(\d\.\d\.\d)\sFeatures:\s+(\w+)?\sMode:\s(\w+)$",
-        ).unwrap()
+        if let Some(captures) = Regex::new(r"^Version:\s(\d\.\d\.\d)\sFeatures:\s+(\w+)?\sMode:\s(\w+)$")
+            .unwrap()
             .captures(info)
         {
             let version = captures

@@ -1,11 +1,11 @@
-use std::mem;
 use std::fmt;
+use std::mem;
 
 use libc;
 
 use constants::*;
-use raw::*;
 use errors::Result;
+use raw::*;
 
 /// Compile mode
 pub trait DatabaseType {

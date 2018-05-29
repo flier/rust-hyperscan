@@ -1,11 +1,11 @@
+use std::borrow::Cow;
+use std::cell::RefCell;
 use std::fmt;
-use std::str;
-use std::vec;
-use std::slice;
 use std::iter;
 use std::rc::Rc;
-use std::cell::RefCell;
-use std::borrow::Cow;
+use std::slice;
+use std::str;
+use std::vec;
 
 use failure::Error;
 use hexplay::HexViewBuilder;
@@ -13,9 +13,9 @@ use hexplay::HexViewBuilder;
 use api::{BlockScanner, DatabaseBuilder, ScratchAllocator};
 use common::BlockDatabase;
 use compile::Pattern;
-use runtime::RawScratch;
 use constants::CompileFlags;
-use errors::{Result};
+use errors::Result;
+use runtime::RawScratch;
 
 /// A compiled regular expression for matching Unicode strings.
 ///
@@ -293,13 +293,9 @@ impl Regex {
         let mut s = self.s.borrow_mut();
         let m = RefCell::new(Match::new(text));
 
-        match self.db.scan(
-            &text[start..],
-            0,
-            &mut *s,
-            Some(Match::short_matched),
-            Some(&m),
-        ) {
+        match self.db
+            .scan(&text[start..], 0, &mut *s, Some(Match::short_matched), Some(&m))
+        {
             Ok(_) => {
                 if m.borrow().is_matched() {
                     Some(m.into_inner().seek(start))
@@ -426,13 +422,10 @@ impl<'r, 't> Iterator for Matches<'r, 't> {
             let mut s = self.re.s.borrow_mut();
             let m = RefCell::new(Match::new(self.text));
 
-            match self.re.db.scan(
-                &self.text[offset..],
-                0,
-                &mut *s,
-                Some(Match::short_matched),
-                Some(&m),
-            ) {
+            match self.re
+                .db
+                .scan(&self.text[offset..], 0, &mut *s, Some(Match::short_matched), Some(&m))
+            {
                 Ok(_) => {
                     let m = m.into_inner();
 
@@ -469,7 +462,6 @@ impl<'r, 't> Matches<'r, 't> {
         self.text
     }
 }
-
 
 /// Yields all substrings delimited by a regular expression match.
 ///
@@ -754,20 +746,16 @@ impl RegexSet {
         let mut s = self.s.borrow_mut();
         let m = RefCell::new(vec![None; self.patterns.len()]);
 
-        match self.db.scan(
-            text,
-            0,
-            &mut *s,
-            Some(Self::matched),
-            Some(&m),
-        ) {
-            Ok(_)  => {}
+        match self.db.scan(text, 0, &mut *s, Some(Self::matched), Some(&m)) {
+            Ok(_) => {}
             Err(err) => {
                 warn!("scan failed, {}", err);
             }
         }
 
-        SetMatches { matches: m.into_inner() }
+        SetMatches {
+            matches: m.into_inner(),
+        }
     }
 
     extern "C" fn matched(
@@ -920,13 +908,9 @@ impl RegexSetBuilder {
         I: IntoIterator<Item = S>,
     {
         let mut builder = RegexSetBuilder(RegexOptions::default());
-        builder.0.expressions = patterns
-            .into_iter()
-            .map(|pat| pat.as_ref().to_owned())
-            .collect();
+        builder.0.expressions = patterns.into_iter().map(|pat| pat.as_ref().to_owned()).collect();
         builder
     }
-
 
     /// Set the value for the case insensitive (`i`) flag.
     pub fn case_insensitive(&mut self, yes: bool) -> &mut RegexSetBuilder {
