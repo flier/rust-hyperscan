@@ -39,7 +39,7 @@ else
 	    elif [ "$1" == "5.0" ]; then
 	        echo "5.0.2"
 	    elif [ "$1" == "6.0" ]; then
-	        echo "6.0.0"
+	        echo "6.0.1"
 	    fi
 	}
 
