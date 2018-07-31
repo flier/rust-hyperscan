@@ -1,17 +1,17 @@
-use std::ptr;
-use std::fmt;
-use std::slice;
-use std::ops::Deref;
 use std::ffi::CStr;
-use std::os::raw::c_char;
+use std::fmt;
 use std::marker::PhantomData;
+use std::ops::Deref;
+use std::os::raw::c_char;
+use std::ptr;
+use std::slice;
 
 use libc;
 
-use raw::*;
 use api::*;
-use errors::Error;
 use cptr::CPtr;
+use errors::Error;
+use raw::*;
 
 /// A compiled pattern database that can then be used to scan data.
 pub struct RawDatabase<T: Type> {
@@ -82,12 +82,7 @@ impl<T: Type> Database for RawDatabase<T> {
             check_hs_error!(hs_database_size(self.db, &mut size));
         }
 
-        debug!(
-            "database size of {} database {:p}: {}",
-            T::name(),
-            self.db,
-            size
-        );
+        debug!("database size of {} database {:p}: {}", T::name(), self.db, size);
 
         Ok(size)
     }
@@ -103,12 +98,7 @@ impl<T: Type> Database for RawDatabase<T> {
                 Err(_) => Err(Error::Invalid),
             };
 
-            debug!(
-                "database info of {} database {:p}: {:?}",
-                T::name(),
-                self.db,
-                result
-            );
+            debug!("database info of {} database {:p}: {:?}", T::name(), self.db, result);
 
             libc::free(p as *mut libc::c_void);
 
@@ -125,17 +115,9 @@ impl<T: Type> SerializableDatabase<RawDatabase<T>, RawSerializedDatabase> for Ra
         unsafe {
             check_hs_error!(hs_serialize_database(self.db, &mut bytes, &mut size));
 
-            debug!(
-                "serialized {} database {:p} to {} bytes",
-                T::name(),
-                self.db,
-                size
-            );
+            debug!("serialized {} database {:p} to {} bytes", T::name(), self.db, size);
 
-            Ok(RawSerializedDatabase::from_raw_parts(
-                bytes as *mut u8,
-                size,
-            ))
+            Ok(RawSerializedDatabase::from_raw_parts(bytes as *mut u8, size))
         }
     }
 
@@ -209,12 +191,7 @@ pub struct RawSerializedDatabase {
 
 impl fmt::Debug for RawSerializedDatabase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "RawSerializedDatabase{{p: {:p}, len: {}}}",
-            self.p,
-            self.len
-        )
+        write!(f, "RawSerializedDatabase{{p: {:p}, len: {}}}", self.p, self.len)
     }
 }
 
@@ -302,8 +279,8 @@ pub mod tests {
     }
 
     pub fn validate_serialized_database<T: SerializedDatabase + ?Sized>(data: &T) {
-        assert_eq!(data.len(), DATABASE_SIZE);
-        assert_eq!(data.database_size().unwrap(), DATABASE_SIZE);
+        assert!(data.len() >= DATABASE_SIZE);
+        assert!(data.database_size().unwrap() >= DATABASE_SIZE);
 
         let db_info = data.database_info().unwrap();
 

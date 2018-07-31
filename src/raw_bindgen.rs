@@ -16,7 +16,6 @@ pub type hs_database_t = hs_database;
 /// A type for errors returned by Hyperscan functions.
 pub type hs_error_t = ::std::os::raw::c_int;
 extern "C" {
-
     /// Free a compiled pattern database.
     ///
     /// The free callback set by @ref hs_set_database_allocator() (or @ref
@@ -28,12 +27,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_free_database"]
     pub fn hs_free_database(db: *mut hs_database_t) -> hs_error_t;
 }
 extern "C" {
-
     /// Serialize a pattern database to a stream of bytes.
     ///
     /// The allocator callback set by @ref hs_set_misc_allocator() (or @ref
@@ -54,7 +51,6 @@ extern "C" {
     /// @return
     /// @ref HS_SUCCESS on success, @ref HS_NOMEM if the byte array cannot be
     /// allocated, other values may be returned if errors are detected.
-
     #[link_name = "\u{1}_hs_serialize_database"]
     pub fn hs_serialize_database(
         db: *const hs_database_t,
@@ -63,7 +59,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Reconstruct a pattern database from a stream of bytes previously generated
     /// by @ref hs_serialize_database().
     ///
@@ -88,7 +83,6 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_deserialize_database"]
     pub fn hs_deserialize_database(
         bytes: *const ::std::os::raw::c_char,
@@ -97,7 +91,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Reconstruct a pattern database from a stream of bytes previously generated
     /// by @ref hs_serialize_database() at a given memory location.
     ///
@@ -124,7 +117,6 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_deserialize_database_at"]
     pub fn hs_deserialize_database_at(
         bytes: *const ::std::os::raw::c_char,
@@ -133,7 +125,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Provides the size of the stream state allocated by a single stream opened
     /// against the given database.
     ///
@@ -146,12 +137,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_stream_size"]
     pub fn hs_stream_size(database: *const hs_database_t, stream_size: *mut usize) -> hs_error_t;
 }
 extern "C" {
-
     /// Provides the size of the given database in bytes.
     ///
     /// @param database
@@ -163,12 +152,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_database_size"]
     pub fn hs_database_size(database: *const hs_database_t, database_size: *mut usize) -> hs_error_t;
 }
 extern "C" {
-
     /// Utility function for reporting the size that would be required by a
     /// database if it were deserialized.
     ///
@@ -191,7 +178,6 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_serialized_database_size"]
     pub fn hs_serialized_database_size(
         bytes: *const ::std::os::raw::c_char,
@@ -200,7 +186,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Utility function providing information about a database.
     ///
     /// @param database
@@ -214,12 +199,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_database_info"]
     pub fn hs_database_info(database: *const hs_database_t, info: *mut *mut ::std::os::raw::c_char) -> hs_error_t;
 }
 extern "C" {
-
     /// Utility function providing information about a serialized database.
     ///
     /// @param bytes
@@ -237,7 +220,6 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_serialized_database_info"]
     pub fn hs_serialized_database_info(
         bytes: *const ::std::os::raw::c_char,
@@ -265,7 +247,6 @@ pub type hs_alloc_t = ::std::option::Option<unsafe extern "C" fn(size: usize) ->
 /// The region of memory to be freed.
 pub type hs_free_t = ::std::option::Option<unsafe extern "C" fn(ptr: *mut ::std::os::raw::c_void)>;
 extern "C" {
-
     /// Set the allocate and free functions used by Hyperscan for allocating
     /// memory at runtime for stream state, scratch space, database bytecode,
     /// and various other data structure returned by the Hyperscan API.
@@ -290,12 +271,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_set_allocator"]
     pub fn hs_set_allocator(alloc_func: hs_alloc_t, free_func: hs_free_t) -> hs_error_t;
 }
 extern "C" {
-
     /// Set the allocate and free functions used by Hyperscan for allocating memory
     /// for database bytecode produced by the compile calls (@ref hs_compile(), @ref
     /// hs_compile_multi(), @ref hs_compile_ext_multi()) and by database
@@ -324,12 +303,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_set_database_allocator"]
     pub fn hs_set_database_allocator(alloc_func: hs_alloc_t, free_func: hs_free_t) -> hs_error_t;
 }
 extern "C" {
-
     /// Set the allocate and free functions used by Hyperscan for allocating memory
     /// for items returned by the Hyperscan API such as @ref hs_compile_error_t, @ref
     /// hs_expr_info_t and serialized databases.
@@ -352,12 +329,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_set_misc_allocator"]
     pub fn hs_set_misc_allocator(alloc_func: hs_alloc_t, free_func: hs_free_t) -> hs_error_t;
 }
 extern "C" {
-
     /// Set the allocate and free functions used by Hyperscan for allocating memory
     /// for scratch space by @ref hs_alloc_scratch() and @ref hs_clone_scratch().
     ///
@@ -380,12 +355,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_set_scratch_allocator"]
     pub fn hs_set_scratch_allocator(alloc_func: hs_alloc_t, free_func: hs_free_t) -> hs_error_t;
 }
 extern "C" {
-
     /// Set the allocate and free functions used by Hyperscan for allocating memory
     /// for stream state by @ref hs_open_stream().
     ///
@@ -408,24 +381,20 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_set_stream_allocator"]
     pub fn hs_set_stream_allocator(alloc_func: hs_alloc_t, free_func: hs_free_t) -> hs_error_t;
 }
 extern "C" {
-
     /// Utility function for identifying this release version.
     ///
     /// @return
     /// A string containing the version number of this release build and the
     /// date of the build. It is allocated statically, so it does not need to
     /// be freed by the caller.
-
     #[link_name = "\u{1}_hs_version"]
     pub fn hs_version() -> *const ::std::os::raw::c_char;
 }
 extern "C" {
-
     /// Utility function to test the current system architecture.
     ///
     /// Hyperscan requires the Supplemental Streaming SIMD Extensions 3 instruction
@@ -439,7 +408,6 @@ extern "C" {
     /// @return
     /// @ref HS_SUCCESS on success, @ref HS_ARCH_ERROR if system does not
     /// support Hyperscan.
-
     #[link_name = "\u{1}_hs_valid_platform"]
     pub fn hs_valid_platform() -> hs_error_t;
 }
@@ -780,12 +748,7 @@ fn bindgen_test_layout_hs_expr_ext() {
     assert_eq!(
         unsafe { &(*(::std::ptr::null::<hs_expr_ext>())).flags as *const _ as usize },
         0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(hs_expr_ext),
-            "::",
-            stringify!(flags)
-        )
+        concat!("Offset of field: ", stringify!(hs_expr_ext), "::", stringify!(flags))
     );
     assert_eq!(
         unsafe { &(*(::std::ptr::null::<hs_expr_ext>())).min_offset as *const _ as usize },
@@ -840,7 +803,6 @@ fn bindgen_test_layout_hs_expr_ext() {
 }
 pub type hs_expr_ext_t = hs_expr_ext;
 extern "C" {
-
     /// The basic regular expression compiler.
     ///
     /// This is the function call with which an expression is compiled into a
@@ -899,7 +861,6 @@ extern "C" {
     /// @ref HS_SUCCESS is returned on successful compilation; @ref
     /// HS_COMPILER_ERROR on failure, with details provided in the error
     /// parameter.
-
     #[link_name = "\u{1}_hs_compile"]
     pub fn hs_compile(
         expression: *const ::std::os::raw::c_char,
@@ -911,7 +872,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// The multiple regular expression compiler.
     ///
     /// This is the function call with which a set of expressions is compiled into a
@@ -984,7 +944,6 @@ extern "C" {
     /// HS_COMPILER_ERROR on failure, with details provided in the @p error
     /// parameter.
     ///
-
     #[link_name = "\u{1}_hs_compile_multi"]
     pub fn hs_compile_multi(
         expressions: *const *const ::std::os::raw::c_char,
@@ -998,7 +957,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// The multiple regular expression compiler with extended parameter support.
     ///
     /// This function call compiles a group of expressions into a database in the
@@ -1076,7 +1034,6 @@ extern "C" {
     /// HS_COMPILER_ERROR on failure, with details provided in the @p error
     /// parameter.
     ///
-
     #[link_name = "\u{1}_hs_compile_ext_multi"]
     pub fn hs_compile_ext_multi(
         expressions: *const *const ::std::os::raw::c_char,
@@ -1091,7 +1048,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Free an error structure generated by @ref hs_compile(), @ref
     /// hs_compile_multi() or @ref hs_compile_ext_multi().
     ///
@@ -1101,12 +1057,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_free_compile_error"]
     pub fn hs_free_compile_error(error: *mut hs_compile_error_t) -> hs_error_t;
 }
 extern "C" {
-
     /// Utility function providing information about a regular expression. The
     /// information provided in @ref hs_expr_info_t includes the minimum and maximum
     /// width of a pattern match.
@@ -1162,7 +1116,6 @@ extern "C" {
     /// @ref HS_SUCCESS is returned on successful compilation; @ref
     /// HS_COMPILER_ERROR on failure, with details provided in the error
     /// parameter.
-
     #[link_name = "\u{1}_hs_expression_info"]
     pub fn hs_expression_info(
         expression: *const ::std::os::raw::c_char,
@@ -1172,7 +1125,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Utility function providing information about a regular expression, with
     /// extended parameter support. The information provided in @ref hs_expr_info_t
     /// includes the minimum and maximum width of a pattern match.
@@ -1233,7 +1185,6 @@ extern "C" {
     /// @ref HS_SUCCESS is returned on successful compilation; @ref
     /// HS_COMPILER_ERROR on failure, with details provided in the error
     /// parameter.
-
     #[link_name = "\u{1}_hs_expression_ext_info"]
     pub fn hs_expression_ext_info(
         expression: *const ::std::os::raw::c_char,
@@ -1244,7 +1195,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Populates the platform information based on the current host.
     ///
     /// @param platform
@@ -1253,10 +1203,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_populate_platform"]
     pub fn hs_populate_platform(platform: *mut hs_platform_info_t) -> hs_error_t;
 }
+/// Definition of the stream identifier type.
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct hs_stream {
@@ -1336,7 +1286,6 @@ pub type match_event_handler = ::std::option::Option<
     ) -> ::std::os::raw::c_int,
 >;
 extern "C" {
-
     /// Open and initialise a stream.
     ///
     /// @param db
@@ -1352,7 +1301,6 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_open_stream"]
     pub fn hs_open_stream(
         db: *const hs_database_t,
@@ -1361,7 +1309,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Write data to be scanned to the opened stream.
     ///
     /// This is the function call in which the actual pattern matching takes place
@@ -1397,7 +1344,6 @@ extern "C" {
     /// Returns @ref HS_SUCCESS on success; @ref HS_SCAN_TERMINATED if the
     /// match callback indicated that scanning should stop; other values on
     /// error.
-
     #[link_name = "\u{1}_hs_scan_stream"]
     pub fn hs_scan_stream(
         id: *mut hs_stream_t,
@@ -1410,7 +1356,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Close a stream.
     ///
     /// This function completes matching on the given stream and frees the memory
@@ -1448,7 +1393,6 @@ extern "C" {
     ///
     /// @return
     /// Returns @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_close_stream"]
     pub fn hs_close_stream(
         id: *mut hs_stream_t,
@@ -1458,7 +1402,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Reset a stream to an initial state.
     ///
     /// Conceptually, this is equivalent to performing @ref hs_close_stream() on the
@@ -1495,7 +1438,6 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_reset_stream"]
     pub fn hs_reset_stream(
         id: *mut hs_stream_t,
@@ -1506,7 +1448,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Duplicate the given stream. The new stream will have the same state as the
     /// original including the current stream offset.
     ///
@@ -1519,12 +1460,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_copy_stream"]
     pub fn hs_copy_stream(to_id: *mut *mut hs_stream_t, from_id: *const hs_stream_t) -> hs_error_t;
 }
 extern "C" {
-
     /// Duplicate the given 'from' stream state onto the 'to' stream. The 'to' stream
     /// will first be reset (reporting any EOD matches if a non-NULL @p onEvent
     /// callback handler is provided).
@@ -1553,7 +1492,6 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_reset_and_copy_stream"]
     pub fn hs_reset_and_copy_stream(
         to_id: *mut hs_stream_t,
@@ -1564,7 +1502,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Creates a compressed representation of the provided stream in the buffer
     /// provided. This compressed representation can be converted back into a stream
     /// state by using @ref hs_expand_stream() or @ref hs_reset_and_expand_stream().
@@ -1598,7 +1535,6 @@ extern "C" {
     /// @return
     /// @ref HS_SUCCESS on success, @ref HS_INSUFFICIENT_SPACE if the provided
     /// buffer is too small.
-
     #[link_name = "\u{1}_hs_compress_stream"]
     pub fn hs_compress_stream(
         stream: *const hs_stream_t,
@@ -1608,7 +1544,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Decompresses a compressed representation created by @ref hs_compress_stream()
     /// into a new stream.
     ///
@@ -1634,7 +1569,6 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_expand_stream"]
     pub fn hs_expand_stream(
         db: *const hs_database_t,
@@ -1644,7 +1578,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Decompresses a compressed representation created by @ref hs_compress_stream()
     /// on top of the 'to' stream. The 'to' stream will first be reset (reporting
     /// any EOD matches if a non-NULL @p onEvent callback handler is provided).
@@ -1682,7 +1615,6 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_reset_and_expand_stream"]
     pub fn hs_reset_and_expand_stream(
         to_stream: *mut hs_stream_t,
@@ -1694,7 +1626,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// The block (non-streaming) regular expression scanner.
     ///
     /// This is the function call in which the actual pattern matching takes place
@@ -1728,7 +1659,6 @@ extern "C" {
     /// Returns @ref HS_SUCCESS on success; @ref HS_SCAN_TERMINATED if the
     /// match callback indicated that scanning should stop; other values on
     /// error.
-
     #[link_name = "\u{1}_hs_scan"]
     pub fn hs_scan(
         db: *const hs_database_t,
@@ -1741,7 +1671,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// The vectored regular expression scanner.
     ///
     /// This is the function call in which the actual pattern matching takes place
@@ -1778,7 +1707,6 @@ extern "C" {
     /// @return
     /// Returns @ref HS_SUCCESS on success; @ref HS_SCAN_TERMINATED if the match
     /// callback indicated that scanning should stop; other values on error.
-
     #[link_name = "\u{1}_hs_scan_vector"]
     pub fn hs_scan_vector(
         db: *const hs_database_t,
@@ -1792,7 +1720,6 @@ extern "C" {
     ) -> hs_error_t;
 }
 extern "C" {
-
     /// Allocate a "scratch" space for use by Hyperscan.
     ///
     /// This is required for runtime use, and one scratch space per thread, or
@@ -1817,12 +1744,10 @@ extern "C" {
     /// @ref HS_SUCCESS on successful allocation; @ref HS_NOMEM if the
     /// allocation fails.  Other errors may be returned if invalid parameters
     /// are specified.
-
     #[link_name = "\u{1}_hs_alloc_scratch"]
     pub fn hs_alloc_scratch(db: *const hs_database_t, scratch: *mut *mut hs_scratch_t) -> hs_error_t;
 }
 extern "C" {
-
     /// Allocate a scratch space that is a clone of an existing scratch space.
     ///
     /// This is useful when multiple concurrent threads will be using the same set
@@ -1839,12 +1764,10 @@ extern "C" {
     /// @return
     /// @ref HS_SUCCESS on success; @ref HS_NOMEM if the allocation fails.
     /// Other errors may be returned if invalid parameters are specified.
-
     #[link_name = "\u{1}_hs_clone_scratch"]
     pub fn hs_clone_scratch(src: *const hs_scratch_t, dest: *mut *mut hs_scratch_t) -> hs_error_t;
 }
 extern "C" {
-
     /// Provides the size of the given scratch space.
     ///
     /// @param scratch
@@ -1857,12 +1780,10 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_scratch_size"]
     pub fn hs_scratch_size(scratch: *const hs_scratch_t, scratch_size: *mut usize) -> hs_error_t;
 }
 extern "C" {
-
     /// Free a scratch block previously allocated by @ref hs_alloc_scratch() or @ref
     /// hs_clone_scratch().
     ///
@@ -1874,7 +1795,6 @@ extern "C" {
     ///
     /// @return
     /// @ref HS_SUCCESS on success, other values on failure.
-
     #[link_name = "\u{1}_hs_free_scratch"]
     pub fn hs_free_scratch(scratch: *mut hs_scratch_t) -> hs_error_t;
 }

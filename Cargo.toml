@@ -17,21 +17,21 @@ gen = ["bindgen"]
 [dependencies]
 libc = "0.2"
 log = "0.4"
-regex-syntax = "0.4"
+regex-syntax = "0.6"
 
 [build-dependencies]
 log = "0.4"
 env_logger = "0.5"
 pkg-config = "0.3"
 
-bindgen = { version = "0.32", optional = true }
+bindgen = { version = "0.37", optional = true }
 
 [dev-dependencies]
 env_logger = "0.5"
-regex = "0.2"
+regex = "1.0"
 getopts = "0.2"
 pcap = "0.7"
-pnet = "0.20"
+pnet = "0.21"
 byteorder = "1.2"
 
 [lib]
