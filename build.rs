@@ -71,7 +71,10 @@ fn generate_binding(_: &str, out_file: &Path) {
     } else if cfg!(target_os = "linux") {
         fs::copy("src/linux/raw.rs", out_file).expect("fail to copy bindings");
     } else {
-        unimplemented!()
+        panic!(
+            "target `{}` haven't binding file, generate it with `cargo build --features gen`",
+            env::var("TARGET").unwrap()
+        );
     }
 }
 
