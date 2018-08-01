@@ -33,7 +33,8 @@ extern crate log;
 extern crate libc;
 extern crate regex_syntax;
 
-mod raw;
+extern crate hyperscan_sys as raw;
+
 mod constants;
 mod cptr;
 #[macro_use]
@@ -44,11 +45,11 @@ mod common;
 mod compile;
 mod runtime;
 
-pub use constants::*;
 pub use api::*;
-pub use errors::Error;
-pub use common::{RawDatabase, BlockDatabase, StreamingDatabase, VectoredDatabase};
+pub use common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
 pub use compile::{CompileFlags, Pattern, Patterns};
+pub use constants::*;
+pub use errors::Error;
 pub use runtime::{RawScratch, RawStream};
 
 #[cfg(test)]

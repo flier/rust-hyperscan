@@ -1,8 +1,8 @@
+use std::error;
+use std::ffi::CStr;
 use std::fmt;
 use std::ptr;
-use std::error;
 use std::string::ToString;
-use std::ffi::CStr;
 
 use constants::*;
 use raw::*;
@@ -107,15 +107,19 @@ impl error::Error for Error {
 }
 
 macro_rules! check_hs_error {
-    ($expr:expr) => (if $expr != $crate::HS_SUCCESS {
-        return ::std::result::Result::Err(::std::convert::From::from($expr));
-    })
+    ($expr:expr) => {
+        if $expr != $crate::HS_SUCCESS {
+            return ::std::result::Result::Err(::std::convert::From::from($expr));
+        }
+    };
 }
 
 macro_rules! assert_hs_error {
-    ($expr:expr) => (if $expr != $crate::HS_SUCCESS {
-        panic!("panic, err={}", $expr);
-    })
+    ($expr:expr) => {
+        if $expr != $crate::HS_SUCCESS {
+            panic!("panic, err={}", $expr);
+        }
+    };
 }
 
 pub trait CompileError: ToString {
@@ -166,10 +170,9 @@ macro_rules! check_compile_error {
                     let msg = $crate::errors::RawCompileError($err);
 
                     Err($crate::errors::Error::CompilerError(msg.to_string()))
-                },
-                _ =>
-                    Err(::std::convert::From::from($expr)),
-            }
+                }
+                _ => Err(::std::convert::From::from($expr)),
+            };
         }
-    }
+    };
 }

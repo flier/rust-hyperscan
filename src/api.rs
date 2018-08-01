@@ -1,16 +1,16 @@
-use std::ptr;
+use std::cell::RefCell;
+use std::ffi::CStr;
 use std::fmt;
 use std::mem;
-use std::cell::RefCell;
 use std::ops::Deref;
 use std::os::raw::c_char;
-use std::ffi::CStr;
+use std::ptr;
 
 use libc;
 
 use constants::*;
-use raw::*;
 use errors::Error;
+use raw::*;
 
 /// Compile mode
 pub trait Type {
@@ -112,7 +112,11 @@ pub trait SerializedDatabase {
         let mut size: usize = 0;
 
         unsafe {
-            check_hs_error!(hs_serialized_database_size(self.as_slice().as_ptr() as *const i8, self.len(), &mut size));
+            check_hs_error!(hs_serialized_database_size(
+                self.as_slice().as_ptr() as *const i8,
+                self.len(),
+                &mut size
+            ));
         }
 
         Ok(size)
@@ -122,7 +126,11 @@ pub trait SerializedDatabase {
         let mut p: *mut c_char = ptr::null_mut();
 
         unsafe {
-            check_hs_error!(hs_serialized_database_info(self.as_slice().as_ptr() as *const i8, self.len(), &mut p));
+            check_hs_error!(hs_serialized_database_info(
+                self.as_slice().as_ptr() as *const i8,
+                self.len(),
+                &mut p
+            ));
 
             let result = match CStr::from_ptr(p).to_str() {
                 Ok(info) => Ok(info.to_string()),
@@ -309,26 +317,30 @@ pub type MatchEventCallbackMut<D> = fn(id: u32, from: u64, to: u64, flags: u32, 
 pub trait BlockScanner<T: Scannable, S: Scratch> {
     /// This is the function call in which the actual pattern matching
     /// takes place for block-mode pattern databases.
-    fn scan<D>(&self,
-               data: T,
-               flags: ScanFlags,
-               scratch: &S,
-               callback: Option<MatchEventCallback<D>>,
-               context: Option<&D>)
-               -> Result<&Self, Error>;
+    fn scan<D>(
+        &self,
+        data: T,
+        flags: ScanFlags,
+        scratch: &S,
+        callback: Option<MatchEventCallback<D>>,
+        context: Option<&D>,
+    ) -> Result<&Self, Error>;
 
-    fn scan_mut<D>(&mut self,
-                   data: T,
-                   flags: ScanFlags,
-                   scratch: &S,
-                   callback: Option<MatchEventCallbackMut<D>>,
-                   context: Option<&mut D>)
-                   -> Result<&Self, Error> {
-        self.scan(data,
-                  flags,
-                  scratch,
-                  callback.map(|f| unsafe { mem::transmute::<MatchEventCallbackMut<D>, MatchEventCallback<D>>(f) }),
-                  context.map(|v| &*v))
+    fn scan_mut<D>(
+        &mut self,
+        data: T,
+        flags: ScanFlags,
+        scratch: &S,
+        callback: Option<MatchEventCallbackMut<D>>,
+        context: Option<&mut D>,
+    ) -> Result<&Self, Error> {
+        self.scan(
+            data,
+            flags,
+            scratch,
+            callback.map(|f| unsafe { mem::transmute::<MatchEventCallbackMut<D>, MatchEventCallback<D>>(f) }),
+            context.map(|v| &*v),
+        )
     }
 }
 
@@ -336,13 +348,14 @@ pub trait BlockScanner<T: Scannable, S: Scratch> {
 pub trait VectoredScanner<T: Scannable, S: Scratch> {
     /// This is the function call in which the actual pattern matching
     /// takes place for vectoring-mode pattern databases.
-    fn scan<D>(&self,
-               data: &Vec<T>,
-               flags: ScanFlags,
-               scratch: &S,
-               callback: Option<MatchEventCallback<D>>,
-               context: Option<&D>)
-               -> Result<&Self, Error>;
+    fn scan<D>(
+        &self,
+        data: &Vec<T>,
+        flags: ScanFlags,
+        scratch: &S,
+        callback: Option<MatchEventCallback<D>>,
+        context: Option<&D>,
+    ) -> Result<&Self, Error>;
 }
 
 /// Raw `Stream` pointer
@@ -354,25 +367,28 @@ pub type StreamFlags = u32;
 /// The stream returned by StreamingDatabase::open_stream
 pub trait Stream<S: Scratch>: Deref<Target = RawStreamPtr> {
     /// Close a stream.
-    fn close<D>(&self,
-                scratch: &S,
-                callback: Option<MatchEventCallback<D>>,
-                context: Option<&D>)
-                -> Result<&Self, Error>;
+    fn close<D>(
+        &self,
+        scratch: &S,
+        callback: Option<MatchEventCallback<D>>,
+        context: Option<&D>,
+    ) -> Result<&Self, Error>;
 
     /// Reset a stream to an initial state.
-    fn reset<D>(&self,
-                flags: StreamFlags,
-                scratch: &S,
-                callback: Option<MatchEventCallback<D>>,
-                context: Option<&D>)
-                -> Result<&Self, Error>;
+    fn reset<D>(
+        &self,
+        flags: StreamFlags,
+        scratch: &S,
+        callback: Option<MatchEventCallback<D>>,
+        context: Option<&D>,
+    ) -> Result<&Self, Error>;
 }
 
 /// The streaming regular expression scanner.
 pub trait StreamingScanner<T, S>
-    where T: Stream<S>,
-          S: Scratch
+where
+    T: Stream<S>,
+    S: Scratch,
 {
     /// Open and initialise a stream.
     fn open_stream(&self, flags: StreamFlags) -> Result<T, Error>;

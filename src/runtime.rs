@@ -1,13 +1,13 @@
 use std::fmt;
-use std::ptr;
 use std::mem;
-use std::os::raw::c_uint;
 use std::ops::{Deref, DerefMut};
+use std::os::raw::c_uint;
+use std::ptr;
 
-use raw::*;
 use api::*;
-use errors::Error;
 use common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
+use errors::Error;
+use raw::*;
 
 /// A large enough region of scratch space to support a given database.
 ///
@@ -330,11 +330,7 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
             ));
         }
 
-        trace!(
-            "stream scan {} bytes with stream at {:p}",
-            bytes.len(),
-            self.0
-        );
+        trace!("stream scan {} bytes with stream at {:p}", bytes.len(), self.0);
 
         Ok(&self)
     }
@@ -384,8 +380,7 @@ pub mod tests {
             .unwrap();
         let s = RawScratch::alloc(&db).unwrap();
 
-        db.scan::<BlockDatabase>("foo test bar", 0, &s, None, None)
-            .unwrap();
+        db.scan::<BlockDatabase>("foo test bar", 0, &s, None, None).unwrap();
 
         fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
             assert_eq!(id, 0);
@@ -415,8 +410,7 @@ pub mod tests {
 
         let data = vec!["foo", "test", "bar"];
 
-        db.scan::<VectoredDatabase>(&data, 0, &s, None, None)
-            .unwrap();
+        db.scan::<VectoredDatabase>(&data, 0, &s, None, None).unwrap();
 
         fn callback(id: u32, from: u64, to: u64, flags: u32, _: &VectoredDatabase) -> u32 {
             assert_eq!(id, 0);

@@ -1,18 +1,18 @@
-use std::ptr;
-use std::fmt;
-use std::os::raw::c_uint;
-use std::str::FromStr;
 use std::ffi::CString;
+use std::fmt;
 use std::iter::FromIterator;
+use std::os::raw::c_uint;
+use std::ptr;
+use std::str::FromStr;
 
 use regex_syntax;
 
-use raw::*;
-use constants::*;
 use api::*;
-use cptr::CPtr;
 use common::RawDatabase;
+use constants::*;
+use cptr::CPtr;
 use errors::{Error, RawCompileErrorPtr};
+use raw::*;
 
 /// Flags which modify the behaviour of the expression.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
@@ -124,9 +124,7 @@ impl Pattern {
             let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
                 (true, Some(end)) if end > 0 => Pattern {
                     expression: String::from(expr.slice_unchecked(1, end)),
-                    flags: try!(CompileFlags::parse(
-                        expr.slice_unchecked(end + 1, expr.len())
-                    )),
+                    flags: try!(CompileFlags::parse(expr.slice_unchecked(end + 1, expr.len()))),
                     id: id,
                 },
 
@@ -204,19 +202,19 @@ pub type Patterns = Vec<Pattern>;
 /// Define `Pattern` with flags
 #[macro_export]
 macro_rules! pattern {
-    ( $expr:expr ) => {{
+    ($expr:expr) => {{
         pattern!($expr, flags => 0, id => 0)
     }};
-    ( $expr:expr, flags => $flags:expr ) => {{
+    ($expr:expr,flags => $flags:expr) => {{
         pattern!($expr, flags => $flags, id => 0)
     }};
-    ( $expr:expr, flags => $flags:expr, id => $id:expr ) => {{
-        $crate::Pattern{
+    ($expr:expr,flags => $flags:expr,id => $id:expr) => {{
+        $crate::Pattern {
             expression: ::std::convert::From::from($expr),
             flags: ::std::convert::From::from($flags),
-            id: $id
+            id: $id,
         }
-    }}
+    }};
 }
 
 /// Define multi `Pattern` with flags and ID
@@ -348,8 +346,8 @@ pub mod tests {
 
     use std::ptr;
 
-    use super::super::*;
     use super::super::common::tests::*;
+    use super::super::*;
 
     const DATABASE_SIZE: usize = 2664;
 
@@ -412,7 +410,6 @@ pub mod tests {
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
         assert_eq!(p.id, 3);
-
 
         let p = Pattern::parse("test/i").unwrap();
 
