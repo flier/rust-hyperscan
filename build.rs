@@ -5,9 +5,9 @@ extern crate env_logger;
 extern crate log;
 extern crate pkg_config;
 
+use std::env;
 #[cfg(not(feature = "gen"))]
 use std::fs;
-use std::env;
 use std::path::{Path, PathBuf};
 
 struct Library {
@@ -34,9 +34,7 @@ fn find_hyperscan() -> Library {
     {
         debug!(
             "building with Hyperscan @ libs={:?}, link_paths={:?}, include_paths={:?}",
-            libs,
-            link_paths,
-            include_paths
+            libs, link_paths, include_paths
         );
 
         Library {
@@ -68,7 +66,13 @@ fn generate_binding(hyperscan_include_path: &str, out_file: &Path) {
 
 #[cfg(not(feature = "gen"))]
 fn generate_binding(_: &str, out_file: &Path) {
-    fs::copy("src/raw_bindgen.rs", out_file).expect("fail to copy bindings");
+    if cfg!(target_os = "macos") {
+        fs::copy("src/macos/raw.rs", out_file).expect("fail to copy bindings");
+    } else if cfg!(target_os = "linux") {
+        fs::copy("src/linux/raw.rs", out_file).expect("fail to copy bindings");
+    } else {
+        unimplemented!()
+    }
 }
 
 fn main() {
@@ -77,7 +81,7 @@ fn main() {
     let libhs = find_hyperscan();
 
     let out_dir = env::var("OUT_DIR").unwrap();
-    let out_file = Path::new(&out_dir).join("raw_bindgen.rs");
+    let out_file = Path::new(&out_dir).join("raw.rs");
 
     generate_binding(libhs.include_paths[0].to_str().unwrap(), &out_file);
 
@@ -95,9 +99,6 @@ fn main() {
     }
 
     for link_path in libhs.link_paths {
-        println!(
-            "cargo:rustc-link-search=native={}",
-            link_path.to_str().unwrap()
-        );
+        println!("cargo:rustc-link-search=native={}", link_path.to_str().unwrap());
     }
 }
