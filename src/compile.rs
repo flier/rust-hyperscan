@@ -53,6 +53,12 @@ impl fmt::Display for CompileFlags {
         if self.is_set(HS_FLAG_UCP) {
             try!(write!(f, "W"))
         }
+        if self.is_set(HS_FLAG_COMBINATION) {
+            try!(write!(f, "C"))
+        }
+        if self.is_set(HS_FLAG_QUIET) {
+            try!(write!(f, "Q"))
+        }
         Ok(())
     }
 }
@@ -82,6 +88,8 @@ impl CompileFlags {
                 'V' => flags |= HS_FLAG_ALLOWEMPTY,
                 '8' => flags |= HS_FLAG_UTF8,
                 'W' => flags |= HS_FLAG_UCP,
+                'C' => flags |= HS_FLAG_COMBINATION,
+                'Q' => flags |= HS_FLAG_QUIET,
                 _ => return Err(Error::CompilerError(format!("invalid compile flag: {}", c))),
             }
         }

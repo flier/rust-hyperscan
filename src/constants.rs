@@ -58,6 +58,48 @@ pub const HS_BAD_ALIGN: i32 = -8;
 pub const HS_BAD_ALLOC: i32 = -9;
 
 /**
+ * The scratch region was already in use.
+ *
+ * This error is returned when Hyperscan is able to detect that the scratch
+ * region given is already in use by another Hyperscan API call.
+ *
+ * A separate scratch region, allocated with @ref hs_alloc_scratch() or @ref
+ * hs_clone_scratch(), is required for every concurrent caller of the Hyperscan
+ * API.
+ *
+ * For example, this error might be returned when @ref hs_scan() has been
+ * called inside a callback delivered by a currently-executing @ref hs_scan()
+ * call using the same scratch region.
+ *
+ * Note: Not all concurrent uses of scratch regions may be detected. This error
+ * is intended as a best-effort debugging tool, not a guarantee.
+ */
+pub const HS_SCRATCH_IN_USE: i32 = -10;
+
+/**
+ * Unsupported CPU architecture.
+ *
+ * This error is returned when Hyperscan is able to detect that the current
+ * system does not support the required instruction set.
+ *
+ * At a minimum, Hyperscan requires Supplemental Streaming SIMD Extensions 3
+ * (SSSE3).
+ */
+pub const HS_ARCH_ERROR: i32 = -11;
+
+/**
+ * Provided buffer was too small.
+ *
+ * This error indicates that there was insufficient space in the buffer. The
+ * call should be repeated with a larger provided buffer.
+ *
+ * Note: in this situation, it is normal for the amount of space required to be
+ * returned in the same manner as the used space would have been returned if the
+ * call was successful.
+ */
+pub const HS_INSUFFICIENT_SPACE: i32 = -12;
+
+/**
  * Compiler mode flag: Block scan (non-streaming) database.
  */
 pub const HS_MODE_BLOCK: u32 = 1;
@@ -110,7 +152,6 @@ pub const HS_MODE_SOM_HORIZON_MEDIUM: u32 = 1 << 25;
  * HS_FLAG_SOM_LEFTMOST expression flag.
  */
 pub const HS_MODE_SOM_HORIZON_SMALL: u32 = 1 << 26;
-
 
 /**
  * Compile flag: Set case-insensitive matching.
@@ -235,6 +276,27 @@ pub const HS_FLAG_PREFILTER: u32 = 128;
  */
 pub const HS_FLAG_SOM_LEFTMOST: u32 = 256;
 
+/**
+ * Compile flag: Logical combination.
+ *
+ * This flag instructs Hyperscan to parse this expression as logical
+ * combination syntax.
+ * Logical constraints consist of operands, operators and parentheses.
+ * The operands are expression indices, and operators can be
+ * '!'(NOT), '&'(AND) or '|'(OR).
+ * For example:
+ *     (101&102&103)|(104&!105)
+ *     ((301|302)&303)&(304|305)
+ */
+pub const HS_FLAG_COMBINATION: u32 = 512;
+
+/**
+ * Compile flag: Don't do any match reporting.
+ *
+ * This flag instructs Hyperscan to ignore match reporting for this expression.
+ * It is designed to be used on the sub-expressions in logical combinations.
+ */
+pub const HS_FLAG_QUIET: u32 = 1024;
 
 /**
  * CPU features flag - Intel(R) Advanced Vector Extensions 2 (Intel(R) AVX2)
@@ -244,6 +306,13 @@ pub const HS_FLAG_SOM_LEFTMOST: u32 = 256;
  */
 pub const HS_CPU_FEATURES_AVX2: u32 = 1 << 2;
 
+/**
+ * CPU features flag - Intel(R) Advanced Vector Extensions 512 (Intel(R) AVX512)
+ *
+ * Setting this flag indicates that the target platform supports AVX512
+ * instructions, specifically AVX-512BW. Using AVX512 implies the use of AVX2.
+ */
+pub const HS_CPU_FEATURES_AVX512: u32 = 1 << 3;
 
 /**
  * Tuning Parameter - Generic
@@ -292,3 +361,27 @@ pub const HS_TUNE_FAMILY_SLM: u32 = 4;
  * Broadwell microarchitecture.
  */
 pub const HS_TUNE_FAMILY_BDW: u32 = 5;
+
+/**
+ * Tuning Parameter - Intel(R) microarchitecture code name Skylake
+ *
+ * This indicates that the compiled database should be tuned for the
+ * Skylake microarchitecture.
+ */
+pub const HS_TUNE_FAMILY_SKL: u32 = 6;
+
+/**
+ * Tuning Parameter - Intel(R) microarchitecture code name Skylake Server
+ *
+ * This indicates that the compiled database should be tuned for the
+ * Skylake Server microarchitecture.
+ */
+pub const HS_TUNE_FAMILY_SKX: u32 = 7;
+
+/**
+ * Tuning Parameter - Intel(R) microarchitecture code name Goldmont
+ *
+ * This indicates that the compiled database should be tuned for the
+ * Goldmont microarchitecture.
+ */
+pub const HS_TUNE_FAMILY_GLM: u32 = 8;
