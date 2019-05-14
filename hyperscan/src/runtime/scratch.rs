@@ -3,7 +3,6 @@ use core::ptr::{null_mut, NonNull};
 use failure::Error;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
-use crate::common::*;
 use crate::common::{Database, DatabaseRef};
 use crate::errors::AsResult;
 
@@ -33,7 +32,7 @@ impl Scratch {
     /// This is required for runtime use, and one scratch space per thread,
     /// or concurrent caller, is required.
     ///
-    unsafe fn alloc<T: Mode>(db: &DatabaseRef<T>) -> Result<Scratch, Error> {
+    unsafe fn alloc<T>(db: &DatabaseRef<T>) -> Result<Scratch, Error> {
         let mut s = null_mut();
 
         ffi::hs_alloc_scratch(db.as_ptr(), &mut s)
@@ -42,7 +41,7 @@ impl Scratch {
     }
 
     /// Reallocate a "scratch" space for use by Hyperscan.
-    unsafe fn realloc<T: Mode>(&mut self, db: &DatabaseRef<T>) -> Result<(), Error> {
+    unsafe fn realloc<T>(&mut self, db: &DatabaseRef<T>) -> Result<(), Error> {
         let mut p = self.as_ptr();
 
         ffi::hs_alloc_scratch(db.as_ptr(), &mut p).ok().map(|_| {
@@ -60,7 +59,7 @@ impl ScratchRef {
     }
 }
 
-impl<T: Mode> Database<T> {
+impl<T> Database<T> {
     /// Allocate a "scratch" space for use by Hyperscan.
     pub fn alloc(&self) -> Result<Scratch, Error> {
         unsafe { Scratch::alloc(self) }

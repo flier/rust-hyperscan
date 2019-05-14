@@ -8,8 +8,7 @@ use failure::Error;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 use libc::c_uint;
 
-use crate::common::Database;
-use crate::common::*;
+use crate::common::{Database, Mode};
 use crate::constants::*;
 use crate::errors::{AsResult, ErrorKind};
 

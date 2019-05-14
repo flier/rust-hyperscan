@@ -1,12 +1,9 @@
 use std::ffi::CStr;
-use std::fmt;
-use std::ptr;
-use std::string::ToString;
 
 use failure::{AsFail, Error, Fail};
+use foreign_types::{foreign_type, ForeignTypeRef};
 
 use crate::constants::*;
-use crate::ffi::*;
 
 /// Error Codes
 #[derive(Debug, PartialEq, Fail)]
@@ -87,43 +84,30 @@ impl AsResult for ffi::hs_error_t {
     }
 }
 
-pub trait CompileError: ToString {
-    fn expression(&self) -> usize;
-}
+foreign_type! {
+    /// Providing details of the compile error condition.
+    pub type CompileError {
+        type CType = ffi::hs_compile_error_t;
 
-pub type RawCompileErrorPtr = *mut hs_compile_error_t;
-
-/// Providing details of the compile error condition.
-pub struct RawCompileError(pub RawCompileErrorPtr);
-
-impl fmt::Debug for RawCompileError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RawCompileError({:p})", self.0)
+        fn drop = free_compile_error;
     }
 }
 
-impl CompileError for RawCompileError {
-    #[inline]
-    fn expression(&self) -> usize {
-        unsafe { (*self.0).expression as usize }
-    }
+unsafe fn free_compile_error(err: *mut ffi::hs_compile_error_t) {
+    ffi::hs_free_compile_error(err).ok().unwrap();
 }
 
-impl ToString for RawCompileError {
-    #[inline]
-    fn to_string(&self) -> String {
-        unsafe { String::from(CStr::from_ptr((*self.0).message).to_str().unwrap()) }
+impl CompileError {
+    unsafe fn as_ref(&self) -> &ffi::hs_compile_error_t {
+        self.as_ptr().as_ref().unwrap()
     }
-}
 
-impl Drop for RawCompileError {
-    #[inline]
-    fn drop(&mut self) {
-        unsafe {
-            if self.0 != ptr::null_mut() {
-                hs_free_compile_error(self.0).ok().unwrap();
-            }
-        }
+    pub fn message(&self) -> &str {
+        unsafe { CStr::from_ptr(self.as_ref().message).to_str().unwrap() }
+    }
+
+    pub fn expression(&self) -> usize {
+        unsafe { self.as_ref().expression as usize }
     }
 }
 
@@ -132,9 +116,9 @@ macro_rules! check_compile_error {
         if $crate::HS_SUCCESS != $expr {
             return match $expr {
                 $crate::HS_COMPILER_ERROR => {
-                    let msg = $crate::errors::RawCompileError($err);
+                    let msg = $crate::errors::CompileError::from_ptr($err);
 
-                    Err($crate::errors::ErrorKind::CompilerError(msg.to_string()).into())
+                    Err($crate::errors::ErrorKind::CompilerError(msg.message().to_owned()).into())
                 }
                 _ => Err($crate::errors::ErrorKind::from($expr).into()),
             };

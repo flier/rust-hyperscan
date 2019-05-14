@@ -4,8 +4,7 @@ use core::ptr::null_mut;
 use failure::Error;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
-use crate::common::Database;
-use crate::common::Streaming;
+use crate::common::{Database, Streaming};
 use crate::errors::AsResult;
 use crate::runtime::{MatchEventCallback, ScratchRef};
 

@@ -4,8 +4,7 @@ use failure::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
 use libc::c_uint;
 
-use crate::common::DatabaseRef;
-use crate::common::{Block, Vectored};
+use crate::common::{Block, DatabaseRef, Vectored};
 use crate::errors::AsResult;
 use crate::runtime::{ScratchRef, Stream};
 

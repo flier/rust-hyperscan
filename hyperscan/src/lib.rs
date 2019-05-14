@@ -49,7 +49,7 @@ pub use crate::compile::{
     Builder, CompileFlags, Expression, ExpressionInfo, Pattern, Patterns, PlatformInfo, PlatformInfoRef,
 };
 pub use crate::constants::*;
-pub use crate::errors::ErrorKind;
+pub use crate::errors::{CompileError, ErrorKind};
 pub use crate::runtime::{Scratch, ScratchRef, Stream, StreamRef};
 
 #[cfg(test)]
