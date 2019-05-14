@@ -5,13 +5,13 @@ use std::os::raw::c_uint;
 use std::ptr;
 use std::str::FromStr;
 
-use regex_syntax;
+use failure::Error;
 
 use crate::api::*;
 use crate::common::RawDatabase;
 use crate::constants::*;
 use crate::cptr::CPtr;
-use crate::errors::{Error, RawCompileErrorPtr};
+use crate::errors::{ErrorKind, RawCompileErrorPtr};
 use crate::ffi::*;
 
 /// Flags which modify the behaviour of the expression.
@@ -90,7 +90,7 @@ impl CompileFlags {
                 'W' => flags |= HS_FLAG_UCP,
                 'C' => flags |= HS_FLAG_COMBINATION,
                 'Q' => flags |= HS_FLAG_QUIET,
-                _ => return Err(Error::CompilerError(format!("invalid compile flag: {}", c))),
+                _ => return Err(ErrorKind::CompilerError(format!("invalid compile flag: {}", c)).into()),
             }
         }
 

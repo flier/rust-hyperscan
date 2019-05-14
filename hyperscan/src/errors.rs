@@ -1,107 +1,68 @@
-use std::error;
 use std::ffi::CStr;
 use std::fmt;
 use std::ptr;
 use std::string::ToString;
 
+use failure::Fail;
+
 use crate::constants::*;
 use crate::ffi::*;
 
 /// Error Codes
-#[derive(Debug, PartialEq, Clone)]
-pub enum Error {
-    /// A parameter passed to this function was invalid.
+#[derive(Debug, PartialEq, Fail)]
+pub enum ErrorKind {
+    #[fail(display = "A parameter passed to this function was invalid.")]
     Invalid,
-    /// A memory allocation failed.
+
+    #[fail(display = "A memory allocation failed.")]
     NoMem,
-    /// The engine was terminated by callback.
-    ///
+
     /// This return value indicates that the target buffer was partially scanned,
     /// but that the callback function requested that scanning cease after a match was located.
+    #[fail(display = "The engine was terminated by callback.")]
     ScanTerminated,
-    /// The pattern compiler failed with more detail.
+
+    #[fail(display = "The pattern compiler failed with more detail, {}.", _0)]
     CompilerError(String),
-    /// The given database was built for a different version of Hyperscan.
+
+    #[fail(display = "The given database was built for a different version of Hyperscan.")]
     DbVersionError,
-    /// The given database was built for a different platform (i.e., CPU type).
+
+    #[fail(display = "The given database was built for a different platform (i.e., CPU type).")]
     DbPlatformError,
-    /// The given database was built for a different mode of operation.
+
     /// This error is returned when streaming calls are used
     /// with a block or vectored database and vice versa.
+    #[fail(display = "The given database was built for a different mode of operation.")]
     DbModeError,
-    /// A parameter passed to this function was not correctly aligned.
+
+    #[fail(display = "A parameter passed to this function was not correctly aligned.")]
     BadAlign,
+
     /// The memory allocator (either malloc() or the allocator set with hs_set_allocator())
     /// did not correctly return memory suitably aligned
     /// for the largest representable data type on this platform.
+    #[fail(display = "The memory allocator did not correctly return memory suitably aligned.")]
     BadAlloc,
-    /// Unknown error code
-    Failed(i32),
-    /// An error which can be returned when parsing an integer.
-    ParseError(::std::num::ParseIntError),
-    /// An error returned from CString::new to indicate
-    /// that a nul byte was found in the vector provided.
-    NulError(::std::ffi::NulError),
+
+    #[fail(display = "Unknown error code")]
+    Code(i32),
 }
 
-impl From<i32> for Error {
-    fn from(err: i32) -> Error {
+impl From<i32> for ErrorKind {
+    fn from(err: i32) -> ErrorKind {
         match err {
             HS_SUCCESS => unreachable!(),
-            HS_INVALID => Error::Invalid,
-            HS_NOMEM => Error::NoMem,
-            HS_SCAN_TERMINATED => Error::ScanTerminated,
-            // HS_COMPILER_ERROR => Error::CompilerError,
-            HS_DB_VERSION_ERROR => Error::DbVersionError,
-            HS_DB_PLATFORM_ERROR => Error::DbPlatformError,
-            HS_DB_MODE_ERROR => Error::DbModeError,
-            HS_BAD_ALIGN => Error::BadAlign,
-            HS_BAD_ALLOC => Error::BadAlloc,
-            _ => Error::Failed(err),
-        }
-    }
-}
-
-impl From<::std::num::ParseIntError> for Error {
-    fn from(err: ::std::num::ParseIntError) -> Error {
-        Error::ParseError(err)
-    }
-}
-impl From<::std::ffi::NulError> for Error {
-    fn from(err: ::std::ffi::NulError) -> Error {
-        Error::NulError(err)
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", error::Error::description(self).to_string())?;
-
-        match *self {
-            Error::CompilerError(ref reason) => write!(f, " {}", reason)?,
-            Error::Failed(ref code) => write!(f, " Code: {}", code)?,
-            _ => {}
-        }
-
-        Ok(())
-    }
-}
-
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::Invalid => "A parameter passed to this function was invalid.",
-            Error::NoMem => "A memory allocation failed.",
-            Error::ScanTerminated => "The engine was terminated by callback.",
-            Error::CompilerError(..) => "The pattern compiler failed.",
-            Error::DbVersionError => "The given database was built for a different version of Hyperscan.",
-            Error::DbPlatformError => "The given database was built for a different platform.",
-            Error::DbModeError => "The given database was built for a different mode of operation.",
-            Error::BadAlign => "A parameter passed to this function was not correctly aligned.",
-            Error::BadAlloc => "The memory allocator did not correctly return memory suitably aligned.",
-            Error::Failed(..) => "Internal operation failed.",
-            Error::ParseError(ref err) => err.description(),
-            Error::NulError(ref err) => err.description(),
+            HS_INVALID => ErrorKind::Invalid,
+            HS_NOMEM => ErrorKind::NoMem,
+            HS_SCAN_TERMINATED => ErrorKind::ScanTerminated,
+            // HS_COMPILER_ERROR => ErrorKind::CompilerError,
+            HS_DB_VERSION_ERROR => ErrorKind::DbVersionError,
+            HS_DB_PLATFORM_ERROR => ErrorKind::DbPlatformError,
+            HS_DB_MODE_ERROR => ErrorKind::DbModeError,
+            HS_BAD_ALIGN => ErrorKind::BadAlign,
+            HS_BAD_ALLOC => ErrorKind::BadAlloc,
+            _ => ErrorKind::Code(err),
         }
     }
 }
@@ -109,7 +70,7 @@ impl error::Error for Error {
 macro_rules! check_hs_error {
     ($expr:expr) => {
         if $expr != $crate::HS_SUCCESS {
-            return ::std::result::Result::Err(::std::convert::From::from($expr));
+            return ::std::result::Result::Err($crate::errors::ErrorKind::from($expr).into());
         }
     };
 }
@@ -169,9 +130,9 @@ macro_rules! check_compile_error {
                 $crate::HS_COMPILER_ERROR => {
                     let msg = $crate::errors::RawCompileError($err);
 
-                    Err($crate::errors::Error::CompilerError(msg.to_string()))
+                    Err($crate::errors::ErrorKind::CompilerError(msg.to_string()).into())
                 }
-                _ => Err(::std::convert::From::from($expr)),
+                _ => Err($crate::errors::ErrorKind::from($expr).into()),
             };
         }
     };

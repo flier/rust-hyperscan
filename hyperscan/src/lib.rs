@@ -47,7 +47,7 @@ pub use crate::api::*;
 pub use crate::common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
 pub use crate::compile::{CompileFlags, Pattern, Patterns};
 pub use crate::constants::*;
-pub use crate::errors::Error;
+pub use crate::errors::ErrorKind;
 pub use crate::runtime::{RawScratch, RawStream};
 
 #[cfg(test)]

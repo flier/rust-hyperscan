@@ -29,8 +29,6 @@ extern crate pretty_env_logger;
 
 use std::collections::HashMap;
 use std::env;
-use std::error;
-use std::fmt;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, Write};
@@ -42,6 +40,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use byteorder::{BigEndian, ReadBytesExt};
+use failure::Error;
 use getopts::Options;
 use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
 use pnet::packet::ip::IpNextHeaderProtocols;
@@ -53,39 +52,6 @@ use hyperscan::{
     BlockDatabase, BlockScanner, Database, DatabaseBuilder, Pattern, Patterns, RawScratch, RawStream, Scratch,
     ScratchAllocator, Stream, StreamingDatabase, StreamingScanner,
 };
-
-#[derive(Debug)]
-enum Error {
-    IoError(io::Error),
-    CompileError(hyperscan::Error),
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Error {
-        Error::IoError(err)
-    }
-}
-
-impl From<hyperscan::Error> for Error {
-    fn from(err: hyperscan::Error) -> Error {
-        Error::CompileError(err)
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", error::Error::description(self))
-    }
-}
-
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::IoError(ref err) => err.description(),
-            Error::CompileError(ref err) => err.description(),
-        }
-    }
-}
 
 const NANOS_PER_MILLI: u32 = 1_000_000;
 const MILLIS_PER_SEC: u64 = 1_000;
@@ -202,7 +168,7 @@ struct Benchmark {
 }
 
 impl Benchmark {
-    fn new(db_streaming: StreamingDatabase, db_block: BlockDatabase) -> Result<Benchmark, hyperscan::Error> {
+    fn new(db_streaming: StreamingDatabase, db_block: BlockDatabase) -> Result<Benchmark, Error> {
         let mut s = db_streaming.alloc()?;
 
         s.realloc(&db_block)?;

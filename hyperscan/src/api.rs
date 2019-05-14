@@ -6,10 +6,10 @@ use std::ops::Deref;
 use std::os::raw::c_char;
 use std::ptr;
 
-use libc;
+use failure::Error;
 
 use crate::constants::*;
-use crate::errors::Error;
+use crate::errors::ErrorKind::*;
 use crate::ffi::*;
 
 /// Compile mode
@@ -134,7 +134,7 @@ pub trait SerializedDatabase {
 
             let result = match CStr::from_ptr(p).to_str() {
                 Ok(info) => Ok(info.to_string()),
-                Err(_) => Err(Error::Invalid),
+                Err(_) => Err(Invalid.into()),
             };
 
             libc::free(p as *mut libc::c_void);

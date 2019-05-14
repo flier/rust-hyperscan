@@ -6,11 +6,11 @@ use std::os::raw::c_char;
 use std::ptr;
 use std::slice;
 
-use libc;
+use failure::Error;
 
 use crate::api::*;
 use crate::cptr::CPtr;
-use crate::errors::Error;
+use crate::errors::ErrorKind::*;
 use crate::ffi::*;
 
 /// A compiled pattern database that can then be used to scan data.
@@ -95,7 +95,7 @@ impl<T: Type> Database for RawDatabase<T> {
 
             let result = match CStr::from_ptr(p).to_str() {
                 Ok(info) => Ok(info.to_string()),
-                Err(_) => Err(Error::Invalid),
+                Err(_) => Err(Invalid.into()),
             };
 
             debug!("database info of {} database {:p}: {:?}", T::name(), self.db, result);

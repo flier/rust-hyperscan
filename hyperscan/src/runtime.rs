@@ -4,9 +4,10 @@ use std::ops::{Deref, DerefMut};
 use std::os::raw::c_uint;
 use std::ptr;
 
+use failure::Error;
+
 use crate::api::*;
 use crate::common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
-use crate::errors::Error;
 use crate::ffi::*;
 
 /// A large enough region of scratch space to support a given database.
@@ -342,7 +343,9 @@ pub mod tests {
 
     use std::ptr;
 
-    use super::super::*;
+    use crate::constants::*;
+    use crate::errors::ErrorKind;
+    use crate::runtime::*;
 
     const SCRATCH_SIZE: usize = 2000;
 
@@ -394,8 +397,9 @@ pub mod tests {
         assert_eq!(
             db.scan("foo test bar".as_bytes(), 0, &s, Some(callback), Some(&db))
                 .err()
-                .unwrap(),
-            Error::ScanTerminated
+                .unwrap()
+                .downcast_ref::<ErrorKind>(),
+            Some(&ErrorKind::ScanTerminated)
         );
     }
 
@@ -424,8 +428,11 @@ pub mod tests {
         let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
 
         assert_eq!(
-            db.scan(&data, 0, &s, Some(callback), Some(&db)).err(),
-            Some(Error::ScanTerminated)
+            db.scan(&data, 0, &s, Some(callback), Some(&db))
+                .err()
+                .unwrap()
+                .downcast_ref::<ErrorKind>(),
+            Some(&ErrorKind::ScanTerminated)
         );
     }
 
