@@ -4,8 +4,8 @@ use std::fmt;
 use std::ptr;
 use std::string::ToString;
 
-use constants::*;
-use raw::*;
+use crate::constants::*;
+use crate::raw::*;
 
 /// Error Codes
 #[derive(Debug, PartialEq, Clone)]
@@ -75,11 +75,11 @@ impl From<::std::ffi::NulError> for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "{}", error::Error::description(self).to_string()));
+        write!(f, "{}", error::Error::description(self).to_string())?;
 
         match *self {
-            Error::CompilerError(ref reason) => try!(write!(f, " {}", reason)),
-            Error::Failed(ref code) => try!(write!(f, " Code: {}", code)),
+            Error::CompilerError(ref reason) => write!(f, " {}", reason)?,
+            Error::Failed(ref code) => write!(f, " Code: {}", code)?,
             _ => {}
         }
 

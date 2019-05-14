@@ -1,13 +1,7 @@
-#[cfg(feature = "gen")]
-extern crate bindgen;
-extern crate env_logger;
 #[macro_use]
 extern crate log;
-extern crate pkg_config;
 
 use std::env;
-#[cfg(not(feature = "gen"))]
-use std::fs;
 use std::path::{Path, PathBuf};
 
 struct Library {
@@ -66,6 +60,8 @@ fn generate_binding(hyperscan_include_path: &str, out_file: &Path) {
 
 #[cfg(not(feature = "gen"))]
 fn generate_binding(_: &str, out_file: &Path) {
+    use std::fs;
+
     if cfg!(target_os = "macos") {
         fs::copy("src/macos/raw.rs", out_file).expect("fail to copy bindings");
     } else if cfg!(target_os = "linux") {
@@ -79,7 +75,7 @@ fn generate_binding(_: &str, out_file: &Path) {
 }
 
 fn main() {
-    env_logger::init();
+    pretty_env_logger::init();
 
     let libhs = find_hyperscan();
 

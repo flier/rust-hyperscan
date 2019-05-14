@@ -8,9 +8,9 @@ use std::ptr;
 
 use libc;
 
-use constants::*;
-use errors::Error;
-use raw::*;
+use crate::constants::*;
+use crate::errors::Error;
+use crate::raw::*;
 
 /// Compile mode
 pub trait Type {

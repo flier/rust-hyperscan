@@ -8,10 +8,10 @@ use std::slice;
 
 use libc;
 
-use api::*;
-use cptr::CPtr;
-use errors::Error;
-use raw::*;
+use crate::api::*;
+use crate::cptr::CPtr;
+use crate::errors::Error;
+use crate::raw::*;
 
 /// A compiled pattern database that can then be used to scan data.
 pub struct RawDatabase<T: Type> {
@@ -235,7 +235,7 @@ impl Deref for RawSerializedDatabase {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate env_logger;
+    extern crate pretty_env_logger;
 
     use std::ptr;
 
@@ -294,7 +294,7 @@ pub mod tests {
 
     #[test]
     fn test_database() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
         let db = BlockDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
@@ -302,16 +302,14 @@ pub mod tests {
 
         validate_database(&db);
 
-        assert!(
-            Regex::new(r"RawDatabase<Block>\{db: \w+\}")
-                .unwrap()
-                .is_match(&format!("{:?}", db))
-        );
+        assert!(Regex::new(r"RawDatabase<Block>\{db: \w+\}")
+            .unwrap()
+            .is_match(&format!("{:?}", db)));
     }
 
     #[test]
     fn test_database_serialize() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
         let db = StreamingDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
@@ -322,16 +320,14 @@ pub mod tests {
         validate_serialized_database(&data);
         validate_serialized_database(data.as_slice());
 
-        assert!(
-            Regex::new(r"RawSerializedDatabase\{p: \w+, len: \d+\}")
-                .unwrap()
-                .is_match(&format!("{:?}", data))
-        );
+        assert!(Regex::new(r"RawSerializedDatabase\{p: \w+, len: \d+\}")
+            .unwrap()
+            .is_match(&format!("{:?}", data)));
     }
 
     #[test]
     fn test_database_deserialize() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
         let db = VectoredDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 
@@ -344,7 +340,7 @@ pub mod tests {
 
     #[test]
     fn test_database_deserialize_at() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
         let db = BlockDatabase::compile("test", 0, &PlatformInfo::null()).unwrap();
 

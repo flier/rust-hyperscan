@@ -4,10 +4,10 @@ use std::ops::{Deref, DerefMut};
 use std::os::raw::c_uint;
 use std::ptr;
 
-use api::*;
-use common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
-use errors::Error;
-use raw::*;
+use crate::api::*;
+use crate::common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
+use crate::errors::Error;
+use crate::raw::*;
 
 /// A large enough region of scratch space to support a given database.
 ///
@@ -119,7 +119,7 @@ impl<T: Type> ScratchAllocator<RawScratch> for RawDatabase<T> {
 
     #[inline]
     fn realloc(&self, s: &mut RawScratch) -> Result<&Self, Error> {
-        try!(s.realloc(self));
+        s.realloc(self)?;
 
         Ok(self)
     }
@@ -338,7 +338,7 @@ impl<T: Scannable, S: Scratch> BlockScanner<T, S> for RawStream {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate env_logger;
+    extern crate pretty_env_logger;
 
     use std::ptr;
 
@@ -348,9 +348,9 @@ pub mod tests {
 
     #[test]
     fn test_scratch() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
-        let db: BlockDatabase = pattern!{"test"}.build().unwrap();
+        let db: BlockDatabase = pattern! {"test"}.build().unwrap();
 
         assert!(*db != ptr::null_mut());
 
@@ -366,16 +366,16 @@ pub mod tests {
 
         assert!(s2.size().unwrap() > SCRATCH_SIZE);
 
-        let db2: VectoredDatabase = pattern!{"foobar"}.build().unwrap();
+        let db2: VectoredDatabase = pattern! {"foobar"}.build().unwrap();
 
         assert!(s2.realloc(&db2).unwrap().size().unwrap() > s.size().unwrap());
     }
 
     #[test]
     fn test_block_scan() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
-        let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
+        let db: BlockDatabase = pattern! {"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
             .build()
             .unwrap();
         let s = RawScratch::alloc(&db).unwrap();
@@ -401,9 +401,9 @@ pub mod tests {
 
     #[test]
     fn test_vectored_scan() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
-        let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
+        let db: VectoredDatabase = pattern! {"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
             .build()
             .unwrap();
         let s = RawScratch::alloc(&db).unwrap();
@@ -431,9 +431,9 @@ pub mod tests {
 
     #[test]
     fn test_streaming_scan() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
-        let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}.build().unwrap();
+        let db: StreamingDatabase = pattern! {"test", flags => HS_FLAG_CASELESS}.build().unwrap();
 
         let s = RawScratch::alloc(&db).unwrap();
         let st = db.open_stream(0).unwrap();

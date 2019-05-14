@@ -1,24 +1,27 @@
 [package]
-name = "hyperscan-sys"
+name = "hyperscan"
 version = "0.2.0"
 authors = ["Flier Lu <flier.lu@gmail.com>"]
 description = "Hyperscan bindings for Rust with Multiple Pattern and Streaming Scan"
 homepage = "https://github.com/flier/rust-hyperscan"
 repository = "https://github.com/flier/rust-hyperscan"
-documentation = "https://docs.rs/crate/hyperscan-sys/"
+documentation = "https://docs.rs/crate/hyperscan/"
 license = "Apache-2.0"
 readme = "README.md"
 keywords = ["regex", "hyperscan", "streaming"]
 edition = "2018"
 
-[features]
-gen = ["bindgen"]
-
 [dependencies]
-
-[build-dependencies]
+libc = "0.2"
 log = "0.4"
-pretty_env_logger = "0.3"
-pkg-config = "0.3"
+regex-syntax = "0.6"
 
-bindgen = { version = "0.49", optional = true }
+hyperscan-sys = { version = "0.2.0", path = "../hyperscan-sys" }
+
+[dev-dependencies]
+pretty_env_logger = "0.3"
+regex = "1.1"
+getopts = "0.2"
+pcap = "0.7"
+pnet = "0.22"
+byteorder = "1.2"

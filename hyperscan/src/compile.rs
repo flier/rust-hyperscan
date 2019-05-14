@@ -7,12 +7,12 @@ use std::str::FromStr;
 
 use regex_syntax;
 
-use api::*;
-use common::RawDatabase;
-use constants::*;
-use cptr::CPtr;
-use errors::{Error, RawCompileErrorPtr};
-use raw::*;
+use crate::api::*;
+use crate::common::RawDatabase;
+use crate::constants::*;
+use crate::cptr::CPtr;
+use crate::errors::{Error, RawCompileErrorPtr};
+use crate::raw::*;
 
 /// Flags which modify the behaviour of the expression.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
@@ -33,31 +33,31 @@ impl Into<u32> for CompileFlags {
 impl fmt::Display for CompileFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.is_set(HS_FLAG_CASELESS) {
-            try!(write!(f, "i"))
+            write!(f, "i")?
         }
         if self.is_set(HS_FLAG_MULTILINE) {
-            try!(write!(f, "m"))
+            write!(f, "m")?
         }
         if self.is_set(HS_FLAG_DOTALL) {
-            try!(write!(f, "s"))
+            write!(f, "s")?
         }
         if self.is_set(HS_FLAG_SINGLEMATCH) {
-            try!(write!(f, "H"))
+            write!(f, "H")?
         }
         if self.is_set(HS_FLAG_ALLOWEMPTY) {
-            try!(write!(f, "V"))
+            write!(f, "V")?
         }
         if self.is_set(HS_FLAG_UTF8) {
-            try!(write!(f, "8"))
+            write!(f, "8")?
         }
         if self.is_set(HS_FLAG_UCP) {
-            try!(write!(f, "W"))
+            write!(f, "W")?
         }
         if self.is_set(HS_FLAG_COMBINATION) {
-            try!(write!(f, "C"))
+            write!(f, "C")?
         }
         if self.is_set(HS_FLAG_QUIET) {
-            try!(write!(f, "Q"))
+            write!(f, "Q")?
         }
         Ok(())
     }
@@ -122,17 +122,14 @@ impl Pattern {
     pub fn parse(s: &str) -> Result<Pattern, Error> {
         unsafe {
             let (id, expr) = match s.find(':') {
-                Some(off) => (
-                    try!(s.slice_unchecked(0, off).parse()),
-                    s.slice_unchecked(off + 1, s.len()),
-                ),
+                Some(off) => (s.get_unchecked(0..off).parse()?, s.get_unchecked(off + 1..s.len())),
                 None => (0, s),
             };
 
             let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
                 (true, Some(end)) if end > 0 => Pattern {
-                    expression: String::from(expr.slice_unchecked(1, end)),
-                    flags: try!(CompileFlags::parse(expr.slice_unchecked(end + 1, expr.len()))),
+                    expression: String::from(expr.get_unchecked(1..end)),
+                    flags: CompileFlags::parse(expr.get_unchecked(end + 1..expr.len()))?,
                     id: id,
                 },
 
@@ -174,7 +171,7 @@ impl FromStr for Pattern {
 
 impl Expression for Pattern {
     fn info(&self) -> Result<ExpressionInfo, Error> {
-        let expr = try!(CString::new(self.expression.as_str()));
+        let expr = CString::new(self.expression.as_str())?;
         let mut info: CPtr<hs_expr_info_t> = CPtr::null();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
@@ -249,7 +246,7 @@ impl<T: Type> RawDatabase<T> {
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
     pub fn compile(expression: &str, flags: u32, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
-        let expr = try!(CString::new(expression));
+        let expr = CString::new(expression)?;
         let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
@@ -307,7 +304,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
         let mut ids = Vec::with_capacity(self.len());
 
         for pattern in self {
-            let expr = try!(CString::new(pattern.expression.as_str()));
+            let expr = CString::new(pattern.expression.as_str())?;
 
             expressions.push(expr);
             flags.push(pattern.flags.0 as c_uint);
@@ -350,7 +347,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate env_logger;
+    extern crate pretty_env_logger;
 
     use std::ptr;
 
@@ -361,7 +358,7 @@ pub mod tests {
 
     #[test]
     fn test_compile_flags() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
         let mut flags = CompileFlags(HS_FLAG_CASELESS | HS_FLAG_DOTALL);
 
@@ -382,7 +379,7 @@ pub mod tests {
 
     #[test]
     fn test_database_compile() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
         let db = BlockDatabase::compile("test", 0, &PlatformInfo::host()).unwrap();
 
@@ -393,7 +390,7 @@ pub mod tests {
 
     #[test]
     fn test_pattern() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
         let p = Pattern::parse("test").unwrap();
 
@@ -434,9 +431,9 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
-        let p = &pattern!{"test"};
+        let p = &pattern! {"test"};
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, CompileFlags(0));
@@ -457,9 +454,9 @@ pub mod tests {
 
     #[test]
     fn test_pattern_build_with_flags() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
-        let p = &pattern!{"test", flags => HS_FLAG_CASELESS};
+        let p = &pattern! {"test", flags => HS_FLAG_CASELESS};
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
@@ -472,7 +469,7 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
         let db: BlockDatabase = patterns!(["test", "foo", "bar"]).build().unwrap();
 
@@ -481,7 +478,7 @@ pub mod tests {
 
     #[test]
     fn test_patterns_build_with_flags() {
-        let _ = env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
 
         let db: BlockDatabase = patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS|HS_FLAG_DOTALL)
             .build()

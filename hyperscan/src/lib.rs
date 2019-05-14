@@ -45,17 +45,17 @@ mod common;
 mod compile;
 mod runtime;
 
-pub use api::*;
-pub use common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
-pub use compile::{CompileFlags, Pattern, Patterns};
-pub use constants::*;
-pub use errors::Error;
-pub use runtime::{RawScratch, RawStream};
+pub use crate::api::*;
+pub use crate::common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
+pub use crate::compile::{CompileFlags, Pattern, Patterns};
+pub use crate::constants::*;
+pub use crate::errors::Error;
+pub use crate::runtime::{RawScratch, RawStream};
 
 #[cfg(test)]
 extern crate regex;
 
 #[cfg(test)]
 mod tests {
-    pub use common::tests::*;
+    pub use crate::common::tests::*;
 }
