@@ -36,26 +36,26 @@ extern crate hyperscan_sys as ffi;
 mod constants;
 #[macro_use]
 mod errors;
-mod api;
-mod database;
+mod common;
 #[macro_use]
 mod compile;
 mod runtime;
-mod scan;
-mod stream;
 
-pub use crate::api::*;
-pub use crate::compile::{CompileFlags, Pattern, Patterns};
+pub use crate::common::{
+    Block, BlockDatabase, Database, DatabaseRef, Mode, SerializedDatabase, Streaming, StreamingDatabase, Vectored,
+    VectoredDatabase,
+};
+pub use crate::compile::{
+    Builder, CompileFlags, Expression, ExpressionInfo, Pattern, Patterns, PlatformInfo, PlatformInfoRef,
+};
 pub use crate::constants::*;
-pub use crate::database::{BlockDatabase, Database, StreamingDatabase, VectoredDatabase};
 pub use crate::errors::ErrorKind;
-pub use crate::runtime::{Scratch, ScratchRef};
-pub use crate::stream::{Stream, StreamRef};
+pub use crate::runtime::{Scratch, ScratchRef, Stream, StreamRef};
 
 #[cfg(test)]
 extern crate regex;
 
 #[cfg(test)]
 mod tests {
-    pub use crate::database::tests::*;
+    pub use super::common::tests::*;
 }

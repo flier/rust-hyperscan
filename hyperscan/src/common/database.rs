@@ -1,13 +1,11 @@
 use core::marker::PhantomData;
-use core::ops::Deref;
 use core::ptr;
-use core::slice;
 use std::ffi::CStr;
 
 use failure::Error;
-use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
+use foreign_types::{foreign_type, ForeignTypeRef};
 
-use crate::api::{Block, Mode, Streaming, Vectored};
+use crate::common::{Block, Mode, Streaming, Vectored};
 use crate::errors::{AsResult, ErrorKind::*};
 
 foreign_type! {
@@ -75,97 +73,13 @@ impl<T> DatabaseRef<T> {
     }
 }
 
-#[derive(Debug)]
-pub struct SerializedDatabase(*const i8, usize);
-
-impl Drop for SerializedDatabase {
-    fn drop(&mut self) {
-        unsafe { libc::free(self.0 as *mut _) }
-    }
-}
-
-impl Deref for SerializedDatabase {
-    type Target = [u8];
-
-    fn deref(&self) -> &Self::Target {
-        unsafe { slice::from_raw_parts(self.0 as *const _, self.1) }
-    }
-}
-
-impl SerializedDatabase {
-    pub fn size(&self) -> Result<usize, Error> {
-        let mut size = 0;
-
-        unsafe {
-            ffi::hs_serialized_database_size(self.0, self.1, &mut size)
-                .ok()
-                .map(|_| size)
-        }
-    }
-
-    pub fn info(&self) -> Result<String, Error> {
-        let mut p = ptr::null_mut();
-
-        unsafe {
-            ffi::hs_serialized_database_info(self.0, self.1, &mut p)
-                .ok()
-                .and_then(|_| {
-                    let info = CStr::from_ptr(p)
-                        .to_str()
-                        .map(|s| s.to_owned())
-                        .map_err(|_| Invalid.into());
-
-                    if !p.is_null() {
-                        libc::free(p as *mut _)
-                    }
-
-                    info
-                })
-        }
-    }
-}
-
-impl<T> Database<T> {
-    pub fn deserialize(bytes: &[u8]) -> Result<Database<T>, Error> {
-        let mut db = ptr::null_mut();
-
-        unsafe {
-            ffi::hs_deserialize_database(bytes.as_ptr() as *const i8, bytes.len(), &mut db)
-                .ok()
-                .map(|_| Database::from_ptr(db))
-        }
-    }
-}
-
-impl<T> DatabaseRef<T> {
-    pub fn serialize(&self) -> Result<SerializedDatabase, Error> {
-        let mut ptr = ptr::null_mut();
-        let mut size: usize = 0;
-
-        unsafe {
-            ffi::hs_serialize_database(self.as_ptr(), &mut ptr, &mut size)
-                .ok()
-                .map(|_| SerializedDatabase(ptr as *mut _, size))
-        }
-    }
-
-    pub fn deserialize_at(&mut self, bytes: &[u8]) -> Result<(), Error> {
-        unsafe {
-            ffi::hs_deserialize_database_at(bytes.as_ptr() as *const i8, bytes.len(), self.as_ptr())
-                .ok()
-                .map(|_| ())
-        }
-    }
-}
-
 #[cfg(test)]
 pub mod tests {
-    extern crate pretty_env_logger;
-
     use regex::Regex;
 
-    use crate::api::PlatformInfo;
-    use crate::database::*;
+    use crate::common::Mode;
+    use crate::common::*;
+    use crate::compile::PlatformInfo;
 
     const DATABASE_SIZE: usize = 872;
 

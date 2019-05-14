@@ -4,10 +4,10 @@ use core::ptr::null_mut;
 use failure::Error;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
-use crate::api::{MatchEventCallback, Streaming};
-use crate::database::Database;
+use crate::common::Database;
+use crate::common::Streaming;
 use crate::errors::AsResult;
-use crate::runtime::ScratchRef;
+use crate::runtime::{MatchEventCallback, ScratchRef};
 
 impl Database<Streaming> {
     pub fn stream_size(&self) -> Result<usize, Error> {

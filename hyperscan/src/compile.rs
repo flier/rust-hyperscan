@@ -1,16 +1,17 @@
 use core::fmt;
+use core::mem;
 use core::ptr::null_mut;
 use core::str::FromStr;
 use std::ffi::CString;
 
 use failure::Error;
-use foreign_types::{ForeignType, ForeignTypeRef};
+use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 use libc::c_uint;
 
-use crate::api::*;
+use crate::common::Database;
+use crate::common::*;
 use crate::constants::*;
-use crate::database::Database;
-use crate::errors::ErrorKind;
+use crate::errors::{AsResult, ErrorKind};
 
 /// Flags which modify the behaviour of the expression.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
@@ -167,6 +168,37 @@ impl FromStr for Pattern {
     }
 }
 
+/// A type containing information related to an expression
+#[derive(Debug, Copy, Clone)]
+pub struct ExpressionInfo {
+    /// The minimum length in bytes of a match for the pattern.
+    pub min_width: usize,
+
+    /// The maximum length in bytes of a match for the pattern.
+    pub max_width: usize,
+
+    /// Whether this expression can produce matches that are not returned in order,
+    /// such as those produced by assertions.
+    pub unordered_matches: bool,
+
+    /// Whether this expression can produce matches at end of data (EOD).
+    pub matches_at_eod: bool,
+
+    /// Whether this expression can *only* produce matches at end of data (EOD).
+    pub matches_only_at_eod: bool,
+}
+
+/// Providing expression information.
+pub trait Expression {
+    ///
+    /// Utility function providing information about a regular expression.
+    ///
+    /// The information provided in ExpressionInfo
+    /// includes the minimum and maximum width of a pattern match.
+    ///
+    fn info(&self) -> Result<ExpressionInfo, Error>;
+}
+
 impl Expression for Pattern {
     fn info(&self) -> Result<ExpressionInfo, Error> {
         let expr = CString::new(self.expression.as_str())?;
@@ -239,6 +271,47 @@ macro_rules! patterns {
     }};
 }
 
+foreign_type! {
+    /// A type containing information on the target platform
+    /// which may optionally be provided to the compile calls
+    pub type PlatformInfo {
+        type CType = ffi::hs_platform_info_t;
+
+        fn drop = free_platform_info;
+    }
+}
+
+unsafe fn free_platform_info(p: *mut ffi::hs_platform_info_t) {
+    let _ = Box::from_raw(p);
+}
+
+impl PlatformInfo {
+    pub fn is_valid() -> Result<(), Error> {
+        unsafe { ffi::hs_valid_platform().ok().map(|_| ()) }
+    }
+
+    pub fn host() -> Result<PlatformInfo, Error> {
+        unsafe {
+            let mut platform = mem::zeroed();
+
+            ffi::hs_populate_platform(&mut platform)
+                .ok()
+                .map(|_| PlatformInfo::from_ptr(Box::into_raw(Box::new(platform))))
+        }
+    }
+
+    pub fn new(tune: u32, cpu_features: u64) -> PlatformInfo {
+        unsafe {
+            PlatformInfo::from_ptr(Box::into_raw(Box::new(ffi::hs_platform_info_t {
+                tune,
+                cpu_features,
+                reserved1: 0,
+                reserved2: 0,
+            })))
+        }
+    }
+}
+
 impl<T: Mode> Database<T> {
     /// The basic regular expression compiler.
     ///
@@ -265,6 +338,17 @@ impl<T: Mode> Database<T> {
             Ok(Database::from_ptr(db))
         }
     }
+}
+
+/// The regular expression pattern database builder.
+pub trait Builder<T> {
+    /// This is the function call with which an expression is compiled into
+    /// a Hyperscan database which can be passed to the runtime functions
+    fn build(&self) -> Result<Database<T>, Error> {
+        self.build_for_platform(None)
+    }
+
+    fn build_for_platform(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error>;
 }
 
 impl<T: Mode> Builder<T> for Pattern {
@@ -331,8 +415,9 @@ impl<T: Mode> Builder<T> for Patterns {
 
 #[cfg(test)]
 pub mod tests {
-    use super::super::database::tests::*;
-    use super::super::*;
+    use crate::common::tests::*;
+    use crate::common::*;
+    use crate::compile::*;
 
     const DATABASE_SIZE: usize = 2664;
 
