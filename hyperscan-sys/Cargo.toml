@@ -16,6 +16,7 @@ links = "hs"
 gen = ["bindgen"]
 
 [dependencies]
+libc = "0.2"
 
 [build-dependencies]
 log = "0.4"

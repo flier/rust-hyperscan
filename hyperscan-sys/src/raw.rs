@@ -13,7 +13,7 @@ pub struct hs_database {
 #[doc = "  - @ref hs_compile_ext_multi()"]
 pub type hs_database_t = hs_database;
 #[doc = " A type for errors returned by Hyperscan functions."]
-pub type hs_error_t = ::std::os::raw::c_int;
+pub type hs_error_t = libc::c_int;
 extern "C" {
     #[doc = " Free a compiled pattern database."]
     #[doc = ""]
@@ -51,7 +51,7 @@ extern "C" {
     #[doc = "      allocated, other values may be returned if errors are detected."]
     pub fn hs_serialize_database(
         db: *const hs_database_t,
-        bytes: *mut *mut ::std::os::raw::c_char,
+        bytes: *mut *mut libc::c_char,
         length: *mut usize,
     ) -> hs_error_t;
 }
@@ -81,7 +81,7 @@ extern "C" {
     #[doc = " @return"]
     #[doc = "      @ref HS_SUCCESS on success, other values on failure."]
     pub fn hs_deserialize_database(
-        bytes: *const ::std::os::raw::c_char,
+        bytes: *const libc::c_char,
         length: usize,
         db: *mut *mut hs_database_t,
     ) -> hs_error_t;
@@ -114,7 +114,7 @@ extern "C" {
     #[doc = " @return"]
     #[doc = "      @ref HS_SUCCESS on success, other values on failure."]
     pub fn hs_deserialize_database_at(
-        bytes: *const ::std::os::raw::c_char,
+        bytes: *const libc::c_char,
         length: usize,
         db: *mut hs_database_t,
     ) -> hs_error_t;
@@ -172,7 +172,7 @@ extern "C" {
     #[doc = " @return"]
     #[doc = "      @ref HS_SUCCESS on success, other values on failure."]
     pub fn hs_serialized_database_size(
-        bytes: *const ::std::os::raw::c_char,
+        bytes: *const libc::c_char,
         length: usize,
         deserialized_size: *mut usize,
     ) -> hs_error_t;
@@ -191,7 +191,7 @@ extern "C" {
     #[doc = ""]
     #[doc = " @return"]
     #[doc = "      @ref HS_SUCCESS on success, other values on failure."]
-    pub fn hs_database_info(database: *const hs_database_t, info: *mut *mut ::std::os::raw::c_char) -> hs_error_t;
+    pub fn hs_database_info(database: *const hs_database_t, info: *mut *mut libc::c_char) -> hs_error_t;
 }
 extern "C" {
     #[doc = " Utility function providing information about a serialized database."]
@@ -212,9 +212,9 @@ extern "C" {
     #[doc = " @return"]
     #[doc = "      @ref HS_SUCCESS on success, other values on failure."]
     pub fn hs_serialized_database_info(
-        bytes: *const ::std::os::raw::c_char,
+        bytes: *const libc::c_char,
         length: usize,
-        info: *mut *mut ::std::os::raw::c_char,
+        info: *mut *mut libc::c_char,
     ) -> hs_error_t;
 }
 #[doc = " The type of the callback function that will be used by Hyperscan to allocate"]
@@ -229,13 +229,13 @@ extern "C" {
 #[doc = "      The number of bytes to allocate."]
 #[doc = " @return"]
 #[doc = "      A pointer to the region of memory allocated, or NULL on error."]
-pub type hs_alloc_t = ::std::option::Option<unsafe extern "C" fn(size: usize) -> *mut ::std::os::raw::c_void>;
+pub type hs_alloc_t = ::core::option::Option<unsafe extern "C" fn(size: usize) -> *mut libc::c_void>;
 #[doc = " The type of the callback function that will be used by Hyperscan to free"]
 #[doc = " memory regions previously allocated using the @ref hs_alloc_t function."]
 #[doc = ""]
 #[doc = " @param ptr"]
 #[doc = "      The region of memory to be freed."]
-pub type hs_free_t = ::std::option::Option<unsafe extern "C" fn(ptr: *mut ::std::os::raw::c_void)>;
+pub type hs_free_t = ::core::option::Option<unsafe extern "C" fn(ptr: *mut libc::c_void)>;
 extern "C" {
     #[doc = " Set the allocate and free functions used by Hyperscan for allocating"]
     #[doc = " memory at runtime for stream state, scratch space, database bytecode,"]
@@ -376,7 +376,7 @@ extern "C" {
     #[doc = "      A string containing the version number of this release build and the"]
     #[doc = "      date of the build. It is allocated statically, so it does not need to"]
     #[doc = "      be freed by the caller."]
-    pub fn hs_version() -> *const ::std::os::raw::c_char;
+    pub fn hs_version() -> *const libc::c_char;
 }
 extern "C" {
     #[doc = " Utility function to test the current system architecture."]
@@ -459,26 +459,26 @@ extern "C" {
 #[derive(Debug, Copy, Clone)]
 pub struct hs_compile_error {
     #[doc = " A human-readable error message describing the error."]
-    pub message: *mut ::std::os::raw::c_char,
+    pub message: *mut libc::c_char,
     #[doc = " The zero-based number of the expression that caused the error (if this"]
     #[doc = " can be determined). If the error is not specific to an expression, then"]
     #[doc = " this value will be less than zero."]
-    pub expression: ::std::os::raw::c_int,
+    pub expression: libc::c_int,
 }
 #[test]
 fn bindgen_test_layout_hs_compile_error() {
     assert_eq!(
-        ::std::mem::size_of::<hs_compile_error>(),
+        ::core::mem::size_of::<hs_compile_error>(),
         16usize,
         concat!("Size of: ", stringify!(hs_compile_error))
     );
     assert_eq!(
-        ::std::mem::align_of::<hs_compile_error>(),
+        ::core::mem::align_of::<hs_compile_error>(),
         8usize,
         concat!("Alignment of ", stringify!(hs_compile_error))
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_compile_error>())).message as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_compile_error>())).message as *const _ as usize },
         0usize,
         concat!(
             "Offset of field: ",
@@ -488,7 +488,7 @@ fn bindgen_test_layout_hs_compile_error() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_compile_error>())).expression as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_compile_error>())).expression as *const _ as usize },
         8usize,
         concat!(
             "Offset of field: ",
@@ -514,32 +514,32 @@ pub struct hs_platform_info {
     #[doc = " Use of this field does not limit the processors that the resulting"]
     #[doc = " database can run on, but may impact the performance of the resulting"]
     #[doc = " database."]
-    pub tune: ::std::os::raw::c_uint,
+    pub tune: libc::c_uint,
     #[doc = " Relevant CPU features available on the target platform"]
     #[doc = ""]
     #[doc = " This value may be produced by combining HS_CPU_FEATURE_* flags (such as"]
     #[doc = " @ref HS_CPU_FEATURES_AVX2). Multiple CPU features may be or'ed together"]
     #[doc = " to produce the value."]
-    pub cpu_features: ::std::os::raw::c_ulonglong,
+    pub cpu_features: libc::c_ulonglong,
     #[doc = " Reserved for future use."]
-    pub reserved1: ::std::os::raw::c_ulonglong,
+    pub reserved1: libc::c_ulonglong,
     #[doc = " Reserved for future use."]
-    pub reserved2: ::std::os::raw::c_ulonglong,
+    pub reserved2: libc::c_ulonglong,
 }
 #[test]
 fn bindgen_test_layout_hs_platform_info() {
     assert_eq!(
-        ::std::mem::size_of::<hs_platform_info>(),
+        ::core::mem::size_of::<hs_platform_info>(),
         32usize,
         concat!("Size of: ", stringify!(hs_platform_info))
     );
     assert_eq!(
-        ::std::mem::align_of::<hs_platform_info>(),
+        ::core::mem::align_of::<hs_platform_info>(),
         8usize,
         concat!("Alignment of ", stringify!(hs_platform_info))
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_platform_info>())).tune as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_platform_info>())).tune as *const _ as usize },
         0usize,
         concat!(
             "Offset of field: ",
@@ -549,7 +549,7 @@ fn bindgen_test_layout_hs_platform_info() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_platform_info>())).cpu_features as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_platform_info>())).cpu_features as *const _ as usize },
         8usize,
         concat!(
             "Offset of field: ",
@@ -559,7 +559,7 @@ fn bindgen_test_layout_hs_platform_info() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_platform_info>())).reserved1 as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_platform_info>())).reserved1 as *const _ as usize },
         16usize,
         concat!(
             "Offset of field: ",
@@ -569,7 +569,7 @@ fn bindgen_test_layout_hs_platform_info() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_platform_info>())).reserved2 as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_platform_info>())).reserved2 as *const _ as usize },
         24usize,
         concat!(
             "Offset of field: ",
@@ -591,7 +591,7 @@ pub struct hs_expr_info {
     #[doc = " (such as extended parameters or the @ref HS_FLAG_SINGLEMATCH flag) this"]
     #[doc = " may represent a conservative lower bound for the true minimum length of"]
     #[doc = " a match."]
-    pub min_width: ::std::os::raw::c_uint,
+    pub min_width: libc::c_uint,
     #[doc = " The maximum length in bytes of a match for the pattern. If the pattern"]
     #[doc = " has an unbounded maximum length, this will be set to the maximum value"]
     #[doc = " of an unsigned int (UINT_MAX)."]
@@ -600,11 +600,11 @@ pub struct hs_expr_info {
     #[doc = " (such as extended parameters or the @ref HS_FLAG_SINGLEMATCH flag) this"]
     #[doc = " may represent a conservative upper bound for the true maximum length of"]
     #[doc = " a match."]
-    pub max_width: ::std::os::raw::c_uint,
+    pub max_width: libc::c_uint,
     #[doc = " Whether this expression can produce matches that are not returned in"]
     #[doc = " order, such as those produced by assertions. Zero if false, non-zero if"]
     #[doc = " true."]
-    pub unordered_matches: ::std::os::raw::c_char,
+    pub unordered_matches: libc::c_char,
     #[doc = " Whether this expression can produce matches at end of data (EOD). In"]
     #[doc = " streaming mode, EOD matches are raised during @ref hs_close_stream(),"]
     #[doc = " since it is only when @ref hs_close_stream() is called that the EOD"]
@@ -612,26 +612,26 @@ pub struct hs_expr_info {
     #[doc = ""]
     #[doc = " Note: trailing `\\b` word boundary assertions may also result in EOD"]
     #[doc = " matches as end-of-data can act as a word boundary."]
-    pub matches_at_eod: ::std::os::raw::c_char,
+    pub matches_at_eod: libc::c_char,
     #[doc = " Whether this expression can *only* produce matches at end of data (EOD)."]
     #[doc = " In streaming mode, all matches for this expression are raised during"]
     #[doc = " @ref hs_close_stream(). Zero if false, non-zero if true."]
-    pub matches_only_at_eod: ::std::os::raw::c_char,
+    pub matches_only_at_eod: libc::c_char,
 }
 #[test]
 fn bindgen_test_layout_hs_expr_info() {
     assert_eq!(
-        ::std::mem::size_of::<hs_expr_info>(),
+        ::core::mem::size_of::<hs_expr_info>(),
         12usize,
         concat!("Size of: ", stringify!(hs_expr_info))
     );
     assert_eq!(
-        ::std::mem::align_of::<hs_expr_info>(),
+        ::core::mem::align_of::<hs_expr_info>(),
         4usize,
         concat!("Alignment of ", stringify!(hs_expr_info))
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_info>())).min_width as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_info>())).min_width as *const _ as usize },
         0usize,
         concat!(
             "Offset of field: ",
@@ -641,7 +641,7 @@ fn bindgen_test_layout_hs_expr_info() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_info>())).max_width as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_info>())).max_width as *const _ as usize },
         4usize,
         concat!(
             "Offset of field: ",
@@ -651,7 +651,7 @@ fn bindgen_test_layout_hs_expr_info() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_info>())).unordered_matches as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_info>())).unordered_matches as *const _ as usize },
         8usize,
         concat!(
             "Offset of field: ",
@@ -661,7 +661,7 @@ fn bindgen_test_layout_hs_expr_info() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_info>())).matches_at_eod as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_info>())).matches_at_eod as *const _ as usize },
         9usize,
         concat!(
             "Offset of field: ",
@@ -671,7 +671,7 @@ fn bindgen_test_layout_hs_expr_info() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_info>())).matches_only_at_eod as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_info>())).matches_only_at_eod as *const _ as usize },
         10usize,
         concat!(
             "Offset of field: ",
@@ -694,47 +694,47 @@ pub type hs_expr_info_t = hs_expr_info;
 pub struct hs_expr_ext {
     #[doc = " Flags governing which parts of this structure are to be used by the"]
     #[doc = " compiler. See @ref HS_EXT_FLAG."]
-    pub flags: ::std::os::raw::c_ulonglong,
+    pub flags: libc::c_ulonglong,
     #[doc = " The minimum end offset in the data stream at which this expression"]
     #[doc = " should match successfully. To use this parameter, set the"]
     #[doc = " @ref HS_EXT_FLAG_MIN_OFFSET flag in the hs_expr_ext::flags field."]
-    pub min_offset: ::std::os::raw::c_ulonglong,
+    pub min_offset: libc::c_ulonglong,
     #[doc = " The maximum end offset in the data stream at which this expression"]
     #[doc = " should match successfully. To use this parameter, set the"]
     #[doc = " @ref HS_EXT_FLAG_MAX_OFFSET flag in the hs_expr_ext::flags field."]
-    pub max_offset: ::std::os::raw::c_ulonglong,
+    pub max_offset: libc::c_ulonglong,
     #[doc = " The minimum match length (from start to end) required to successfully"]
     #[doc = " match this expression. To use this parameter, set the"]
     #[doc = " @ref HS_EXT_FLAG_MIN_LENGTH flag in the hs_expr_ext::flags field."]
-    pub min_length: ::std::os::raw::c_ulonglong,
+    pub min_length: libc::c_ulonglong,
     #[doc = " Allow patterns to approximately match within this edit distance. To use"]
     #[doc = " this parameter, set the @ref HS_EXT_FLAG_EDIT_DISTANCE flag in the"]
     #[doc = " hs_expr_ext::flags field."]
-    pub edit_distance: ::std::os::raw::c_uint,
+    pub edit_distance: libc::c_uint,
     #[doc = " Allow patterns to approximately match within this Hamming distance. To"]
     #[doc = " use this parameter, set the @ref HS_EXT_FLAG_HAMMING_DISTANCE flag in the"]
     #[doc = " hs_expr_ext::flags field."]
-    pub hamming_distance: ::std::os::raw::c_uint,
+    pub hamming_distance: libc::c_uint,
 }
 #[test]
 fn bindgen_test_layout_hs_expr_ext() {
     assert_eq!(
-        ::std::mem::size_of::<hs_expr_ext>(),
+        ::core::mem::size_of::<hs_expr_ext>(),
         40usize,
         concat!("Size of: ", stringify!(hs_expr_ext))
     );
     assert_eq!(
-        ::std::mem::align_of::<hs_expr_ext>(),
+        ::core::mem::align_of::<hs_expr_ext>(),
         8usize,
         concat!("Alignment of ", stringify!(hs_expr_ext))
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_ext>())).flags as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_ext>())).flags as *const _ as usize },
         0usize,
         concat!("Offset of field: ", stringify!(hs_expr_ext), "::", stringify!(flags))
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_ext>())).min_offset as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_ext>())).min_offset as *const _ as usize },
         8usize,
         concat!(
             "Offset of field: ",
@@ -744,7 +744,7 @@ fn bindgen_test_layout_hs_expr_ext() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_ext>())).max_offset as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_ext>())).max_offset as *const _ as usize },
         16usize,
         concat!(
             "Offset of field: ",
@@ -754,7 +754,7 @@ fn bindgen_test_layout_hs_expr_ext() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_ext>())).min_length as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_ext>())).min_length as *const _ as usize },
         24usize,
         concat!(
             "Offset of field: ",
@@ -764,7 +764,7 @@ fn bindgen_test_layout_hs_expr_ext() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_ext>())).edit_distance as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_ext>())).edit_distance as *const _ as usize },
         32usize,
         concat!(
             "Offset of field: ",
@@ -774,7 +774,7 @@ fn bindgen_test_layout_hs_expr_ext() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<hs_expr_ext>())).hamming_distance as *const _ as usize },
+        unsafe { &(*(::core::ptr::null::<hs_expr_ext>())).hamming_distance as *const _ as usize },
         36usize,
         concat!(
             "Offset of field: ",
@@ -845,9 +845,9 @@ extern "C" {
     #[doc = "      HS_COMPILER_ERROR on failure, with details provided in the error"]
     #[doc = "      parameter."]
     pub fn hs_compile(
-        expression: *const ::std::os::raw::c_char,
-        flags: ::std::os::raw::c_uint,
-        mode: ::std::os::raw::c_uint,
+        expression: *const libc::c_char,
+        flags: libc::c_uint,
+        mode: libc::c_uint,
         platform: *const hs_platform_info_t,
         db: *mut *mut hs_database_t,
         error: *mut *mut hs_compile_error_t,
@@ -927,11 +927,11 @@ extern "C" {
     #[doc = "      parameter."]
     #[doc = ""]
     pub fn hs_compile_multi(
-        expressions: *const *const ::std::os::raw::c_char,
-        flags: *const ::std::os::raw::c_uint,
-        ids: *const ::std::os::raw::c_uint,
-        elements: ::std::os::raw::c_uint,
-        mode: ::std::os::raw::c_uint,
+        expressions: *const *const libc::c_char,
+        flags: *const libc::c_uint,
+        ids: *const libc::c_uint,
+        elements: libc::c_uint,
+        mode: libc::c_uint,
         platform: *const hs_platform_info_t,
         db: *mut *mut hs_database_t,
         error: *mut *mut hs_compile_error_t,
@@ -1016,12 +1016,12 @@ extern "C" {
     #[doc = "      parameter."]
     #[doc = ""]
     pub fn hs_compile_ext_multi(
-        expressions: *const *const ::std::os::raw::c_char,
-        flags: *const ::std::os::raw::c_uint,
-        ids: *const ::std::os::raw::c_uint,
+        expressions: *const *const libc::c_char,
+        flags: *const libc::c_uint,
+        ids: *const libc::c_uint,
         ext: *const *const hs_expr_ext_t,
-        elements: ::std::os::raw::c_uint,
-        mode: ::std::os::raw::c_uint,
+        elements: libc::c_uint,
+        mode: libc::c_uint,
         platform: *const hs_platform_info_t,
         db: *mut *mut hs_database_t,
         error: *mut *mut hs_compile_error_t,
@@ -1096,8 +1096,8 @@ extern "C" {
     #[doc = "      HS_COMPILER_ERROR on failure, with details provided in the error"]
     #[doc = "      parameter."]
     pub fn hs_expression_info(
-        expression: *const ::std::os::raw::c_char,
-        flags: ::std::os::raw::c_uint,
+        expression: *const libc::c_char,
+        flags: libc::c_uint,
         info: *mut *mut hs_expr_info_t,
         error: *mut *mut hs_compile_error_t,
     ) -> hs_error_t;
@@ -1164,8 +1164,8 @@ extern "C" {
     #[doc = "      HS_COMPILER_ERROR on failure, with details provided in the error"]
     #[doc = "      parameter."]
     pub fn hs_expression_ext_info(
-        expression: *const ::std::os::raw::c_char,
-        flags: ::std::os::raw::c_uint,
+        expression: *const libc::c_char,
+        flags: libc::c_uint,
         ext: *const hs_expr_ext_t,
         info: *mut *mut hs_expr_info_t,
         error: *mut *mut hs_compile_error_t,
@@ -1252,14 +1252,14 @@ pub type hs_scratch_t = hs_scratch;
 #[doc = "      performed in streaming mode and a non-zero value is returned, any"]
 #[doc = "      subsequent calls to @ref hs_scan_stream() for that stream will"]
 #[doc = "      immediately return with @ref HS_SCAN_TERMINATED."]
-pub type match_event_handler = ::std::option::Option<
+pub type match_event_handler = ::core::option::Option<
     unsafe extern "C" fn(
-        id: ::std::os::raw::c_uint,
-        from: ::std::os::raw::c_ulonglong,
-        to: ::std::os::raw::c_ulonglong,
-        flags: ::std::os::raw::c_uint,
-        context: *mut ::std::os::raw::c_void,
-    ) -> ::std::os::raw::c_int,
+        id: libc::c_uint,
+        from: libc::c_ulonglong,
+        to: libc::c_ulonglong,
+        flags: libc::c_uint,
+        context: *mut libc::c_void,
+    ) -> libc::c_int,
 >;
 extern "C" {
     #[doc = " Open and initialise a stream."]
@@ -1279,7 +1279,7 @@ extern "C" {
     #[doc = "      @ref HS_SUCCESS on success, other values on failure."]
     pub fn hs_open_stream(
         db: *const hs_database_t,
-        flags: ::std::os::raw::c_uint,
+        flags: libc::c_uint,
         stream: *mut *mut hs_stream_t,
     ) -> hs_error_t;
 }
@@ -1321,12 +1321,12 @@ extern "C" {
     #[doc = "      error."]
     pub fn hs_scan_stream(
         id: *mut hs_stream_t,
-        data: *const ::std::os::raw::c_char,
-        length: ::std::os::raw::c_uint,
-        flags: ::std::os::raw::c_uint,
+        data: *const libc::c_char,
+        length: libc::c_uint,
+        flags: libc::c_uint,
         scratch: *mut hs_scratch_t,
         onEvent: match_event_handler,
-        ctxt: *mut ::std::os::raw::c_void,
+        ctxt: *mut libc::c_void,
     ) -> hs_error_t;
 }
 extern "C" {
@@ -1371,7 +1371,7 @@ extern "C" {
         id: *mut hs_stream_t,
         scratch: *mut hs_scratch_t,
         onEvent: match_event_handler,
-        ctxt: *mut ::std::os::raw::c_void,
+        ctxt: *mut libc::c_void,
     ) -> hs_error_t;
 }
 extern "C" {
@@ -1413,10 +1413,10 @@ extern "C" {
     #[doc = "      @ref HS_SUCCESS on success, other values on failure."]
     pub fn hs_reset_stream(
         id: *mut hs_stream_t,
-        flags: ::std::os::raw::c_uint,
+        flags: libc::c_uint,
         scratch: *mut hs_scratch_t,
         onEvent: match_event_handler,
-        context: *mut ::std::os::raw::c_void,
+        context: *mut libc::c_void,
     ) -> hs_error_t;
 }
 extern "C" {
@@ -1468,7 +1468,7 @@ extern "C" {
         from_id: *const hs_stream_t,
         scratch: *mut hs_scratch_t,
         onEvent: match_event_handler,
-        context: *mut ::std::os::raw::c_void,
+        context: *mut libc::c_void,
     ) -> hs_error_t;
 }
 extern "C" {
@@ -1507,7 +1507,7 @@ extern "C" {
     #[doc = "      buffer is too small."]
     pub fn hs_compress_stream(
         stream: *const hs_stream_t,
-        buf: *mut ::std::os::raw::c_char,
+        buf: *mut libc::c_char,
         buf_space: usize,
         used_space: *mut usize,
     ) -> hs_error_t;
@@ -1541,7 +1541,7 @@ extern "C" {
     pub fn hs_expand_stream(
         db: *const hs_database_t,
         stream: *mut *mut hs_stream_t,
-        buf: *const ::std::os::raw::c_char,
+        buf: *const libc::c_char,
         buf_size: usize,
     ) -> hs_error_t;
 }
@@ -1585,11 +1585,11 @@ extern "C" {
     #[doc = "      @ref HS_SUCCESS on success, other values on failure."]
     pub fn hs_reset_and_expand_stream(
         to_stream: *mut hs_stream_t,
-        buf: *const ::std::os::raw::c_char,
+        buf: *const libc::c_char,
         buf_size: usize,
         scratch: *mut hs_scratch_t,
         onEvent: match_event_handler,
-        context: *mut ::std::os::raw::c_void,
+        context: *mut libc::c_void,
     ) -> hs_error_t;
 }
 extern "C" {
@@ -1628,12 +1628,12 @@ extern "C" {
     #[doc = "      error."]
     pub fn hs_scan(
         db: *const hs_database_t,
-        data: *const ::std::os::raw::c_char,
-        length: ::std::os::raw::c_uint,
-        flags: ::std::os::raw::c_uint,
+        data: *const libc::c_char,
+        length: libc::c_uint,
+        flags: libc::c_uint,
         scratch: *mut hs_scratch_t,
         onEvent: match_event_handler,
-        context: *mut ::std::os::raw::c_void,
+        context: *mut libc::c_void,
     ) -> hs_error_t;
 }
 extern "C" {
@@ -1675,13 +1675,13 @@ extern "C" {
     #[doc = "      callback indicated that scanning should stop; other values on error."]
     pub fn hs_scan_vector(
         db: *const hs_database_t,
-        data: *const *const ::std::os::raw::c_char,
-        length: *const ::std::os::raw::c_uint,
-        count: ::std::os::raw::c_uint,
-        flags: ::std::os::raw::c_uint,
+        data: *const *const libc::c_char,
+        length: *const libc::c_uint,
+        count: libc::c_uint,
+        flags: libc::c_uint,
         scratch: *mut hs_scratch_t,
         onEvent: match_event_handler,
-        context: *mut ::std::os::raw::c_void,
+        context: *mut libc::c_void,
     ) -> hs_error_t;
 }
 extern "C" {

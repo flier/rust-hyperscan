@@ -24,7 +24,7 @@
 //!     let db: BlockDatabase = pattern.build().unwrap();
 //!     let scratch = db.alloc().unwrap();
 //!
-//!     db.scan::<BlockDatabase>("some test data", 0, &scratch, Some(callback), Some(&db)).unwrap();
+//!     db.scan("some test data", &scratch, Some(callback), Some(&db)).unwrap();
 //! }
 //! ```
 
@@ -34,26 +34,28 @@ extern crate log;
 extern crate hyperscan_sys as ffi;
 
 mod constants;
-mod cptr;
 #[macro_use]
 mod errors;
 mod api;
-mod common;
+mod database;
 #[macro_use]
 mod compile;
 mod runtime;
+mod scan;
+mod stream;
 
 pub use crate::api::*;
-pub use crate::common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
 pub use crate::compile::{CompileFlags, Pattern, Patterns};
 pub use crate::constants::*;
+pub use crate::database::{BlockDatabase, Database, StreamingDatabase, VectoredDatabase};
 pub use crate::errors::ErrorKind;
-pub use crate::runtime::{RawScratch, RawStream};
+pub use crate::runtime::{Scratch, ScratchRef};
+pub use crate::stream::{Stream, StreamRef};
 
 #[cfg(test)]
 extern crate regex;
 
 #[cfg(test)]
 mod tests {
-    pub use crate::common::tests::*;
+    pub use crate::database::tests::*;
 }

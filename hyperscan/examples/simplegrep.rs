@@ -26,9 +26,11 @@
 use std::env;
 use std::fs::File;
 use std::io;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::path::Path;
 use std::process::exit;
+
+use failure::{Error, ResultExt};
 
 use hyperscan::*;
 
@@ -45,13 +47,13 @@ fn read_input_data(input_filename: &str) -> Result<String, io::Error> {
     Ok(buf)
 }
 
-#[allow(unused_must_use)]
-fn main() {
+fn main() -> Result<(), Error> {
+    pretty_env_logger::init();
+
     let mut args = env::args();
 
     if args.len() != 3 {
-        write!(
-            io::stderr(),
+        eprintln!(
             "Usage: {} <pattern> <input file>\n",
             Path::new(&args.next().unwrap()).file_name().unwrap().to_str().unwrap()
         );
@@ -68,32 +70,10 @@ fn main() {
     let pattern = pattern!(args.next().unwrap(), flags => HS_FLAG_DOTALL);
     let input_filename = args.next().unwrap();
 
-    let database: BlockDatabase = match pattern.build() {
-        Ok(db) => db,
-        Err(err) => {
-            write!(
-                io::stderr(),
-                "ERROR: Unable to compile pattern `{}`: {}\n",
-                pattern,
-                err
-            );
-            exit(-1);
-        }
-    };
+    let database: BlockDatabase = pattern.build().context("compile pattern")?;
 
     // Next, we read the input data file into a buffer.
-    let input_data = match read_input_data(&input_filename) {
-        Ok(buf) => buf,
-        Err(err) => {
-            write!(
-                io::stderr(),
-                "ERROR: Unable to read file `{}`: {}\n",
-                input_filename,
-                err
-            );
-            exit(-1);
-        }
-    };
+    let input_data = read_input_data(&input_filename).context("read input file")?;
 
     // Finally, we issue a call to hs_scan, which will search the input buffer
     // for the pattern represented in the bytecode. Note that in order to do
@@ -112,13 +92,7 @@ fn main() {
     // match event.
     //
 
-    let scratch = match database.alloc() {
-        Ok(s) => s,
-        Err(err) => {
-            write!(io::stderr(), "ERROR: Unable to allocate scratch space. {}\n", err);
-            exit(-1);
-        }
-    };
+    let scratch = database.alloc().context("allocate scratch space")?;
 
     println!("Scanning {} bytes with Hyperscan", input_data.len());
 
@@ -129,8 +103,9 @@ fn main() {
         0
     };
 
-    if let Err(err) = database.scan(input_data.as_str(), 0, &scratch, Some(event_handler), Some(&pattern)) {
-        write!(io::stderr(), "ERROR: Unable to scan input buffer. Exiting. {}\n", err);
-        exit(-1);
-    }
+    let _ = database
+        .scan(input_data.as_str(), &scratch, Some(event_handler), Some(&pattern))
+        .context("scan input buffer")?;
+
+    Ok(())
 }

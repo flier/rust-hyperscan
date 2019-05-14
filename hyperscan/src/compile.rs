@@ -1,18 +1,16 @@
+use core::fmt;
+use core::ptr::null_mut;
+use core::str::FromStr;
 use std::ffi::CString;
-use std::fmt;
-use std::iter::FromIterator;
-use std::os::raw::c_uint;
-use std::ptr;
-use std::str::FromStr;
 
 use failure::Error;
+use foreign_types::{ForeignType, ForeignTypeRef};
+use libc::c_uint;
 
 use crate::api::*;
-use crate::common::RawDatabase;
 use crate::constants::*;
-use crate::cptr::CPtr;
-use crate::errors::{ErrorKind, RawCompileErrorPtr};
-use crate::ffi::*;
+use crate::database::Database;
+use crate::errors::ErrorKind;
 
 /// Flags which modify the behaviour of the expression.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
@@ -172,26 +170,27 @@ impl FromStr for Pattern {
 impl Expression for Pattern {
     fn info(&self) -> Result<ExpressionInfo, Error> {
         let expr = CString::new(self.expression.as_str())?;
-        let mut info: CPtr<hs_expr_info_t> = CPtr::null();
-        let mut err: RawCompileErrorPtr = ptr::null_mut();
+        let mut info = null_mut();
+        let mut err = null_mut();
 
         unsafe {
             check_compile_error!(
-                hs_expression_info(
+                ffi::hs_expression_info(
                     expr.as_bytes_with_nul().as_ptr() as *const i8,
                     self.flags.0,
-                    &mut *info,
+                    &mut info,
                     &mut err
                 ),
                 err
             );
 
+            let info = info.as_ref().unwrap();
             let info = ExpressionInfo {
-                min_width: info.as_ref().min_width as usize,
-                max_width: info.as_ref().max_width as usize,
-                unordered_matches: info.as_ref().unordered_matches != 0,
-                matches_at_eod: info.as_ref().matches_at_eod != 0,
-                matches_only_at_eod: info.as_ref().matches_only_at_eod != 0,
+                min_width: info.min_width as usize,
+                max_width: info.max_width as usize,
+                unordered_matches: info.unordered_matches != 0,
+                matches_at_eod: info.matches_at_eod != 0,
+                matches_only_at_eod: info.matches_only_at_eod != 0,
             };
 
             debug!("expression `{}` info: {:?}", self, info);
@@ -240,55 +239,47 @@ macro_rules! patterns {
     }};
 }
 
-impl<T: Type> RawDatabase<T> {
+impl<T: Mode> Database<T> {
     /// The basic regular expression compiler.
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
-    pub fn compile(expression: &str, flags: u32, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
+    pub fn compile(expression: &str, flags: u32, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
         let expr = CString::new(expression)?;
-        let mut db: RawDatabasePtr = ptr::null_mut();
-        let mut err: RawCompileErrorPtr = ptr::null_mut();
+        let mut db = null_mut();
+        let mut err = null_mut();
 
         unsafe {
             check_compile_error!(
-                hs_compile(
+                ffi::hs_compile(
                     expr.as_bytes_with_nul().as_ptr() as *const i8,
                     flags,
-                    T::mode(),
-                    platform.as_ptr(),
+                    T::ID,
+                    platform.map_or_else(null_mut, |p| p.as_ptr()),
                     &mut db,
                     &mut err
                 ),
                 err
             );
+
+            Ok(Database::from_ptr(db))
         }
-
-        debug!(
-            "pattern `/{}/{}` compiled to {} database {:p}",
-            expression,
-            CompileFlags(flags),
-            T::name(),
-            db
-        );
-
-        Ok(RawDatabase::from_raw(db))
     }
 }
 
-impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Pattern {
+impl<T: Mode> Builder<T> for Pattern {
     ///
     /// The basic regular expression compiler.
     ///
     /// / This is the function call with which an expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
-    fn build_for_platform(&self, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
-        RawDatabase::compile(&self.expression, self.flags.0, platform)
+    fn build_for_platform(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
+        Database::compile(&self.expression, self.flags.0, platform)
     }
 }
 
-impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
+impl<T: Mode> Builder<T> for Patterns {
     ///
     /// The multiple regular expression compiler.
     ///
@@ -297,7 +288,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
     /// Each expression can be labelled with a unique integer
     // which is passed into the match callback to identify the pattern that has matched.
     ///
-    fn build_for_platform(&self, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
+    fn build_for_platform(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
         let mut expressions = Vec::with_capacity(self.len());
         let mut ptrs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
@@ -315,43 +306,32 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
             ptrs.push(expr.as_bytes_with_nul().as_ptr() as *const i8);
         }
 
-        let mut db: RawDatabasePtr = ptr::null_mut();
-        let mut err: RawCompileErrorPtr = ptr::null_mut();
+        let mut db = null_mut();
+        let mut err = null_mut();
 
         unsafe {
             check_compile_error!(
-                hs_compile_multi(
+                ffi::hs_compile_multi(
                     ptrs.as_ptr(),
                     flags.as_ptr(),
                     ids.as_ptr(),
                     self.len() as u32,
-                    T::mode(),
-                    platform.as_ptr(),
+                    T::ID,
+                    platform.map_or_else(null_mut, |p| p.as_ptr()),
                     &mut db,
                     &mut err
                 ),
                 err
             );
+
+            Ok(Database::from_ptr(db))
         }
-
-        debug!(
-            "patterns [{}] compiled to {} database {:p}",
-            Vec::from_iter(self.iter().map(|p| format!("`{}`", p))).join(", "),
-            T::name(),
-            db
-        );
-
-        Ok(RawDatabase::from_raw(db))
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    extern crate pretty_env_logger;
-
-    use std::ptr;
-
-    use super::super::common::tests::*;
+    use super::super::database::tests::*;
     use super::super::*;
 
     const DATABASE_SIZE: usize = 2664;
@@ -380,10 +360,9 @@ pub mod tests {
     #[test]
     fn test_database_compile() {
         let _ = pretty_env_logger::try_init();
+        let info = PlatformInfo::host().unwrap();
 
-        let db = BlockDatabase::compile("test", 0, &PlatformInfo::host()).unwrap();
-
-        assert!(*db != ptr::null_mut());
+        let db = BlockDatabase::compile("test", 0, Some(&info)).unwrap();
 
         validate_database(&db);
     }

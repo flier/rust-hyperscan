@@ -3,7 +3,7 @@ use std::fmt;
 use std::ptr;
 use std::string::ToString;
 
-use failure::Fail;
+use failure::{AsFail, Error, Fail};
 
 use crate::constants::*;
 use crate::ffi::*;
@@ -67,20 +67,24 @@ impl From<i32> for ErrorKind {
     }
 }
 
-macro_rules! check_hs_error {
-    ($expr:expr) => {
-        if $expr != $crate::HS_SUCCESS {
-            return ::std::result::Result::Err($crate::errors::ErrorKind::from($expr).into());
-        }
-    };
+pub trait AsResult {
+    type Output;
+    type Error: AsFail;
+
+    fn ok(self) -> Result<Self::Output, Self::Error>;
 }
 
-macro_rules! assert_hs_error {
-    ($expr:expr) => {
-        if $expr != $crate::HS_SUCCESS {
-            panic!("panic, err={}", $expr);
+impl AsResult for ffi::hs_error_t {
+    type Output = Self;
+    type Error = Error;
+
+    fn ok(self) -> Result<Self::Output, Self::Error> {
+        if self == HS_SUCCESS {
+            Ok(self)
+        } else {
+            Err(ErrorKind::from(self).into())
         }
-    };
+    }
 }
 
 pub trait CompileError: ToString {
@@ -117,7 +121,7 @@ impl Drop for RawCompileError {
     fn drop(&mut self) {
         unsafe {
             if self.0 != ptr::null_mut() {
-                assert_hs_error!(hs_free_compile_error(self.0));
+                hs_free_compile_error(self.0).ok().unwrap();
             }
         }
     }

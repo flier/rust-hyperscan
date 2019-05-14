@@ -19,20 +19,12 @@
 // by the scheduler as a source of noise in the results.
 //
 //
-extern crate byteorder;
-extern crate getopts;
-extern crate hyperscan;
-extern crate log;
-extern crate pcap;
-extern crate pnet;
-extern crate pretty_env_logger;
-
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, Write};
-use std::iter::Iterator;
+use std::io::BufRead;
+use std::iter;
 use std::net::SocketAddrV4;
 use std::path::Path;
 use std::process::exit;
@@ -40,7 +32,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use byteorder::{BigEndian, ReadBytesExt};
-use failure::Error;
+use failure::{Error, ResultExt};
 use getopts::Options;
 use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
 use pnet::packet::ip::IpNextHeaderProtocols;
@@ -48,10 +40,7 @@ use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::udp::UdpPacket;
 use pnet::packet::{Packet, PrimitiveValues};
 
-use hyperscan::{
-    BlockDatabase, BlockScanner, Database, DatabaseBuilder, Pattern, Patterns, RawScratch, RawStream, Scratch,
-    ScratchAllocator, Stream, StreamingDatabase, StreamingScanner,
-};
+use hyperscan::{BlockDatabase, Builder, Pattern, Patterns, Scratch, Stream, StreamingDatabase};
 
 const NANOS_PER_MILLI: u32 = 1_000_000;
 const MILLIS_PER_SEC: u64 = 1_000;
@@ -158,10 +147,10 @@ struct Benchmark {
     db_block: BlockDatabase,
 
     /// Hyperscan temporary scratch space (used in both modes)
-    scratch: RawScratch,
+    scratch: Scratch,
 
     // Vector of Hyperscan stream state (used in streaming mode)
-    streams: Vec<RawStream>,
+    streams: Vec<Stream>,
 
     // Count of matches found during scanning
     match_count: AtomicUsize,
@@ -171,7 +160,7 @@ impl Benchmark {
     fn new(db_streaming: StreamingDatabase, db_block: BlockDatabase) -> Result<Benchmark, Error> {
         let mut s = db_streaming.alloc()?;
 
-        s.realloc(&db_block)?;
+        db_block.realloc(&mut s)?;
 
         Ok(Benchmark {
             packets: Vec::new(),
@@ -267,67 +256,73 @@ impl Benchmark {
     }
 
     // Open a Hyperscan stream for each stream in stream_ids
-    fn open_streams(&mut self) {
-        self.streams = self
-            .stream_map
-            .iter()
-            .map(|_| self.db_streaming.open_stream(0).unwrap())
-            .collect()
+    fn open_streams(&mut self) -> Result<(), Error> {
+        self.streams = iter::repeat_with(|| self.db_streaming.open_stream())
+            .take(self.stream_map.len())
+            .collect::<Result<Vec<_>, Error>>()?;
+
+        Ok(())
     }
 
     // Close all open Hyperscan streams (potentially generating any end-anchored matches)
-    fn close_streams(&mut self) {
-        for ref stream in &self.streams {
-            if let Err(err) = stream.close(&self.scratch, Some(Self::on_match), Some(&self.match_count)) {
-                println!("ERROR: Unable to close stream. Exiting. {}", err);
-            }
+    fn close_streams(&mut self) -> Result<(), Error> {
+        for stream in self.streams.drain(..) {
+            stream
+                .close(&self.scratch, Some(Self::on_match), Some(&self.match_count))
+                .context("close stream")?;
         }
+
+        Ok(())
     }
 
-    fn reset_streams(&mut self) {
+    fn reset_streams(&mut self) -> Result<(), Error> {
         for ref stream in &self.streams {
-            if let Err(err) = stream.reset(0, &self.scratch, Some(Self::on_match), Some(&self.match_count)) {
-                println!("ERROR: Unable to reset stream. Exiting. {}", err);
-            }
+            stream
+                .reset(&self.scratch, Some(Self::on_match), Some(&self.match_count))
+                .context("reset stream")?;
         }
+
+        Ok(())
     }
 
     // Scan each packet (in the ordering given in the PCAP file)
     // through Hyperscan using the streaming interface.
-    fn scan_streams(&mut self) {
+    fn scan_streams(&mut self) -> Result<(), Error> {
         for (i, ref packet) in self.packets.iter().enumerate() {
             let ref stream = self.streams[self.stream_ids[i]];
 
-            if let Err(err) = stream.scan(
-                packet.as_ref().as_slice(),
-                0,
-                &self.scratch,
-                Some(Self::on_match),
-                Some(&self.match_count),
-            ) {
-                println!("ERROR: Unable to scan packet. Exiting. {}", err)
-            }
+            stream
+                .scan(
+                    packet.as_ref().as_slice(),
+                    &self.scratch,
+                    Some(Self::on_match),
+                    Some(&self.match_count),
+                )
+                .context("scan packet")?;
         }
+
+        Ok(())
     }
 
     // Scan each packet (in the ordering given in the PCAP file)
     // through Hyperscan using the block-mode interface.
-    fn scan_block(&mut self) {
+    fn scan_block(&mut self) -> Result<(), Error> {
         for ref packet in &self.packets {
-            if let Err(err) = self.db_block.scan(
-                packet.as_ref().as_slice(),
-                0,
-                &self.scratch,
-                Some(Self::on_match),
-                Some(&self.match_count),
-            ) {
-                println!("ERROR: Unable to scan packet. Exiting. {}", err)
-            }
+            self.db_block
+                .scan(
+                    packet.as_ref().as_slice(),
+                    &self.scratch,
+                    Some(Self::on_match),
+                    Some(&self.match_count),
+                )
+                .context("scan packet")?;
         }
+
+        Ok(())
     }
 
     // Display some information about the compiled database and scanned data.
-    fn display_stats(&self) {
+    fn display_stats(&self) -> Result<(), Error> {
         let num_packets = self.packets.len();
         let num_streams = self.stream_map.len();
         let num_bytes = self.bytes();
@@ -345,36 +340,25 @@ impl Benchmark {
             num_bytes / if num_streams > 0 { num_streams } else { 1 }
         );
         println!("");
+        println!(
+            "Streaming mode Hyperscan database size    : {} bytes.",
+            self.db_streaming.size()?
+        );
+        println!(
+            "Block mode Hyperscan database size        : {} bytes.",
+            self.db_block.size()?
+        );
+        println!(
+            "Streaming mode Hyperscan stream state size: {} bytes (per stream).",
+            self.db_streaming.stream_size()?
+        );
 
-        match self.db_streaming.database_size() {
-            Ok(size) => {
-                println!("Streaming mode Hyperscan database size    : {} bytes.", size);
-            }
-            Err(err) => println!("Error getting streaming mode Hyperscan database size, {}", err),
-        }
-
-        match self.db_block.database_size() {
-            Ok(size) => {
-                println!("Block mode Hyperscan database size        : {} bytes.", size);
-            }
-            Err(err) => println!("Error getting block mode Hyperscan database size, {}", err),
-        }
-
-        match self.db_streaming.stream_size() {
-            Ok(size) => {
-                println!(
-                    "Streaming mode Hyperscan stream state size: {} bytes (per stream).",
-                    size
-                );
-            }
-            Err(err) => println!("Error getting stream state size, {}", err),
-        }
+        Ok(())
     }
 }
 
 // Main entry point.
-#[allow(unused_must_use)]
-fn main() {
+fn main() -> Result<(), Error> {
     pretty_env_logger::init();
 
     // Process command line arguments.
@@ -402,7 +386,7 @@ fn main() {
         Some(s) => match s.parse() {
             Ok(n) => n,
             Err(err) => {
-                write!(io::stderr(), "ERROR: Unable to parse repeats `{}`: {}\n", s, err);
+                eprintln!("ERROR: Unable to parse repeats `{}`: {}\n", s, err);
                 exit(-1);
             }
         },
@@ -423,7 +407,7 @@ fn main() {
     let (db_streaming, db_block) = match databases_from_file(pattern_file) {
         Ok((db_streaming, db_block)) => (db_streaming, db_block),
         Err(err) => {
-            write!(io::stderr(), "ERROR: Unable to parse and compile patterns: {}\n", err);
+            eprintln!("ERROR: Unable to parse and compile patterns: {}\n", err);
             exit(-1);
         }
     };
@@ -434,11 +418,7 @@ fn main() {
     println!("PCAP input file: {}", pcap_file);
 
     if let Err(err) = bench.read_streams(pcap_file) {
-        write!(
-            io::stderr(),
-            "Unable to read packets from PCAP file. Exiting. {}\n",
-            err
-        );
+        eprintln!("Unable to read packets from PCAP file. Exiting. {}\n", err);
         exit(-1);
     }
 
@@ -446,7 +426,7 @@ fn main() {
         println!("Repeating PCAP scan {} times.", repeat_count);
     }
 
-    bench.display_stats();
+    bench.display_stats()?;
 
     // Streaming mode scans.
     let mut streaming_scan = Duration::from_secs(0);
@@ -456,24 +436,24 @@ fn main() {
         if i == 0 {
             // Open streams.
             let now = Instant::now();
-            bench.open_streams();
+            bench.open_streams()?;
             streaming_open_close = streaming_open_close + now.elapsed();
         } else {
             // Reset streams.
             let now = Instant::now();
-            bench.reset_streams();
+            bench.reset_streams()?;
             streaming_open_close = streaming_open_close + now.elapsed();
         }
 
         // Scan all our packets in streaming mode.
         let now = Instant::now();
-        bench.scan_streams();
+        bench.scan_streams()?;
         streaming_scan = streaming_scan + now.elapsed();
     }
 
     // Close streams.
     let now = Instant::now();
-    bench.close_streams();
+    bench.close_streams()?;
     streaming_open_close = streaming_open_close + now.elapsed();
 
     // Collect data from streaming mode scans.
@@ -488,7 +468,7 @@ fn main() {
     bench.clear_matches();
     let now = Instant::now();
     for _ in 0..repeat_count {
-        bench.scan_block();
+        bench.scan_block()?;
     }
     let scan_block = now.elapsed();
 
@@ -520,4 +500,6 @@ fn main() {
                   This test may have been too short to calculate accurate results."
         );
     }
+
+    Ok(())
 }
