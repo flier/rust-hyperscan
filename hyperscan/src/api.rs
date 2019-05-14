@@ -10,7 +10,7 @@ use libc;
 
 use crate::constants::*;
 use crate::errors::Error;
-use crate::raw::*;
+use crate::ffi::*;
 
 /// Compile mode
 pub trait Type {

@@ -5,7 +5,7 @@ use std::ptr;
 use std::string::ToString;
 
 use crate::constants::*;
-use crate::raw::*;
+use crate::ffi::*;
 
 /// Error Codes
 #[derive(Debug, PartialEq, Clone)]

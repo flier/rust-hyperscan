@@ -30,10 +30,8 @@
 
 #[macro_use]
 extern crate log;
-extern crate libc;
-extern crate regex_syntax;
 
-extern crate hyperscan_sys as raw;
+extern crate hyperscan_sys as ffi;
 
 mod constants;
 mod cptr;

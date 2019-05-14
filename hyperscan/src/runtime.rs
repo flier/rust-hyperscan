@@ -7,7 +7,7 @@ use std::ptr;
 use crate::api::*;
 use crate::common::{BlockDatabase, RawDatabase, StreamingDatabase, VectoredDatabase};
 use crate::errors::Error;
-use crate::raw::*;
+use crate::ffi::*;
 
 /// A large enough region of scratch space to support a given database.
 ///

@@ -12,7 +12,7 @@ use crate::common::RawDatabase;
 use crate::constants::*;
 use crate::cptr::CPtr;
 use crate::errors::{Error, RawCompileErrorPtr};
-use crate::raw::*;
+use crate::ffi::*;
 
 /// Flags which modify the behaviour of the expression.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]

@@ -11,7 +11,7 @@ use libc;
 use crate::api::*;
 use crate::cptr::CPtr;
 use crate::errors::Error;
-use crate::raw::*;
+use crate::ffi::*;
 
 /// A compiled pattern database that can then be used to scan data.
 pub struct RawDatabase<T: Type> {
