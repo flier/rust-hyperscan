@@ -10,6 +10,7 @@ license = "Apache-2.0"
 readme = "README.md"
 keywords = ["regex", "hyperscan", "streaming"]
 edition = "2018"
+links = "hs"
 
 [features]
 gen = ["bindgen"]
