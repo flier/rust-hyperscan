@@ -18,7 +18,11 @@ gen = ["bindgen"]
 
 [build-dependencies]
 log = "0.4"
+failure = "0.1"
 pretty_env_logger = "0.3"
 pkg-config = "0.3"
 
 bindgen = { version = "0.49", optional = true }
+
+[lib]
+doctest = false
