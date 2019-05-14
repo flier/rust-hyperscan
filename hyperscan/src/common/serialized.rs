@@ -98,70 +98,8 @@ impl<T> DatabaseRef<T> {
 
 #[cfg(test)]
 pub mod tests {
-    use regex::Regex;
-
-    use crate::common::Mode;
+    use crate::common::database::tests::*;
     use crate::common::*;
-    use crate::compile::PlatformInfo;
-
-    const DATABASE_SIZE: usize = 872;
-
-    pub fn validate_database_info(info: &str) -> (Vec<u8>, Option<String>, Option<String>) {
-        if let Some(captures) = Regex::new(r"^Version:\s(\d\.\d\.\d)\sFeatures:\s+(\w+)?\sMode:\s(\w+)$")
-            .unwrap()
-            .captures(info)
-        {
-            let version = captures
-                .get(1)
-                .unwrap()
-                .as_str()
-                .split('.')
-                .flat_map(|s| s.parse())
-                .collect();
-            let features = captures.get(2).map(|m| m.as_str().to_owned());
-            let mode = captures.get(3).map(|m| m.as_str().to_owned());
-
-            (version, features, mode)
-        } else {
-            panic!("fail to parse database info: {}", info);
-        }
-    }
-
-    pub fn validate_database_with_size<T: Mode>(db: &DatabaseRef<T>, size: usize) {
-        assert!(db.size().unwrap() >= size);
-
-        let db_info = db.info().unwrap();
-
-        validate_database_info(&db_info);
-    }
-
-    pub fn validate_database<T: Mode>(db: &DatabaseRef<T>) {
-        validate_database_with_size(db, DATABASE_SIZE);
-    }
-
-    pub fn validate_serialized_database(data: &SerializedDatabase) {
-        assert!(data.size().unwrap() >= DATABASE_SIZE);
-
-        let db_info = data.info().unwrap();
-
-        validate_database_info(&db_info);
-    }
-
-    #[test]
-    pub fn test_platform() {
-        assert!(PlatformInfo::is_valid().is_ok())
-    }
-
-    #[test]
-    fn test_database() {
-        let _ = pretty_env_logger::try_init();
-
-        let db = BlockDatabase::compile("test", 0, None).unwrap();
-
-        validate_database(&db);
-
-        assert_eq!(db.name(), "Block");
-    }
 
     #[test]
     fn test_database_serialize() {

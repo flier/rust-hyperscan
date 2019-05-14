@@ -139,43 +139,4 @@ pub mod tests {
 
         assert_eq!(db.name(), "Block");
     }
-
-    #[test]
-    fn test_database_serialize() {
-        let _ = pretty_env_logger::try_init();
-
-        let db = StreamingDatabase::compile("test", 0, None).unwrap();
-
-        let data = db.serialize().unwrap();
-
-        validate_serialized_database(&data);
-
-        assert!(!data.info().unwrap().is_empty());
-    }
-
-    #[test]
-    fn test_database_deserialize() {
-        let _ = pretty_env_logger::try_init();
-
-        let db = VectoredDatabase::compile("test", 0, None).unwrap();
-
-        let data = db.serialize().unwrap();
-
-        let db = VectoredDatabase::deserialize(&data).unwrap();
-
-        validate_database(&db);
-    }
-
-    #[test]
-    fn test_database_deserialize_at() {
-        let _ = pretty_env_logger::try_init();
-
-        let mut db = BlockDatabase::compile("test", 0, None).unwrap();
-
-        let data = db.serialize().unwrap();
-
-        db.deserialize_at(&data).unwrap();
-
-        validate_database(&db);
-    }
 }
