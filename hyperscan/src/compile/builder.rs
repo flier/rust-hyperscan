@@ -7,7 +7,7 @@ use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 use libc::c_uint;
 
 use crate::common::{Database, Mode};
-use crate::compile::{Flags, Pattern, Patterns};
+use crate::compile::{AsCompileResult, Flags, Pattern, Patterns};
 use crate::errors::AsResult;
 
 foreign_type! {
@@ -56,25 +56,26 @@ impl<T: Mode> Database<T> {
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
-    pub fn compile(expression: &str, flags: Flags, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
-        let expr = CString::new(expression)?;
+    pub fn compile<S: AsRef<str>>(
+        expression: S,
+        flags: Flags,
+        platform: Option<&PlatformInfoRef>,
+    ) -> Result<Database<T>, Error> {
+        let expr = CString::new(expression.as_ref())?;
         let mut db = null_mut();
         let mut err = null_mut();
 
         unsafe {
-            check_compile_error!(
-                ffi::hs_compile(
-                    expr.as_bytes_with_nul().as_ptr() as *const i8,
-                    flags.bits(),
-                    T::ID,
-                    platform.map_or_else(null_mut, |p| p.as_ptr()),
-                    &mut db,
-                    &mut err
-                ),
-                err
-            );
-
-            Ok(Database::from_ptr(db))
+            ffi::hs_compile(
+                expr.as_bytes_with_nul().as_ptr() as *const i8,
+                flags.bits(),
+                T::ID,
+                platform.map_or_else(null_mut, |p| p.as_ptr()),
+                &mut db,
+                &mut err,
+            )
+            .ok_or(err)
+            .map(|_| Database::from_ptr(db))
         }
     }
 }
@@ -133,21 +134,18 @@ impl<T: Mode> Builder<T> for Patterns {
         let mut err = null_mut();
 
         unsafe {
-            check_compile_error!(
-                ffi::hs_compile_multi(
-                    ptrs.as_ptr(),
-                    flags.as_ptr(),
-                    ids.as_ptr(),
-                    self.len() as u32,
-                    T::ID,
-                    platform.map_or_else(null_mut, |p| p.as_ptr()),
-                    &mut db,
-                    &mut err
-                ),
-                err
-            );
-
-            Ok(Database::from_ptr(db))
+            ffi::hs_compile_multi(
+                ptrs.as_ptr(),
+                flags.as_ptr(),
+                ids.as_ptr(),
+                self.len() as u32,
+                T::ID,
+                platform.map_or_else(null_mut, |p| p.as_ptr()),
+                &mut db,
+                &mut err,
+            )
+            .ok_or(err)
+            .map(|_| Database::from_ptr(db))
         }
     }
 }

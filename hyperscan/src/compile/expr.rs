@@ -2,9 +2,8 @@ use core::ptr::null_mut;
 use std::ffi::CString;
 
 use failure::Error;
-use foreign_types::ForeignType;
 
-use crate::compile::Pattern;
+use crate::compile::{AsCompileResult, Pattern};
 
 /// A type containing information related to an expression
 #[derive(Debug, Clone)]
@@ -39,24 +38,23 @@ impl Pattern {
         let mut info = null_mut();
         let mut err = null_mut();
 
-        unsafe {
-            check_compile_error!(
-                ffi::hs_expression_ext_info(expr.as_ptr() as *const i8, self.flags.bits(), &ext, &mut info, &mut err),
-                err
-            );
+        let info = unsafe {
+            ffi::hs_expression_ext_info(expr.as_ptr() as *const i8, self.flags.bits(), &ext, &mut info, &mut err)
+                .ok_or(err)?;
 
-            let info = info.as_ref().unwrap();
-            let info = Info {
-                min_width: info.min_width as usize,
-                max_width: info.max_width as usize,
-                unordered_matches: info.unordered_matches != 0,
-                matches_at_eod: info.matches_at_eod != 0,
-                matches_only_at_eod: info.matches_only_at_eod != 0,
-            };
+            info.as_ref().unwrap()
+        };
 
-            debug!("expression `{}` info: {:?}", self, info);
+        let info = Info {
+            min_width: info.min_width as usize,
+            max_width: info.max_width as usize,
+            unordered_matches: info.unordered_matches != 0,
+            matches_at_eod: info.matches_at_eod != 0,
+            matches_only_at_eod: info.matches_only_at_eod != 0,
+        };
 
-            Ok(info)
-        }
+        debug!("expression `{}` info: {:?}", self, info);
+
+        Ok(info)
     }
 }

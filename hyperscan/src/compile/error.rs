@@ -1,9 +1,32 @@
 use core::fmt;
 use std::ffi::CStr;
 
-use foreign_types::{foreign_type, ForeignTypeRef};
+use failure::AsFail;
+use foreign_types::{foreign_type, ForeignType};
 
-use crate::errors::AsResult;
+use crate::errors::{AsResult, HsError};
+
+pub trait AsCompileResult {
+    type Output;
+    type Error: AsFail;
+
+    fn ok_or(self, err: *mut ffi::hs_compile_error_t) -> Result<Self::Output, Self::Error>;
+}
+
+impl AsCompileResult for ffi::hs_error_t {
+    type Output = ();
+    type Error = failure::Error;
+
+    fn ok_or(self, err: *mut ffi::hs_compile_error_t) -> Result<Self::Output, Self::Error> {
+        if self == ffi::HS_SUCCESS as ffi::hs_error_t {
+            Ok(())
+        } else if self == ffi::HS_COMPILER_ERROR && !err.is_null() {
+            Err(HsError::CompileError(unsafe { Error::from_ptr(err) }).into())
+        } else {
+            Err(HsError::from(self).into())
+        }
+    }
+}
 
 foreign_type! {
     /// Providing details of the compile error condition.
@@ -51,19 +74,4 @@ impl Error {
     pub fn expression(&self) -> usize {
         unsafe { self.as_ref().expression as usize }
     }
-}
-
-macro_rules! check_compile_error {
-    ($expr:expr, $err:ident) => {
-        if $crate::HS_SUCCESS != $expr {
-            return match $expr {
-                $crate::HS_COMPILER_ERROR => {
-                    let msg = $crate::compile::Error::from_ptr($err);
-
-                    Err($crate::errors::HsError::CompileError(msg).into())
-                }
-                _ => Err($crate::errors::HsError::from($expr).into()),
-            };
-        }
-    };
 }
