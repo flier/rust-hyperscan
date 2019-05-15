@@ -1,8 +1,6 @@
-use core::fmt;
-use std::ffi::CStr;
-
 use failure::{AsFail, Error, Fail};
-use foreign_types::{foreign_type, ForeignTypeRef};
+
+use crate::compile::Error as CompileError;
 
 /// Error Codes
 #[derive(Debug, PartialEq, Fail)]
@@ -91,67 +89,4 @@ impl AsResult for ffi::hs_error_t {
             Err(HsError::from(self).into())
         }
     }
-}
-
-foreign_type! {
-    /// Providing details of the compile error condition.
-    pub type CompileError: Send + Sync {
-        type CType = ffi::hs_compile_error_t;
-
-        fn drop = free_compile_error;
-    }
-}
-
-unsafe fn free_compile_error(err: *mut ffi::hs_compile_error_t) {
-    ffi::hs_free_compile_error(err).ok().unwrap();
-}
-
-impl fmt::Display for CompileError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(self.message())
-    }
-}
-
-impl fmt::Debug for CompileError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("CompileError")
-            .field("message", &self.message())
-            .field("expression", &self.expression())
-            .finish()
-    }
-}
-
-impl PartialEq for CompileError {
-    fn eq(&self, other: &Self) -> bool {
-        self.as_ptr() == other.as_ptr()
-    }
-}
-
-impl CompileError {
-    unsafe fn as_ref(&self) -> &ffi::hs_compile_error_t {
-        self.as_ptr().as_ref().unwrap()
-    }
-
-    pub fn message(&self) -> &str {
-        unsafe { CStr::from_ptr(self.as_ref().message).to_str().unwrap() }
-    }
-
-    pub fn expression(&self) -> usize {
-        unsafe { self.as_ref().expression as usize }
-    }
-}
-
-macro_rules! check_compile_error {
-    ($expr:expr, $err:ident) => {
-        if $crate::HS_SUCCESS != $expr {
-            return match $expr {
-                $crate::HS_COMPILER_ERROR => {
-                    let msg = $crate::errors::CompileError::from_ptr($err);
-
-                    Err($crate::errors::HsError::CompileError(msg).into())
-                }
-                _ => Err($crate::errors::HsError::from($expr).into()),
-            };
-        }
-    };
 }
