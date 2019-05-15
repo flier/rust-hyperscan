@@ -139,7 +139,7 @@ impl From<Ext> for ffi::hs_expr_ext_t {
 /// Pattern that has matched.
 #[derive(Debug, Clone)]
 pub struct Pattern {
-    /// The NULL-terminated expression to parse.
+    /// The expression to parse.
     pub expression: String,
     /// Flags which modify the behaviour of the expression.
     pub flags: Flags,
