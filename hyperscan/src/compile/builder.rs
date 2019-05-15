@@ -7,7 +7,7 @@ use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 use libc::c_uint;
 
 use crate::common::{Database, Mode};
-use crate::compile::{Pattern, Patterns};
+use crate::compile::{Flags, Pattern, Patterns};
 use crate::errors::AsResult;
 
 foreign_type! {
@@ -56,7 +56,7 @@ impl<T: Mode> Database<T> {
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
-    pub fn compile(expression: &str, flags: u32, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
+    pub fn compile(expression: &str, flags: Flags, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
         let expr = CString::new(expression)?;
         let mut db = null_mut();
         let mut err = null_mut();
@@ -65,7 +65,7 @@ impl<T: Mode> Database<T> {
             check_compile_error!(
                 ffi::hs_compile(
                     expr.as_bytes_with_nul().as_ptr() as *const i8,
-                    flags,
+                    flags.bits(),
                     T::ID,
                     platform.map_or_else(null_mut, |p| p.as_ptr()),
                     &mut db,
@@ -98,7 +98,7 @@ impl<T: Mode> Builder<T> for Pattern {
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
     fn build_for_platform(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
-        Database::compile(&self.expression, self.flags.0, platform)
+        Database::compile(&self.expression, self.flags, platform)
     }
 }
 
@@ -121,7 +121,7 @@ impl<T: Mode> Builder<T> for Patterns {
             let expr = CString::new(pattern.expression.as_str())?;
 
             expressions.push(expr);
-            flags.push(pattern.flags.0 as c_uint);
+            flags.push(pattern.flags.bits() as c_uint);
             ids.push(pattern.id as c_uint);
         }
 
@@ -154,140 +154,18 @@ impl<T: Mode> Builder<T> for Patterns {
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     use crate::common::tests::*;
     use crate::common::*;
-    use crate::compile::*;
-    use crate::constants::*;
-
-    const DATABASE_SIZE: usize = 2664;
-
-    #[test]
-    fn test_compile_flags() {
-        let _ = pretty_env_logger::try_init();
-
-        let mut flags = CompileFlags(HS_FLAG_CASELESS | HS_FLAG_DOTALL);
-
-        assert_eq!(flags, CompileFlags(HS_FLAG_CASELESS | HS_FLAG_DOTALL));
-        assert!(flags.is_set(HS_FLAG_CASELESS));
-        assert!(!flags.is_set(HS_FLAG_MULTILINE));
-        assert!(flags.is_set(HS_FLAG_DOTALL));
-        assert_eq!(format!("{}", flags), "is");
-
-        assert_eq!(
-            *flags.set(HS_FLAG_MULTILINE),
-            CompileFlags(HS_FLAG_CASELESS | HS_FLAG_MULTILINE | HS_FLAG_DOTALL)
-        );
-
-        assert_eq!(CompileFlags::parse("ism").unwrap(), flags);
-        assert!(CompileFlags::parse("test").is_err());
-    }
+    use crate::compile::Flags;
 
     #[test]
     fn test_database_compile() {
         let _ = pretty_env_logger::try_init();
         let info = PlatformInfo::host().unwrap();
 
-        let db = BlockDatabase::compile("test", 0, Some(&info)).unwrap();
+        let db = BlockDatabase::compile("test", Flags::empty(), Some(&info)).unwrap();
 
         validate_database(&db);
-    }
-
-    #[test]
-    fn test_pattern() {
-        let _ = pretty_env_logger::try_init();
-
-        let p = Pattern::parse("test").unwrap();
-
-        assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, CompileFlags(0));
-        assert_eq!(p.id, 0);
-
-        let p = Pattern::parse("/test/").unwrap();
-
-        assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, CompileFlags(0));
-        assert_eq!(p.id, 0);
-
-        let p = Pattern::parse("/test/i").unwrap();
-
-        assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
-        assert_eq!(p.id, 0);
-
-        let p = Pattern::parse("3:/test/i").unwrap();
-
-        assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
-        assert_eq!(p.id, 3);
-
-        let p = Pattern::parse("test/i").unwrap();
-
-        assert_eq!(p.expression, "test/i");
-        assert_eq!(p.flags, CompileFlags(0));
-        assert_eq!(p.id, 0);
-
-        let p = Pattern::parse("/t/e/s/t/i").unwrap();
-
-        assert_eq!(p.expression, "t/e/s/t");
-        assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
-        assert_eq!(p.id, 0);
-    }
-
-    #[test]
-    fn test_pattern_build() {
-        let _ = pretty_env_logger::try_init();
-
-        let p = &pattern! {"test"};
-
-        assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, CompileFlags(0));
-        assert_eq!(p.id, 0);
-
-        let info = p.info().unwrap();
-
-        assert_eq!(info.min_width, 4);
-        assert_eq!(info.max_width, 4);
-        assert!(!info.unordered_matches);
-        assert!(!info.matches_at_eod);
-        assert!(!info.matches_only_at_eod);
-
-        let db: BlockDatabase = p.build().unwrap();
-
-        validate_database(&db);
-    }
-
-    #[test]
-    fn test_pattern_build_with_flags() {
-        let _ = pretty_env_logger::try_init();
-
-        let p = &pattern! {"test", flags => HS_FLAG_CASELESS};
-
-        assert_eq!(p.expression, "test");
-        assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
-        assert_eq!(p.id, 0);
-
-        let db: BlockDatabase = p.build().unwrap();
-
-        validate_database(&db);
-    }
-
-    #[test]
-    fn test_patterns_build() {
-        let _ = pretty_env_logger::try_init();
-
-        let db: BlockDatabase = patterns!(["test", "foo", "bar"]).build().unwrap();
-
-        validate_database_with_size(&db, DATABASE_SIZE);
-    }
-
-    #[test]
-    fn test_patterns_build_with_flags() {
-        let _ = pretty_env_logger::try_init();
-
-        let db: BlockDatabase = patterns!(["test", "foo", "bar"], flags => HS_FLAG_CASELESS|HS_FLAG_DOTALL)
-            .build()
-            .unwrap();
-
-        validate_database_with_size(&db, DATABASE_SIZE);
     }
 }

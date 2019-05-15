@@ -20,7 +20,7 @@
 //! }
 //!
 //! fn main() {
-//!     let pattern = &pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST};
+//!     let pattern = &pattern!{"test", flags => CompileFlags::CASELESS | CompileFlags::SOM_LEFTMOST};
 //!     let db: BlockDatabase = pattern.build().unwrap();
 //!     let scratch = db.alloc().unwrap();
 //!
@@ -46,7 +46,8 @@ pub use crate::common::{
     VectoredDatabase,
 };
 pub use crate::compile::{
-    Builder, CompileFlags, Error as CompileError, ExpressionInfo, Pattern, Patterns, PlatformInfo, PlatformInfoRef,
+    Builder, Error as CompileError, ExpressionInfo, Flags as CompileFlags, Pattern, Patterns, PlatformInfo,
+    PlatformInfoRef,
 };
 pub use crate::constants::*;
 pub use crate::errors::HsError;

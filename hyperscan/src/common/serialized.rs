@@ -97,12 +97,13 @@ impl<T> DatabaseRef<T> {
 pub mod tests {
     use crate::common::database::tests::*;
     use crate::common::*;
+    use crate::compile::Flags;
 
     #[test]
     fn test_database_serialize() {
         let _ = pretty_env_logger::try_init();
 
-        let db = StreamingDatabase::compile("test", 0, None).unwrap();
+        let db = StreamingDatabase::compile("test", Flags::empty(), None).unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -115,7 +116,7 @@ pub mod tests {
     fn test_database_deserialize() {
         let _ = pretty_env_logger::try_init();
 
-        let db = VectoredDatabase::compile("test", 0, None).unwrap();
+        let db = VectoredDatabase::compile("test", Flags::empty(), None).unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -128,7 +129,7 @@ pub mod tests {
     fn test_database_deserialize_at() {
         let _ = pretty_env_logger::try_init();
 
-        let mut db = BlockDatabase::compile("test", 0, None).unwrap();
+        let mut db = BlockDatabase::compile("test", Flags::empty(), None).unwrap();
 
         let data = db.serialize().unwrap();
 

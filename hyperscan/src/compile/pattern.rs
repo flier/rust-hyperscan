@@ -1,102 +1,88 @@
 use core::fmt;
 use core::str::FromStr;
 
+use bitflags::bitflags;
 use failure::{bail, Error};
 
-use crate::constants::*;
-
-/// Flags which modify the behaviour of the expression.
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
-pub struct CompileFlags(pub u32);
-
-impl From<u32> for CompileFlags {
-    fn from(flags: u32) -> Self {
-        CompileFlags(flags)
+bitflags! {
+    pub struct Flags: u32 {
+        const CASELESS = ffi::HS_FLAG_CASELESS;
+        const DOTALL = ffi::HS_FLAG_DOTALL;
+        const MULTILINE = ffi::HS_FLAG_MULTILINE;
+        const SINGLEMATCH = ffi::HS_FLAG_SINGLEMATCH;
+        const ALLOWEMPTY = ffi::HS_FLAG_ALLOWEMPTY;
+        const UTF8 = ffi::HS_FLAG_UTF8;
+        const UCP = ffi::HS_FLAG_UCP;
+        const PREFILTER = ffi::HS_FLAG_PREFILTER;
+        const SOM_LEFTMOST = ffi::HS_FLAG_SOM_LEFTMOST;
+        const COMBINATION = ffi::HS_FLAG_COMBINATION;
+        const QUIET = ffi::HS_FLAG_QUIET;
     }
 }
 
-impl Into<u32> for CompileFlags {
-    fn into(self) -> u32 {
-        self.0
+impl Default for Flags {
+    fn default() -> Self {
+        Flags::empty()
     }
 }
 
-impl fmt::Display for CompileFlags {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.is_set(HS_FLAG_CASELESS) {
-            write!(f, "i")?
-        }
-        if self.is_set(HS_FLAG_MULTILINE) {
-            write!(f, "m")?
-        }
-        if self.is_set(HS_FLAG_DOTALL) {
-            write!(f, "s")?
-        }
-        if self.is_set(HS_FLAG_SINGLEMATCH) {
-            write!(f, "H")?
-        }
-        if self.is_set(HS_FLAG_ALLOWEMPTY) {
-            write!(f, "V")?
-        }
-        if self.is_set(HS_FLAG_UTF8) {
-            write!(f, "8")?
-        }
-        if self.is_set(HS_FLAG_UCP) {
-            write!(f, "W")?
-        }
-        if self.is_set(HS_FLAG_COMBINATION) {
-            write!(f, "C")?
-        }
-        if self.is_set(HS_FLAG_QUIET) {
-            write!(f, "Q")?
-        }
-        Ok(())
-    }
-}
+impl FromStr for Flags {
+    type Err = Error;
 
-impl CompileFlags {
-    #[inline]
-    pub fn is_set(&self, flag: u32) -> bool {
-        self.0 & flag == flag
-    }
-
-    #[inline]
-    pub fn set(&mut self, flag: u32) -> &mut Self {
-        self.0 |= flag;
-
-        self
-    }
-
-    pub fn parse(s: &str) -> Result<CompileFlags, Error> {
-        let mut flags: u32 = 0;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut flags = Flags::empty();
 
         for c in s.chars() {
             match c {
-                'i' => flags |= HS_FLAG_CASELESS,
-                'm' => flags |= HS_FLAG_MULTILINE,
-                's' => flags |= HS_FLAG_DOTALL,
-                'H' => flags |= HS_FLAG_SINGLEMATCH,
-                'V' => flags |= HS_FLAG_ALLOWEMPTY,
-                '8' => flags |= HS_FLAG_UTF8,
-                'W' => flags |= HS_FLAG_UCP,
-                'C' => flags |= HS_FLAG_COMBINATION,
-                'Q' => flags |= HS_FLAG_QUIET,
+                'i' => flags |= Flags::CASELESS,
+                'm' => flags |= Flags::MULTILINE,
+                's' => flags |= Flags::DOTALL,
+                'H' => flags |= Flags::SINGLEMATCH,
+                'V' => flags |= Flags::ALLOWEMPTY,
+                '8' => flags |= Flags::UTF8,
+                'W' => flags |= Flags::UCP,
+                'C' => flags |= Flags::COMBINATION,
+                'Q' => flags |= Flags::QUIET,
                 _ => {
                     bail!("invalid compile flag: {}", c);
                 }
             }
         }
 
-        Ok(CompileFlags(flags))
+        Ok(flags)
     }
 }
 
-impl FromStr for CompileFlags {
-    type Err = Error;
-
-    #[inline]
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        CompileFlags::parse(s)
+impl fmt::Display for Flags {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.contains(Flags::CASELESS) {
+            write!(f, "i")?
+        }
+        if self.contains(Flags::MULTILINE) {
+            write!(f, "m")?
+        }
+        if self.contains(Flags::DOTALL) {
+            write!(f, "s")?
+        }
+        if self.contains(Flags::SINGLEMATCH) {
+            write!(f, "H")?
+        }
+        if self.contains(Flags::ALLOWEMPTY) {
+            write!(f, "V")?
+        }
+        if self.contains(Flags::UTF8) {
+            write!(f, "8")?
+        }
+        if self.contains(Flags::UCP) {
+            write!(f, "W")?
+        }
+        if self.contains(Flags::COMBINATION) {
+            write!(f, "C")?
+        }
+        if self.contains(Flags::QUIET) {
+            write!(f, "Q")?
+        }
+        Ok(())
     }
 }
 
@@ -106,7 +92,7 @@ pub struct Pattern {
     /// The NULL-terminated expression to parse.
     pub expression: String,
     /// Flags which modify the behaviour of the expression.
-    pub flags: CompileFlags,
+    pub flags: Flags,
     /// ID number to be associated with the corresponding pattern in the expressions array.
     pub id: usize,
 }
@@ -121,14 +107,14 @@ impl Pattern {
 
             let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
                 (true, Some(end)) if end > 0 => Pattern {
-                    expression: String::from(expr.get_unchecked(1..end)),
-                    flags: CompileFlags::parse(expr.get_unchecked(end + 1..expr.len()))?,
+                    expression: expr.get_unchecked(1..end).into(),
+                    flags: expr.get_unchecked(end + 1..expr.len()).parse()?,
                     id: id,
                 },
 
                 _ => Pattern {
                     expression: String::from(expr),
-                    flags: CompileFlags::default(),
+                    flags: Flags::empty(),
                     id: id,
                 },
             };
@@ -169,15 +155,15 @@ pub type Patterns = Vec<Pattern>;
 #[macro_export]
 macro_rules! pattern {
     ($expr:expr) => {{
-        pattern!($expr, flags => 0, id => 0)
+        pattern!($expr, flags => Default::default(), id => 0)
     }};
     ($expr:expr, flags => $flags:expr) => {{
         pattern!($expr, flags => $flags, id => 0)
     }};
     ($expr:expr, flags => $flags:expr, id => $id:expr) => {{
         $crate::Pattern {
-            expression: ::std::convert::From::from($expr),
-            flags: ::std::convert::From::from($flags),
+            expression: $expr.into(),
+            flags: $flags,
             id: $id,
         }
     }};
@@ -187,7 +173,7 @@ macro_rules! pattern {
 #[macro_export]
 macro_rules! patterns {
     ( [ $( $expr:expr ), * ] ) => {{
-        patterns!([ $( $expr ), * ], flags => 0)
+        patterns!([ $( $expr ), * ], flags => Default::default())
     }};
     ( [ $( $expr:expr ), * ], flags => $flags:expr ) => {{
         let mut v = Vec::new();
@@ -197,4 +183,126 @@ macro_rules! patterns {
 
         v
     }};
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::common::tests::*;
+    use crate::common::BlockDatabase;
+    use crate::compile::Builder;
+
+    use super::*;
+
+    const DATABASE_SIZE: usize = 2664;
+
+    #[test]
+    fn test_compile_flags() {
+        let _ = pretty_env_logger::try_init();
+
+        let flags = Flags::CASELESS | Flags::DOTALL;
+
+        assert_eq!(flags.to_string(), "is");
+
+        assert_eq!("ism".parse::<Flags>().unwrap(), flags | Flags::MULTILINE);
+        assert!("test".parse::<Flags>().is_err());
+    }
+
+    #[test]
+    fn test_pattern() {
+        let _ = pretty_env_logger::try_init();
+
+        let p = Pattern::parse("test").unwrap();
+
+        assert_eq!(p.expression, "test");
+        assert!(p.flags.is_empty());
+        assert_eq!(p.id, 0);
+
+        let p = Pattern::parse("/test/").unwrap();
+
+        assert_eq!(p.expression, "test");
+        assert!(p.flags.is_empty());
+        assert_eq!(p.id, 0);
+
+        let p = Pattern::parse("/test/i").unwrap();
+
+        assert_eq!(p.expression, "test");
+        assert_eq!(p.flags, Flags::CASELESS);
+        assert_eq!(p.id, 0);
+
+        let p = Pattern::parse("3:/test/i").unwrap();
+
+        assert_eq!(p.expression, "test");
+        assert_eq!(p.flags, Flags::CASELESS);
+        assert_eq!(p.id, 3);
+
+        let p = Pattern::parse("test/i").unwrap();
+
+        assert_eq!(p.expression, "test/i");
+        assert!(p.flags.is_empty());
+        assert_eq!(p.id, 0);
+
+        let p = Pattern::parse("/t/e/s/t/i").unwrap();
+
+        assert_eq!(p.expression, "t/e/s/t");
+        assert_eq!(p.flags, Flags::CASELESS);
+        assert_eq!(p.id, 0);
+    }
+
+    #[test]
+    fn test_pattern_build() {
+        let _ = pretty_env_logger::try_init();
+
+        let p = &pattern! {"test"};
+
+        assert_eq!(p.expression, "test");
+        assert!(p.flags.is_empty());
+        assert_eq!(p.id, 0);
+
+        let info = p.info().unwrap();
+
+        assert_eq!(info.min_width, 4);
+        assert_eq!(info.max_width, 4);
+        assert!(!info.unordered_matches);
+        assert!(!info.matches_at_eod);
+        assert!(!info.matches_only_at_eod);
+
+        let db: BlockDatabase = p.build().unwrap();
+
+        validate_database(&db);
+    }
+
+    #[test]
+    fn test_pattern_build_with_flags() {
+        let _ = pretty_env_logger::try_init();
+
+        let p = &pattern! {"test", flags => Flags::CASELESS};
+
+        assert_eq!(p.expression, "test");
+        assert_eq!(p.flags, Flags::CASELESS);
+        assert_eq!(p.id, 0);
+
+        let db: BlockDatabase = p.build().unwrap();
+
+        validate_database(&db);
+    }
+
+    #[test]
+    fn test_patterns_build() {
+        let _ = pretty_env_logger::try_init();
+
+        let db: BlockDatabase = patterns!(["test", "foo", "bar"]).build().unwrap();
+
+        validate_database_with_size(&db, DATABASE_SIZE);
+    }
+
+    #[test]
+    fn test_patterns_build_with_flags() {
+        let _ = pretty_env_logger::try_init();
+
+        let db: BlockDatabase = patterns!(["test", "foo", "bar"], flags => Flags::CASELESS|Flags::DOTALL)
+            .build()
+            .unwrap();
+
+        validate_database_with_size(&db, DATABASE_SIZE);
+    }
 }

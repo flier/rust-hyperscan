@@ -76,7 +76,7 @@ pub mod tests {
 
     use crate::common::Mode;
     use crate::common::*;
-    use crate::compile::PlatformInfo;
+    use crate::compile::{Flags, PlatformInfo};
 
     const DATABASE_SIZE: usize = 872;
 
@@ -130,7 +130,7 @@ pub mod tests {
     fn test_database() {
         let _ = pretty_env_logger::try_init();
 
-        let db = BlockDatabase::compile("test", 0, None).unwrap();
+        let db = BlockDatabase::compile("test", Flags::empty(), None).unwrap();
 
         validate_database(&db);
 

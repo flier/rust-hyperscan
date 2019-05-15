@@ -40,7 +40,7 @@ impl Pattern {
 
         unsafe {
             check_compile_error!(
-                ffi::hs_expression_info(expr.as_ptr() as *const i8, self.flags.0, &mut info, &mut err),
+                ffi::hs_expression_info(expr.as_ptr() as *const i8, self.flags.bits(), &mut info, &mut err),
                 err
             );
 
