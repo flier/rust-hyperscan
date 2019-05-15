@@ -26,7 +26,7 @@ unsafe fn free_platform_info(p: *mut ffi::hs_platform_info_t) {
 
 impl PlatformInfo {
     pub fn is_valid() -> Result<(), Error> {
-        unsafe { ffi::hs_valid_platform().ok().map(|_| ()) }
+        unsafe { ffi::hs_valid_platform().ok() }
     }
 
     pub fn host() -> Result<PlatformInfo, Error> {

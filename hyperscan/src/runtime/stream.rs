@@ -65,7 +65,6 @@ impl StreamRef {
                 mem::transmute(context),
             )
             .ok()
-            .map(|_| ())
         }
     }
 }
@@ -85,7 +84,6 @@ impl Stream {
                 mem::transmute(context),
             )
             .ok()
-            .map(|_| ())
         }
     }
 }

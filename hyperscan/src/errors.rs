@@ -79,12 +79,12 @@ pub trait AsResult {
 }
 
 impl AsResult for ffi::hs_error_t {
-    type Output = Self;
+    type Output = ();
     type Error = Error;
 
     fn ok(self) -> Result<Self::Output, Self::Error> {
         if self == ffi::HS_SUCCESS as ffi::hs_error_t {
-            Ok(self)
+            Ok(())
         } else {
             Err(HsError::from(self).into())
         }

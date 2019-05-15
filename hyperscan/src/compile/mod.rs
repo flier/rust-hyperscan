@@ -7,5 +7,5 @@ mod expr;
 
 pub use self::builder::{Builder, PlatformInfo, PlatformInfoRef};
 pub use self::error::Error;
-pub use self::expr::ExpressionInfo;
-pub use self::pattern::{Flags, Pattern, Patterns};
+pub use self::expr::Info as ExpressionInfo;
+pub use self::pattern::{Ext as ExpressionExt, Flags, Pattern, Patterns};

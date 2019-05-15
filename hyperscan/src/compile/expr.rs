@@ -7,8 +7,8 @@ use foreign_types::ForeignType;
 use crate::compile::Pattern;
 
 /// A type containing information related to an expression
-#[derive(Debug, Copy, Clone)]
-pub struct ExpressionInfo {
+#[derive(Debug, Clone)]
+pub struct Info {
     /// The minimum length in bytes of a match for the pattern.
     pub min_width: usize,
 
@@ -33,19 +33,20 @@ impl Pattern {
     /// The information provided in ExpressionInfo
     /// includes the minimum and maximum width of a pattern match.
     ///
-    pub fn info(&self) -> Result<ExpressionInfo, Error> {
+    pub fn info(&self) -> Result<Info, Error> {
         let expr = CString::new(self.expression.as_str())?;
+        let ext = self.ext.into();
         let mut info = null_mut();
         let mut err = null_mut();
 
         unsafe {
             check_compile_error!(
-                ffi::hs_expression_info(expr.as_ptr() as *const i8, self.flags.bits(), &mut info, &mut err),
+                ffi::hs_expression_ext_info(expr.as_ptr() as *const i8, self.flags.bits(), &ext, &mut info, &mut err),
                 err
             );
 
             let info = info.as_ref().unwrap();
-            let info = ExpressionInfo {
+            let info = Info {
                 min_width: info.min_width as usize,
                 max_width: info.max_width as usize,
                 unordered_matches: info.unordered_matches != 0,

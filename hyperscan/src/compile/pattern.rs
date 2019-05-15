@@ -86,6 +86,56 @@ impl fmt::Display for Flags {
     }
 }
 
+/// A structure containing additional parameters related to an expression.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Ext {
+    /// The minimum end offset in the data stream at which this expression should match successfully.
+    pub min_offset: Option<u64>,
+
+    /// The maximum end offset in the data stream at which this expression should match successfully.
+    pub max_offset: Option<u64>,
+
+    /// The minimum match length (from start to end) required to successfully match this expression.
+    pub min_length: Option<u64>,
+
+    /// Allow patterns to approximately match within this edit distance.
+    pub edit_distance: Option<u32>,
+
+    /// Allow patterns to approximately match within this Hamming distance.
+    pub hamming_distance: Option<u32>,
+}
+
+impl From<Ext> for ffi::hs_expr_ext_t {
+    fn from(ext: Ext) -> Self {
+        let mut flags = 0;
+
+        if ext.min_offset.is_some() {
+            flags |= ffi::HS_EXT_FLAG_MIN_OFFSET as u64;
+        }
+        if ext.max_offset.is_some() {
+            flags |= ffi::HS_EXT_FLAG_MAX_OFFSET as u64;
+        }
+        if ext.min_length.is_some() {
+            flags |= ffi::HS_EXT_FLAG_MIN_LENGTH as u64;
+        }
+        if ext.edit_distance.is_some() {
+            flags |= ffi::HS_EXT_FLAG_EDIT_DISTANCE as u64;
+        }
+        if ext.hamming_distance.is_some() {
+            flags |= ffi::HS_EXT_FLAG_HAMMING_DISTANCE as u64;
+        }
+
+        ffi::hs_expr_ext_t {
+            flags,
+            min_offset: ext.min_offset.unwrap_or_default(),
+            max_offset: ext.max_offset.unwrap_or_default(),
+            min_length: ext.min_length.unwrap_or_default(),
+            edit_distance: ext.edit_distance.unwrap_or_default(),
+            hamming_distance: ext.hamming_distance.unwrap_or_default(),
+        }
+    }
+}
+
 /// Pattern that has matched.
 #[derive(Debug, Clone)]
 pub struct Pattern {
@@ -95,6 +145,8 @@ pub struct Pattern {
     pub flags: Flags,
     /// ID number to be associated with the corresponding pattern in the expressions array.
     pub id: usize,
+    /// Extended behaviour for this pattern
+    pub ext: Ext,
 }
 
 impl Pattern {
@@ -109,13 +161,15 @@ impl Pattern {
                 (true, Some(end)) if end > 0 => Pattern {
                     expression: expr.get_unchecked(1..end).into(),
                     flags: expr.get_unchecked(end + 1..expr.len()).parse()?,
-                    id: id,
+                    id,
+                    ext: Ext::default(),
                 },
 
                 _ => Pattern {
                     expression: String::from(expr),
                     flags: Flags::empty(),
-                    id: id,
+                    id,
+                    ext: Ext::default(),
                 },
             };
 
@@ -165,6 +219,7 @@ macro_rules! pattern {
             expression: $expr.into(),
             flags: $flags,
             id: $id,
+            ext: $crate::ExpressionExt::default(),
         }
     }};
 }

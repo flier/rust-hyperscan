@@ -54,7 +54,6 @@ impl DatabaseRef<Block> {
                 mem::transmute(context),
             )
             .ok()
-            .map(|_| ())
         }
     }
 }
@@ -88,7 +87,6 @@ impl DatabaseRef<Vectored> {
                 mem::transmute(context),
             )
             .ok()
-            .map(|_| ())
         }
     }
 }
@@ -118,7 +116,6 @@ impl Stream {
                 mem::transmute(context),
             )
             .ok()
-            .map(|_| ())
         }
     }
 }

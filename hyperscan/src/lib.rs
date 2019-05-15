@@ -46,8 +46,8 @@ pub use crate::common::{
     VectoredDatabase,
 };
 pub use crate::compile::{
-    Builder, Error as CompileError, ExpressionInfo, Flags as CompileFlags, Pattern, Patterns, PlatformInfo,
-    PlatformInfoRef,
+    Builder, Error as CompileError, ExpressionExt, ExpressionInfo, Flags as CompileFlags, Pattern, Patterns,
+    PlatformInfo, PlatformInfoRef,
 };
 pub use crate::constants::*;
 pub use crate::errors::HsError;
