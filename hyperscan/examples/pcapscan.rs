@@ -40,87 +40,73 @@ use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::udp::UdpPacket;
 use pnet::packet::{Packet, PrimitiveValues};
 
-use hyperscan::{BlockDatabase, Builder, Pattern, Patterns, Scratch, Stream, StreamingDatabase};
-
-const NANOS_PER_MILLI: u32 = 1_000_000;
-const MILLIS_PER_SEC: u64 = 1_000;
-
-trait Milliseconds {
-    fn ms(&self) -> usize;
-}
-
-impl Milliseconds for Duration {
-    fn ms(&self) -> usize {
-        (self.as_secs() * MILLIS_PER_SEC) as usize + (self.subsec_nanos() / NANOS_PER_MILLI) as usize
-    }
-}
-
-macro_rules! build_database {
-    ($builder:expr, $mode:expr) => {{
-        let now = Instant::now();
-
-        let db = $builder.build()?;
-
-        println!("Hyperscan {} mode database compiled in {}ms", $mode, now.elapsed().ms());
-
-        db
-    }};
-}
+use hyperscan::{BlockDatabase, Builder, Database, Mode, Patterns, Scratch, Stream, StreamingDatabase};
 
 /**
  * This function will read in the file with the specified name, with an
  * expression per line, ignoring lines starting with '#' and build a Hyperscan
  * database for it.
  */
-fn databases_from_file(filename: &str) -> Result<(StreamingDatabase, BlockDatabase), Error> {
+fn read_databases(filename: &str) -> Result<(StreamingDatabase, BlockDatabase), Error> {
     // do the actual file reading and string handling
     let patterns = parse_file(filename)?;
 
     println!("Compiling Hyperscan databases with {} patterns.", patterns.len());
 
-    Ok((
-        build_database!(patterns, "streaming"),
-        build_database!(patterns, "block"),
-    ))
+    Ok((build_database(&patterns)?, build_database(&patterns)?))
 }
 
-fn parse_file(filename: &str) -> Result<Patterns, io::Error> {
+fn parse_file(filename: &str) -> Result<Patterns, Error> {
     let f = File::open(filename)?;
-    let patterns = io::BufReader::new(f)
+
+    io::BufReader::new(f)
         .lines()
-        .filter_map(|line: Result<String, io::Error>| -> Option<Pattern> {
-            if let Ok(line) = line {
-                let line = line.trim();
+        .flat_map(|line| {
+            line.map_err(Error::from)
+                .and_then(|line| {
+                    let line = line.trim();
 
-                if line.len() > 0 && !line.starts_with('#') {
-                    if let Ok(pattern) = Pattern::parse(line) {
-                        return Some(pattern);
+                    if line.is_empty() || line.starts_with('#') {
+                        Ok(None)
+                    } else {
+                        line.parse().map(Some)
                     }
-                }
-            }
+                })
+                .transpose()
+        })
+        .collect()
+}
 
-            None
-        });
+fn build_database<B: Builder, T: Mode>(builder: &B) -> Result<Database<T>, Error> {
+    let now = Instant::now();
 
-    Ok(patterns.collect())
+    let db = builder.build::<T>()?;
+
+    println!(
+        "compile `{}` mode database in {} ms",
+        T::NAME,
+        now.elapsed().as_millis()
+    );
+
+    Ok(db)
 }
 
 // Key for identifying a stream in our pcap input data, using data from its IP
 // headers.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-struct FiveTuple {
+struct Session {
     proto: u8,
     src: SocketAddrV4,
     dst: SocketAddrV4,
 }
 
-impl FiveTuple {
-    fn new(ipv4: &Ipv4Packet) -> FiveTuple {
+impl Session {
+    fn new(ipv4: &Ipv4Packet) -> Session {
         let mut c = io::Cursor::new(ipv4.payload());
         let src_port = c.read_u16::<BigEndian>().unwrap();
         let dst_port = c.read_u16::<BigEndian>().unwrap();
 
-        FiveTuple {
+        Session {
             proto: ipv4.get_next_level_protocol().to_primitive_values().0,
             src: SocketAddrV4::new(ipv4.get_source(), src_port),
             dst: SocketAddrV4::new(ipv4.get_destination(), dst_port),
@@ -138,13 +124,13 @@ struct Benchmark {
     stream_ids: Vec<usize>,
 
     /// Map used to construct stream_ids
-    stream_map: HashMap<FiveTuple, usize>,
+    sessions: HashMap<Session, usize>,
 
     /// Hyperscan compiled database (streaming mode)
-    db_streaming: StreamingDatabase,
+    streaming_db: StreamingDatabase,
 
     /// Hyperscan compiled database (block mode)
-    db_block: BlockDatabase,
+    block_db: BlockDatabase,
 
     /// Hyperscan temporary scratch space (used in both modes)
     scratch: Scratch,
@@ -157,24 +143,24 @@ struct Benchmark {
 }
 
 impl Benchmark {
-    fn new(db_streaming: StreamingDatabase, db_block: BlockDatabase) -> Result<Benchmark, Error> {
-        let mut s = db_streaming.alloc()?;
+    fn new(streaming_db: StreamingDatabase, block_db: BlockDatabase) -> Result<Benchmark, Error> {
+        let mut s = streaming_db.alloc()?;
 
-        db_block.realloc(&mut s)?;
+        block_db.realloc(&mut s)?;
 
         Ok(Benchmark {
             packets: Vec::new(),
             stream_ids: Vec::new(),
-            stream_map: HashMap::new(),
-            db_streaming: db_streaming,
-            db_block: db_block,
+            sessions: HashMap::new(),
+            streaming_db: streaming_db,
+            block_db: block_db,
             scratch: s,
             streams: Vec::new(),
             match_count: AtomicUsize::new(0),
         })
     }
 
-    fn decode_packet(packet: &pcap::Packet) -> Option<(FiveTuple, Vec<u8>)> {
+    fn decode_packet(packet: &pcap::Packet) -> Option<(Session, Vec<u8>)> {
         let ether = EthernetPacket::new(&packet.data).unwrap();
 
         if ether.get_ethertype() != EtherTypes::Ipv4 {
@@ -196,13 +182,13 @@ impl Benchmark {
                 let payload = ipv4.payload();
                 let data_off = ((payload[12] >> 4) * 4) as usize;
 
-                Some((FiveTuple::new(&ipv4), Vec::from(&payload[data_off..])))
+                Some((Session::new(&ipv4), Vec::from(&payload[data_off..])))
             }
 
             IpNextHeaderProtocols::Udp => {
                 let udp = UdpPacket::new(&ipv4.payload()).unwrap();
 
-                Some((FiveTuple::new(&ipv4), Vec::from(udp.payload())))
+                Some((Session::new(&ipv4), Vec::from(udp.payload())))
             }
             _ => None,
         }
@@ -214,12 +200,12 @@ impl Benchmark {
         while let Ok(ref packet) = capture.next() {
             if let Some((key, payload)) = Self::decode_packet(&packet) {
                 if payload.len() > 0 {
-                    let stream_id = match self.stream_map.get(&key) {
+                    let stream_id = match self.sessions.get(&key) {
                         Some(&id) => id,
                         None => {
-                            let id = self.stream_map.len();
+                            let id = self.sessions.len();
 
-                            assert!(self.stream_map.insert(key, id).is_none());
+                            assert!(self.sessions.insert(key, id).is_none());
 
                             id
                         }
@@ -257,8 +243,8 @@ impl Benchmark {
 
     // Open a Hyperscan stream for each stream in stream_ids
     fn open_streams(&mut self) -> Result<(), Error> {
-        self.streams = iter::repeat_with(|| self.db_streaming.open_stream())
-            .take(self.stream_map.len())
+        self.streams = iter::repeat_with(|| self.streaming_db.open_stream())
+            .take(self.sessions.len())
             .collect::<Result<Vec<_>, Error>>()?;
 
         Ok(())
@@ -308,7 +294,7 @@ impl Benchmark {
     // through Hyperscan using the block-mode interface.
     fn scan_block(&mut self) -> Result<(), Error> {
         for ref packet in &self.packets {
-            self.db_block
+            self.block_db
                 .scan(
                     packet.as_ref().as_slice(),
                     &self.scratch,
@@ -324,7 +310,7 @@ impl Benchmark {
     // Display some information about the compiled database and scanned data.
     fn display_stats(&self) -> Result<(), Error> {
         let num_packets = self.packets.len();
-        let num_streams = self.stream_map.len();
+        let num_streams = self.sessions.len();
         let num_bytes = self.bytes();
 
         println!(
@@ -342,15 +328,15 @@ impl Benchmark {
         println!("");
         println!(
             "Streaming mode Hyperscan database size    : {} bytes.",
-            self.db_streaming.size()?
+            self.streaming_db.size()?
         );
         println!(
             "Block mode Hyperscan database size        : {} bytes.",
-            self.db_block.size()?
+            self.block_db.size()?
         );
         println!(
             "Streaming mode Hyperscan stream state size: {} bytes (per stream).",
-            self.db_streaming.stream_size()?
+            self.streaming_db.stream_size()?
         );
 
         Ok(())
@@ -404,8 +390,8 @@ fn main() -> Result<(), Error> {
     // Read our pattern set in and build Hyperscan databases from it.
     println!("Pattern file: {}", pattern_file);
 
-    let (db_streaming, db_block) = match databases_from_file(pattern_file) {
-        Ok((db_streaming, db_block)) => (db_streaming, db_block),
+    let (streaming_db, block_db) = match read_databases(pattern_file) {
+        Ok((streaming_db, block_db)) => (streaming_db, block_db),
         Err(err) => {
             eprintln!("ERROR: Unable to parse and compile patterns: {}\n", err);
             exit(-1);
@@ -413,7 +399,7 @@ fn main() -> Result<(), Error> {
     };
 
     // Read our input PCAP file in
-    let mut bench = Benchmark::new(db_streaming, db_block).unwrap();
+    let mut bench = Benchmark::new(streaming_db, block_db)?;
 
     println!("PCAP input file: {}", pcap_file);
 
@@ -459,8 +445,8 @@ fn main() -> Result<(), Error> {
     // Collect data from streaming mode scans.
     let bytes = bench.bytes();
     let total_bytes = (bytes * 8 * repeat_count) as f64;
-    let tput_stream_scanning = total_bytes * 1000.0 / streaming_scan.ms() as f64;
-    let tput_stream_overhead = total_bytes * 1000.0 / (streaming_scan + streaming_open_close).ms() as f64;
+    let tput_stream_scanning = total_bytes * 1000.0 / streaming_scan.as_millis() as f64;
+    let tput_stream_overhead = total_bytes * 1000.0 / (streaming_scan + streaming_open_close).as_millis() as f64;
     let matches_stream = bench.matches();
     let match_rate_stream = (matches_stream as f64) / ((bytes * repeat_count) as f64 / 1024.0);
 
@@ -473,7 +459,7 @@ fn main() -> Result<(), Error> {
     let scan_block = now.elapsed();
 
     // Collect data from block mode scans.
-    let tput_block_scanning = total_bytes * 1000.0 / scan_block.ms() as f64;
+    let tput_block_scanning = total_bytes * 1000.0 / scan_block.as_millis() as f64;
     let matches_block = bench.matches();
     let match_rate_block = (matches_block as f64) / ((bytes * repeat_count) as f64 / 1024.0);
 
