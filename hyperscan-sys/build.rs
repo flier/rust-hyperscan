@@ -20,7 +20,7 @@ fn find_hyperscan() -> Result<Library, Error> {
             Library {
                 libs: vec!["hs".to_owned()],
                 link_paths: vec![format!("{}/lib", prefix).into()],
-                include_paths: vec![format!("{}/include", prefix).into()],
+                include_paths: vec![format!("{}/include/hs", prefix).into()],
             }
         })
         .or_else(|_| {
@@ -57,16 +57,23 @@ fn generate_binding(hyperscan_include_path: &str, out_file: &Path) -> Result<(),
 
     let hyperscan_include_file = format!("{}/hs.h", hyperscan_include_path);
 
+    println!("cargo:rerun-if-changed={}", hyperscan_include_file);
+
     bindgen::builder()
-        .header(&hyperscan_include_file)
+        .header(hyperscan_include_file)
+        .use_core()
+        .ctypes_prefix("::libc")
         .clang_args(&["-x", "c++", "-std=c++11"])
+        .whitelist_var("^HS_.*")
+        .whitelist_type("^hs_.*")
         .whitelist_function("^hs_.*")
+        .blacklist_type("__darwin_.*")
+        .derive_copy(false)
+        .derive_default(true)
         .generate()
         .map_err(|_| err_msg("generate binding files"))?
         .write_to_file(out_file)
         .context("write wrapper")?;
-
-    println!("cargo:rerun-if-changed={}", hyperscan_include_file);
 
     Ok(())
 }
@@ -87,6 +94,12 @@ fn main() -> Result<(), Error> {
     let out_file = Path::new(&out_dir).join("raw.rs");
 
     generate_binding(libhs.include_paths[0].to_str().unwrap(), &out_file)?;
+
+    for lib in libhs.libs {
+        if lib.contains("hs") {
+            println!("cargo:rustc-link-lib=dylib={}", lib);
+        }
+    }
 
     for link_path in libhs.link_paths {
         println!("cargo:rustc-link-search=native={}", link_path.to_str().unwrap());
