@@ -6,7 +6,7 @@ use failure::Error;
 use foreign_types::{foreign_type, ForeignTypeRef};
 
 use crate::common::{Block, Mode, Streaming, Vectored};
-use crate::errors::{AsResult, ErrorKind::*};
+use crate::errors::AsResult;
 
 foreign_type! {
     /// A compiled pattern database that can then be used to scan data.
@@ -58,16 +58,13 @@ impl<T> DatabaseRef<T> {
 
         unsafe {
             ffi::hs_database_info(self.as_ptr(), &mut p).ok().and_then(|_| {
-                let info = CStr::from_ptr(p)
-                    .to_str()
-                    .map(|s| s.to_owned())
-                    .map_err(|_| Invalid.into());
+                let info = CStr::from_ptr(p).to_str()?.to_owned();
 
                 if !p.is_null() {
                     libc::free(p as *mut _)
                 }
 
-                info
+                Ok(info)
             })
         }
     }

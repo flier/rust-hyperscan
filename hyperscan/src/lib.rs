@@ -45,11 +45,9 @@ pub use crate::common::{
     Block, BlockDatabase, Database, DatabaseRef, Mode, SerializedDatabase, Streaming, StreamingDatabase, Vectored,
     VectoredDatabase,
 };
-pub use crate::compile::{
-    Builder, CompileFlags, Expression, ExpressionInfo, Pattern, Patterns, PlatformInfo, PlatformInfoRef,
-};
+pub use crate::compile::{Builder, CompileFlags, ExpressionInfo, Pattern, Patterns, PlatformInfo, PlatformInfoRef};
 pub use crate::constants::*;
-pub use crate::errors::{CompileError, ErrorKind};
+pub use crate::errors::{CompilerError, HsError};
 pub use crate::runtime::{Scratch, ScratchRef, Stream, StreamRef};
 
 #[cfg(test)]

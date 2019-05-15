@@ -26,31 +26,21 @@ pub struct ExpressionInfo {
     pub matches_only_at_eod: bool,
 }
 
-/// Providing expression information.
-pub trait Expression {
+impl Pattern {
     ///
     /// Utility function providing information about a regular expression.
     ///
     /// The information provided in ExpressionInfo
     /// includes the minimum and maximum width of a pattern match.
     ///
-    fn info(&self) -> Result<ExpressionInfo, Error>;
-}
-
-impl Expression for Pattern {
-    fn info(&self) -> Result<ExpressionInfo, Error> {
+    pub fn info(&self) -> Result<ExpressionInfo, Error> {
         let expr = CString::new(self.expression.as_str())?;
         let mut info = null_mut();
         let mut err = null_mut();
 
         unsafe {
             check_compile_error!(
-                ffi::hs_expression_info(
-                    expr.as_bytes_with_nul().as_ptr() as *const i8,
-                    self.flags.0,
-                    &mut info,
-                    &mut err
-                ),
+                ffi::hs_expression_info(expr.as_ptr() as *const i8, self.flags.0, &mut info, &mut err),
                 err
             );
 

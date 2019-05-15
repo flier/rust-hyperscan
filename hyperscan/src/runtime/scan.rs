@@ -128,7 +128,7 @@ pub mod tests {
     use crate::common::*;
     use crate::compile::Builder;
     use crate::constants::*;
-    use crate::errors::ErrorKind;
+    use crate::errors::HsError;
 
     #[test]
     fn test_block_scan() {
@@ -154,8 +154,8 @@ pub mod tests {
             db.scan("foo test bar".as_bytes(), &s, Some(callback), Some(&db))
                 .err()
                 .unwrap()
-                .downcast_ref::<ErrorKind>(),
-            Some(&ErrorKind::ScanTerminated)
+                .downcast_ref::<HsError>(),
+            Some(&HsError::ScanTerminated)
         );
     }
 
@@ -187,8 +187,8 @@ pub mod tests {
             db.scan::<_>(&data, &s, Some(callback), Some(&db))
                 .err()
                 .unwrap()
-                .downcast_ref::<ErrorKind>(),
-            Some(&ErrorKind::ScanTerminated)
+                .downcast_ref::<HsError>(),
+            Some(&HsError::ScanTerminated)
         );
     }
 

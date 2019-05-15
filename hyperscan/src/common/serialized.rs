@@ -7,7 +7,7 @@ use failure::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
 
 use crate::common::{Database, DatabaseRef};
-use crate::errors::{AsResult, ErrorKind::*};
+use crate::errors::AsResult;
 
 #[derive(Debug)]
 pub struct SerializedDatabase(*const i8, usize);
@@ -44,16 +44,13 @@ impl SerializedDatabase {
             ffi::hs_serialized_database_info(self.0, self.1, &mut p)
                 .ok()
                 .and_then(|_| {
-                    let info = CStr::from_ptr(p)
-                        .to_str()
-                        .map(|s| s.to_owned())
-                        .map_err(|_| Invalid.into());
+                    let info = CStr::from_ptr(p).to_str()?.to_owned();
 
                     if !p.is_null() {
                         libc::free(p as *mut _)
                     }
 
-                    info
+                    Ok(info)
                 })
         }
     }

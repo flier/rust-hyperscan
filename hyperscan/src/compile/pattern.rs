@@ -1,11 +1,9 @@
 use core::fmt;
 use core::str::FromStr;
 
-use failure::Error;
+use failure::{bail, Error};
 
 use crate::constants::*;
-
-use crate::errors::ErrorKind;
 
 /// Flags which modify the behaviour of the expression.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
@@ -83,7 +81,9 @@ impl CompileFlags {
                 'W' => flags |= HS_FLAG_UCP,
                 'C' => flags |= HS_FLAG_COMBINATION,
                 'Q' => flags |= HS_FLAG_QUIET,
-                _ => return Err(ErrorKind::CompilerError(format!("invalid compile flag: {}", c)).into()),
+                _ => {
+                    bail!("invalid compile flag: {}", c);
+                }
             }
         }
 
