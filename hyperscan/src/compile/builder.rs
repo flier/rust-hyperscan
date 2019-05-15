@@ -33,9 +33,7 @@ impl PlatformInfo {
         unsafe {
             let mut platform = mem::zeroed();
 
-            ffi::hs_populate_platform(&mut platform)
-                .ok()
-                .map(|_| PlatformInfo::from_ptr(Box::into_raw(Box::new(platform))))
+            ffi::hs_populate_platform(&mut platform).map(|_| PlatformInfo::from_ptr(Box::into_raw(Box::new(platform))))
         }
     }
 

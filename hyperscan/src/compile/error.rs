@@ -38,7 +38,7 @@ foreign_type! {
 }
 
 unsafe fn free_compile_error(err: *mut ffi::hs_compile_error_t) {
-    ffi::hs_free_compile_error(err).ok().unwrap();
+    ffi::hs_free_compile_error(err).expect("free compile error");
 }
 
 impl fmt::Display for Error {

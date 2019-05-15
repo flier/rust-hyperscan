@@ -30,28 +30,22 @@ impl SerializedDatabase {
     pub fn size(&self) -> Result<usize, Error> {
         let mut size = 0;
 
-        unsafe {
-            ffi::hs_serialized_database_size(self.0, self.1, &mut size)
-                .ok()
-                .map(|_| size)
-        }
+        unsafe { ffi::hs_serialized_database_size(self.0, self.1, &mut size).map(|_| size) }
     }
 
     pub fn info(&self) -> Result<String, Error> {
         let mut p = ptr::null_mut();
 
         unsafe {
-            ffi::hs_serialized_database_info(self.0, self.1, &mut p)
-                .ok()
-                .and_then(|_| {
-                    let info = CStr::from_ptr(p).to_str()?.to_owned();
+            ffi::hs_serialized_database_info(self.0, self.1, &mut p).and_then(|_| {
+                let info = CStr::from_ptr(p).to_str()?.to_owned();
 
-                    if !p.is_null() {
-                        libc::free(p as *mut _)
-                    }
+                if !p.is_null() {
+                    libc::free(p as *mut _)
+                }
 
-                    Ok(info)
-                })
+                Ok(info)
+            })
         }
     }
 }
@@ -63,7 +57,6 @@ impl<T> Database<T> {
 
         unsafe {
             ffi::hs_deserialize_database(bytes.as_ptr() as *const i8, bytes.len(), &mut db)
-                .ok()
                 .map(|_| Database::from_ptr(db))
         }
     }
@@ -77,7 +70,6 @@ impl<T> DatabaseRef<T> {
 
         unsafe {
             ffi::hs_serialize_database(self.as_ptr(), &mut ptr, &mut size)
-                .ok()
                 .map(|_| SerializedDatabase(ptr as *mut _, size))
         }
     }

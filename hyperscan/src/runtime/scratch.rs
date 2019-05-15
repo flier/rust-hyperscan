@@ -17,12 +17,12 @@ foreign_type! {
 }
 
 unsafe fn free_scratch(s: *mut ffi::hs_scratch_t) {
-    ffi::hs_free_scratch(s).ok().unwrap();
+    ffi::hs_free_scratch(s).expect("free scratch");
 }
 
 unsafe fn clone_scratch(s: *mut ffi::hs_scratch_t) -> *mut ffi::hs_scratch_t {
     let mut p = null_mut();
-    ffi::hs_clone_scratch(s, &mut p).ok().unwrap();
+    ffi::hs_clone_scratch(s, &mut p).expect("clone scratch");
     p
 }
 
@@ -35,16 +35,14 @@ impl Scratch {
     unsafe fn alloc<T>(db: &DatabaseRef<T>) -> Result<Scratch, Error> {
         let mut s = null_mut();
 
-        ffi::hs_alloc_scratch(db.as_ptr(), &mut s)
-            .ok()
-            .map(|_| Scratch::from_ptr(s))
+        ffi::hs_alloc_scratch(db.as_ptr(), &mut s).map(|_| Scratch::from_ptr(s))
     }
 
     /// Reallocate a "scratch" space for use by Hyperscan.
     unsafe fn realloc<T>(&mut self, db: &DatabaseRef<T>) -> Result<(), Error> {
         let mut p = self.as_ptr();
 
-        ffi::hs_alloc_scratch(db.as_ptr(), &mut p).ok().map(|_| {
+        ffi::hs_alloc_scratch(db.as_ptr(), &mut p).map(|_| {
             self.0 = NonNull::new_unchecked(p);
         })
     }
@@ -55,7 +53,7 @@ impl ScratchRef {
     pub fn size(&self) -> Result<usize, Error> {
         let mut size = 0;
 
-        unsafe { ffi::hs_scratch_size(self.as_ptr(), &mut size).ok().map(|_| size) }
+        unsafe { ffi::hs_scratch_size(self.as_ptr(), &mut size).map(|_| size) }
     }
 }
 

@@ -19,7 +19,7 @@ foreign_type! {
 }
 
 unsafe fn drop_database(db: *mut ffi::hs_database_t) {
-    ffi::hs_free_database(db).ok().unwrap();
+    ffi::hs_free_database(db).expect("drop database");
 }
 
 /// Block scan (non-streaming) database.
@@ -49,7 +49,7 @@ impl<T> DatabaseRef<T> {
     pub fn size(&self) -> Result<usize, Error> {
         let mut size: usize = 0;
 
-        unsafe { ffi::hs_database_size(self.as_ptr(), &mut size).ok().map(|_| size) }
+        unsafe { ffi::hs_database_size(self.as_ptr(), &mut size).map(|_| size) }
     }
 
     /// Utility function providing information about a database.
@@ -57,7 +57,7 @@ impl<T> DatabaseRef<T> {
         let mut p = ptr::null_mut();
 
         unsafe {
-            ffi::hs_database_info(self.as_ptr(), &mut p).ok().and_then(|_| {
+            ffi::hs_database_info(self.as_ptr(), &mut p).and_then(|_| {
                 let info = CStr::from_ptr(p).to_str()?.to_owned();
 
                 if !p.is_null() {

@@ -12,7 +12,7 @@ impl Database<Streaming> {
     pub fn stream_size(&self) -> Result<usize, Error> {
         let mut size: usize = 0;
 
-        unsafe { ffi::hs_stream_size(self.as_ptr(), &mut size).ok().map(|_| size) }
+        unsafe { ffi::hs_stream_size(self.as_ptr(), &mut size).map(|_| size) }
     }
 }
 
@@ -21,11 +21,7 @@ impl Database<Streaming> {
     pub fn open_stream(&self) -> Result<Stream, Error> {
         let mut s = null_mut();
 
-        unsafe {
-            ffi::hs_open_stream(self.as_ptr(), 0, &mut s)
-                .ok()
-                .map(|_| Stream::from_ptr(s))
-        }
+        unsafe { ffi::hs_open_stream(self.as_ptr(), 0, &mut s).map(|_| Stream::from_ptr(s)) }
     }
 }
 
@@ -44,7 +40,7 @@ fn drop_stream(_s: *mut ffi::hs_stream_t) {}
 unsafe fn clone_stream(s: *mut ffi::hs_stream_t) -> *mut ffi::hs_stream_t {
     let mut p = null_mut();
 
-    ffi::hs_copy_stream(&mut p, s).ok().unwrap();
+    ffi::hs_copy_stream(&mut p, s).expect("copy stream");
 
     p
 }

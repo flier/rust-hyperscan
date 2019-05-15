@@ -1,3 +1,5 @@
+use core::fmt;
+
 use failure::{AsFail, Error, Fail};
 
 use crate::compile::Error as CompileError;
@@ -71,11 +73,26 @@ impl From<ffi::hs_error_t> for HsError {
     }
 }
 
-pub trait AsResult {
+pub trait AsResult
+where
+    Self: Sized,
+{
     type Output;
-    type Error: AsFail;
+    type Error: fmt::Debug + AsFail;
 
     fn ok(self) -> Result<Self::Output, Self::Error>;
+
+    fn map<U, F: FnOnce(Self::Output) -> U>(self, op: F) -> Result<U, Self::Error> {
+        self.ok().map(op)
+    }
+
+    fn and_then<U, F: FnOnce(Self::Output) -> Result<U, Self::Error>>(self, op: F) -> Result<U, Self::Error> {
+        self.ok().and_then(op)
+    }
+
+    fn expect(self, msg: &str) -> Self::Output {
+        self.ok().expect(msg)
+    }
 }
 
 impl AsResult for ffi::hs_error_t {
