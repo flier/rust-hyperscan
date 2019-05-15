@@ -8,6 +8,10 @@ use crate::common::{Block, DatabaseRef, Vectored};
 use crate::errors::AsResult;
 use crate::runtime::{ScratchRef, Stream};
 
+pub trait Scannable: AsRef<[u8]> {}
+
+impl<T> Scannable for T where T: AsRef<[u8]> {}
+
 /// Definition of the match event callback function type.
 ///
 /// This callback function will be invoked whenever a match is located in the
@@ -39,15 +43,15 @@ impl DatabaseRef<Block> {
         context: Option<&D>,
     ) -> Result<(), Error>
     where
-        T: AsRef<[u8]>,
+        T: Scannable,
     {
-        unsafe {
-            let bytes = data.as_ref();
+        let data = data.as_ref();
 
+        unsafe {
             ffi::hs_scan(
                 self.as_ptr(),
-                bytes.as_ptr() as *const i8,
-                bytes.len() as u32,
+                data.as_ptr() as *const i8,
+                data.len() as u32,
                 0,
                 scratch.as_ptr(),
                 mem::transmute(callback),
@@ -60,27 +64,32 @@ impl DatabaseRef<Block> {
 
 impl DatabaseRef<Vectored> {
     /// pattern matching takes place for vectoring-mode pattern databases.
-    pub fn scan<D>(
+    pub fn scan<I, T, D>(
         &self,
-        data: &[&[u8]],
+        data: I,
         scratch: &ScratchRef,
         callback: MatchEventCallback<D>,
         context: Option<&D>,
-    ) -> Result<(), Error> {
-        let mut ptrs = Vec::with_capacity(data.len());
-        let mut lens = Vec::with_capacity(data.len());
+    ) -> Result<(), Error>
+    where
+        I: IntoIterator<Item = T>,
+        T: Scannable,
+    {
+        let (ptrs, lens): (Vec<_>, Vec<_>) = data
+            .into_iter()
+            .map(|buf| {
+                let buf = buf.as_ref();
 
-        for v in data {
-            ptrs.push(v.as_ptr() as *const i8);
-            lens.push(v.len() as c_uint);
-        }
+                (buf.as_ptr() as *const i8, buf.len() as c_uint)
+            })
+            .unzip();
 
         unsafe {
             ffi::hs_scan_vector(
                 self.as_ptr(),
                 ptrs.as_slice().as_ptr() as *const *const i8,
                 lens.as_slice().as_ptr() as *const _,
-                data.len() as u32,
+                ptrs.len() as u32,
                 0,
                 scratch.as_ptr(),
                 mem::transmute(callback),
@@ -101,15 +110,15 @@ impl Stream {
         context: Option<&D>,
     ) -> Result<(), Error>
     where
-        T: AsRef<[u8]>,
+        T: Scannable,
     {
-        let bytes = data.as_ref();
+        let data = data.as_ref();
 
         unsafe {
             ffi::hs_scan_stream(
                 self.as_ptr(),
-                bytes.as_ptr() as *const i8,
-                bytes.len() as u32,
+                data.as_ptr() as *const i8,
+                data.len() as u32,
                 0,
                 scratch.as_ptr(),
                 mem::transmute(callback),
@@ -166,7 +175,7 @@ pub mod tests {
 
         let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
 
-        db.scan::<()>(&data, &s, None, None).unwrap();
+        db.scan::<_, _, ()>(data, &s, None, None).unwrap();
 
         fn callback(id: u32, from: u64, to: u64, flags: u32, _: &VectoredDatabase) -> u32 {
             assert_eq!(id, 0);
@@ -180,7 +189,7 @@ pub mod tests {
         let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
 
         assert_eq!(
-            db.scan::<_>(&data, &s, Some(callback), Some(&db))
+            db.scan(data, &s, Some(callback), Some(&db))
                 .err()
                 .unwrap()
                 .downcast_ref::<HsError>(),

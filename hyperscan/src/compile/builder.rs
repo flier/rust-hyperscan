@@ -79,29 +79,29 @@ impl<T: Mode> Database<T> {
 }
 
 /// The regular expression pattern database builder.
-pub trait Builder<T> {
+pub trait Builder {
     /// This is the function call with which an expression is compiled into
     /// a Hyperscan database which can be passed to the runtime functions
-    fn build(&self) -> Result<Database<T>, Error> {
-        self.build_for_platform(None)
+    fn build<T: Mode>(&self) -> Result<Database<T>, Error> {
+        self.for_platform(None)
     }
 
-    fn build_for_platform(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error>;
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error>;
 }
 
-impl<T: Mode> Builder<T> for Pattern {
+impl Builder for Pattern {
     ///
     /// The basic regular expression compiler.
     ///
     /// / This is the function call with which an expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
-    fn build_for_platform(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
         Database::compile(&self.expression, self.flags, platform)
     }
 }
 
-impl<T: Mode> Builder<T> for Patterns {
+impl Builder for Patterns {
     ///
     /// The multiple regular expression compiler.
     ///
@@ -110,7 +110,7 @@ impl<T: Mode> Builder<T> for Patterns {
     /// Each expression can be labelled with a unique integer
     // which is passed into the match callback to identify the pattern that has matched.
     ///
-    fn build_for_platform(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
         let mut expressions = Vec::with_capacity(self.len());
         let mut ptrs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());

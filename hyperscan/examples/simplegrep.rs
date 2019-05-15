@@ -70,7 +70,7 @@ fn main() -> Result<(), Error> {
     let pattern = pattern!(args.next().unwrap(), flags => CompileFlags::DOTALL);
     let input_filename = args.next().unwrap();
 
-    let database: BlockDatabase = pattern.build().context("compile pattern")?;
+    let database = pattern.build::<Block>().context("compile pattern")?;
 
     // Next, we read the input data file into a buffer.
     let input_data = read_input_data(&input_filename).context("read input file")?;
@@ -104,7 +104,7 @@ fn main() -> Result<(), Error> {
     };
 
     let _ = database
-        .scan(input_data.as_str(), &scratch, Some(event_handler), Some(&pattern))
+        .scan(&input_data, &scratch, Some(event_handler), Some(&pattern))
         .context("scan input buffer")?;
 
     Ok(())

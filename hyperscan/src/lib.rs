@@ -51,7 +51,7 @@ pub use crate::compile::{
 };
 pub use crate::constants::*;
 pub use crate::errors::HsError;
-pub use crate::runtime::{Scratch, ScratchRef, Stream, StreamRef};
+pub use crate::runtime::{Scannable, Scratch, ScratchRef, Stream, StreamRef};
 
 #[cfg(test)]
 extern crate regex;
