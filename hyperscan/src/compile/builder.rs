@@ -68,7 +68,7 @@ impl<T: Mode> Database<T> {
                 expr.as_bytes_with_nul().as_ptr() as *const i8,
                 flags.bits(),
                 T::ID,
-                platform.map_or_else(null_mut, |p| p.as_ptr()),
+                platform.map_or_else(null_mut, ForeignTypeRef::as_ptr),
                 &mut db,
                 &mut err,
             )
@@ -138,7 +138,7 @@ impl<T: Mode> Builder<T> for Patterns {
                 ids.as_ptr(),
                 self.len() as u32,
                 T::ID,
-                platform.map_or_else(null_mut, |p| p.as_ptr()),
+                platform.map_or_else(null_mut, ForeignTypeRef::as_ptr),
                 &mut db,
                 &mut err,
             )

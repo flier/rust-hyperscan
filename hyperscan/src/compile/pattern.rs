@@ -110,19 +110,19 @@ impl From<Ext> for ffi::hs_expr_ext_t {
         let mut flags = 0;
 
         if ext.min_offset.is_some() {
-            flags |= ffi::HS_EXT_FLAG_MIN_OFFSET as u64;
+            flags |= u64::from(ffi::HS_EXT_FLAG_MIN_OFFSET);
         }
         if ext.max_offset.is_some() {
-            flags |= ffi::HS_EXT_FLAG_MAX_OFFSET as u64;
+            flags |= u64::from(ffi::HS_EXT_FLAG_MAX_OFFSET);
         }
         if ext.min_length.is_some() {
-            flags |= ffi::HS_EXT_FLAG_MIN_LENGTH as u64;
+            flags |= u64::from(ffi::HS_EXT_FLAG_MIN_LENGTH);
         }
         if ext.edit_distance.is_some() {
-            flags |= ffi::HS_EXT_FLAG_EDIT_DISTANCE as u64;
+            flags |= u64::from(ffi::HS_EXT_FLAG_EDIT_DISTANCE);
         }
         if ext.hamming_distance.is_some() {
-            flags |= ffi::HS_EXT_FLAG_HAMMING_DISTANCE as u64;
+            flags |= u64::from(ffi::HS_EXT_FLAG_HAMMING_DISTANCE);
         }
 
         ffi::hs_expr_ext_t {
