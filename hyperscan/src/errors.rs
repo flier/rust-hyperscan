@@ -17,7 +17,7 @@ pub enum HsError {
     ScanTerminated,
 
     #[fail(display = "The pattern compiler failed with more detail, {}.", _0)]
-    CompilerError(CompilerError),
+    CompileError(CompileError),
 
     #[fail(display = "The given database was built for a different version of Hyperscan.")]
     DbVersionError,
@@ -58,7 +58,7 @@ impl From<ffi::hs_error_t> for HsError {
             ffi::HS_INVALID => Invalid,
             ffi::HS_NOMEM => NoMem,
             ffi::HS_SCAN_TERMINATED => ScanTerminated,
-            // ffi::HS_COMPILER_ERROR => HsError::CompilerError,
+            // ffi::HS_COMPILER_ERROR => HsError::CompileError,
             ffi::HS_DB_VERSION_ERROR => DbVersionError,
             ffi::HS_DB_PLATFORM_ERROR => DbPlatformError,
             ffi::HS_DB_MODE_ERROR => DbModeError,
@@ -95,7 +95,7 @@ impl AsResult for ffi::hs_error_t {
 
 foreign_type! {
     /// Providing details of the compile error condition.
-    pub type CompilerError: Send + Sync {
+    pub type CompileError: Send + Sync {
         type CType = ffi::hs_compile_error_t;
 
         fn drop = free_compile_error;
@@ -106,28 +106,28 @@ unsafe fn free_compile_error(err: *mut ffi::hs_compile_error_t) {
     ffi::hs_free_compile_error(err).ok().unwrap();
 }
 
-impl fmt::Display for CompilerError {
+impl fmt::Display for CompileError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(self.message())
     }
 }
 
-impl fmt::Debug for CompilerError {
+impl fmt::Debug for CompileError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("CompilerError")
+        f.debug_struct("CompileError")
             .field("message", &self.message())
             .field("expression", &self.expression())
             .finish()
     }
 }
 
-impl PartialEq for CompilerError {
+impl PartialEq for CompileError {
     fn eq(&self, other: &Self) -> bool {
         self.as_ptr() == other.as_ptr()
     }
 }
 
-impl CompilerError {
+impl CompileError {
     unsafe fn as_ref(&self) -> &ffi::hs_compile_error_t {
         self.as_ptr().as_ref().unwrap()
     }
@@ -146,9 +146,9 @@ macro_rules! check_compile_error {
         if $crate::HS_SUCCESS != $expr {
             return match $expr {
                 $crate::HS_COMPILER_ERROR => {
-                    let msg = $crate::errors::CompilerError::from_ptr($err);
+                    let msg = $crate::errors::CompileError::from_ptr($err);
 
-                    Err($crate::errors::HsError::CompilerError(msg).into())
+                    Err($crate::errors::HsError::CompileError(msg).into())
                 }
                 _ => Err($crate::errors::HsError::from($expr).into()),
             };

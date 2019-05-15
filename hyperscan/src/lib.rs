@@ -47,7 +47,7 @@ pub use crate::common::{
 };
 pub use crate::compile::{Builder, CompileFlags, ExpressionInfo, Pattern, Patterns, PlatformInfo, PlatformInfoRef};
 pub use crate::constants::*;
-pub use crate::errors::{CompilerError, HsError};
+pub use crate::errors::{CompileError, HsError};
 pub use crate::runtime::{Scratch, ScratchRef, Stream, StreamRef};
 
 #[cfg(test)]
