@@ -1,4 +1,5 @@
 use core::mem;
+use core::pin::Pin;
 
 use failure::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
@@ -33,16 +34,17 @@ impl<T> Scannable for T where T: AsRef<[u8]> {}
 ///
 /// Fn(id: u32, from: u64, to: u64, flags: u32) -> bool
 ///
-pub type MatchEventCallback<D> = Option<fn(id: u32, from: u64, to: u64, flags: u32, data: &D) -> u32>;
+pub type MatchEventCallback<'a, D> =
+    Option<fn(id: u32, from: u64, to: u64, flags: u32, context: Option<Pin<&'a mut D>>) -> u32>;
 
 impl DatabaseRef<Block> {
     /// pattern matching takes place for block-mode pattern databases.
-    pub fn scan<T, D>(
+    pub fn scan<'a, T, D>(
         &self,
         data: T,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<D>,
-        context: Option<&D>,
+        callback: MatchEventCallback<'a, D>,
+        context: Option<Pin<&'a mut D>>,
     ) -> Result<(), Error>
     where
         T: Scannable,
@@ -66,12 +68,12 @@ impl DatabaseRef<Block> {
 
 impl DatabaseRef<Vectored> {
     /// pattern matching takes place for vectoring-mode pattern databases.
-    pub fn scan<I, T, D>(
+    pub fn scan<'a, I, T, D>(
         &self,
         data: I,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<D>,
-        context: Option<&D>,
+        callback: MatchEventCallback<'a, D>,
+        context: Option<Pin<&'a mut D>>,
     ) -> Result<(), Error>
     where
         I: IntoIterator<Item = T>,
@@ -104,12 +106,12 @@ impl DatabaseRef<Vectored> {
 
 impl Stream {
     /// pattern matching takes place for stream-mode pattern databases.
-    pub fn scan<T, D>(
+    pub fn scan<'a, T, D>(
         &self,
         data: T,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<D>,
-        context: Option<&D>,
+        callback: MatchEventCallback<'a, D>,
+        context: Option<Pin<&'a mut D>>,
     ) -> Result<(), Error>
     where
         T: Scannable,
@@ -133,6 +135,8 @@ impl Stream {
 
 #[cfg(test)]
 pub mod tests {
+    use core::pin::Pin;
+
     use crate::common::*;
     use crate::compile::Builder;
     use crate::errors::HsError;
@@ -146,7 +150,7 @@ pub mod tests {
 
         db.scan::<_, ()>("foo test bar", &s, None, None).unwrap();
 
-        fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
+        fn callback<T>(id: u32, from: u64, to: u64, flags: u32, _: T) -> u32 {
             assert_eq!(id, 0);
             assert_eq!(from, 4);
             assert_eq!(to, 8);
@@ -156,7 +160,7 @@ pub mod tests {
         };
 
         assert_eq!(
-            db.scan("foo test bar".as_bytes(), &s, Some(callback), Some(&db))
+            db.scan::<_, ()>("foo test bar".as_bytes(), &s, Some(callback), None)
                 .err()
                 .unwrap()
                 .downcast_ref::<HsError>(),
@@ -175,11 +179,15 @@ pub mod tests {
 
         db.scan::<_, _, ()>(data, &s, None, None).unwrap();
 
-        fn callback(id: u32, from: u64, to: u64, flags: u32, _: &VectoredDatabase) -> u32 {
+        let mut matches = vec![];
+
+        fn callback<'a>(id: u32, from: u64, to: u64, flags: u32, matches: Option<Pin<&'a mut Vec<(u64, u64)>>>) -> u32 {
             assert_eq!(id, 0);
             assert_eq!(from, 3);
             assert_eq!(to, 7);
             assert_eq!(flags, 0);
+
+            matches.unwrap().push((from, to));
 
             1
         };
@@ -187,7 +195,7 @@ pub mod tests {
         let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
 
         assert_eq!(
-            db.scan(data, &s, Some(callback), Some(&db))
+            db.scan(data, &s, Some(callback), Some(Pin::new(&mut matches)))
                 .err()
                 .unwrap()
                 .downcast_ref::<HsError>(),
@@ -205,20 +213,23 @@ pub mod tests {
         let st = db.open_stream().unwrap();
 
         let data = vec!["foo", "test", "bar"];
+        let mut matches = vec![];
 
-        fn callback(id: u32, from: u64, to: u64, flags: u32, _: &StreamingDatabase) -> u32 {
+        fn callback<'a>(id: u32, from: u64, to: u64, flags: u32, matches: Option<Pin<&'a mut Vec<(u64, u64)>>>) -> u32 {
             assert_eq!(id, 0);
             assert_eq!(from, 0);
             assert_eq!(to, 7);
             assert_eq!(flags, 0);
 
+            matches.unwrap().push((from, to));
+
             0
         }
 
         for d in data {
-            st.scan(d, &s, Some(callback), Some(&db)).unwrap();
+            st.scan(d, &s, Some(callback), Some(Pin::new(&mut matches))).unwrap();
         }
 
-        st.close(&s, Some(callback), Some(&db)).unwrap();
+        st.close(&s, Some(callback), Some(Pin::new(&mut matches))).unwrap();
     }
 }

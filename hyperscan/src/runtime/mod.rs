@@ -1,3 +1,5 @@
+#[cfg(unstable)]
+mod pattern;
 mod scan;
 mod scratch;
 mod stream;

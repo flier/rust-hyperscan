@@ -28,6 +28,7 @@ use std::fs::File;
 use std::io;
 use std::io::Read;
 use std::path::Path;
+use std::pin::Pin;
 use std::process::exit;
 
 use failure::{Error, ResultExt};
@@ -97,14 +98,16 @@ fn main() -> Result<(), Error> {
     println!("Scanning {} bytes with Hyperscan", input_data.len());
 
     // This is the function that will be called for each match that occurs.
-    fn event_handler(_: u32, _: u64, to: u64, _: u32, pattern: &hyperscan::Pattern) -> u32 {
-        println!("Match for pattern \"{}\" at offset {}", &pattern, to);
+    fn event_handler<'a>(_: u32, _: u64, to: u64, _: u32, expression: Option<Pin<&'a mut String>>) -> u32 {
+        println!("Match for pattern \"{}\" at offset {}", expression.unwrap(), to);
 
         0
     };
 
+    let mut expr = pattern.expression;
+
     let _ = database
-        .scan(&input_data, &scratch, Some(event_handler), Some(&pattern))
+        .scan(&input_data, &scratch, Some(event_handler), Some(Pin::new(&mut expr)))
         .context("scan input buffer")?;
 
     Ok(())

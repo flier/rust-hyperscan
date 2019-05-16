@@ -28,3 +28,6 @@ getopts = "0.2"
 pcap = "0.7"
 pnet = "0.22"
 byteorder = "1.2"
+
+[build-dependencies]
+rustc_version = "0.2"

@@ -1,4 +1,5 @@
 use core::mem;
+use core::pin::Pin;
 use core::ptr::null_mut;
 
 use failure::Error;
@@ -49,11 +50,11 @@ unsafe fn clone_stream(s: *mut ffi::hs_stream_t) -> *mut ffi::hs_stream_t {
 
 impl StreamRef {
     /// Reset a stream to an initial state.
-    pub fn reset<D>(
+    pub fn reset<'a, D>(
         &self,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<D>,
-        context: Option<&D>,
+        callback: MatchEventCallback<'a, D>,
+        context: Option<Pin<&'a mut D>>,
     ) -> Result<(), Error> {
         unsafe {
             ffi::hs_reset_stream(
@@ -70,11 +71,11 @@ impl StreamRef {
 
 impl Stream {
     /// Close a stream.
-    pub fn close<D>(
+    pub fn close<'a, D>(
         self,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<D>,
-        context: Option<&D>,
+        callback: MatchEventCallback<'a, D>,
+        context: Option<Pin<&'a mut D>>,
     ) -> Result<(), Error> {
         unsafe {
             ffi::hs_close_stream(
