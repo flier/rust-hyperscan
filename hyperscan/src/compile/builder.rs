@@ -156,6 +156,11 @@ pub mod tests {
     use crate::compile::Flags;
 
     #[test]
+    pub fn test_platform() {
+        assert!(PlatformInfo::is_valid().is_ok())
+    }
+
+    #[test]
     fn test_database_compile() {
         let _ = pretty_env_logger::try_init();
         let info = PlatformInfo::host().unwrap();

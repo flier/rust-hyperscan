@@ -60,9 +60,7 @@ impl<T> DatabaseRef<T> {
             ffi::hs_database_info(self.as_ptr(), &mut p).and_then(|_| {
                 let info = CStr::from_ptr(p).to_str()?.to_owned();
 
-                if !p.is_null() {
-                    libc::free(p as *mut _)
-                }
+                libc::free(p as *mut _);
 
                 Ok(info)
             })
@@ -76,9 +74,9 @@ pub mod tests {
 
     use crate::common::Mode;
     use crate::common::*;
-    use crate::compile::{Flags, PlatformInfo};
+    use crate::compile::Flags;
 
-    const DATABASE_SIZE: usize = 872;
+    pub const DATABASE_SIZE: usize = 872;
 
     pub fn validate_database_info(info: &str) -> (Vec<u8>, Option<String>, Option<String>) {
         if let Some(captures) = Regex::new(r"^Version:\s(\d\.\d\.\d)\sFeatures:\s+(\w+)?\sMode:\s(\w+)$")
@@ -111,19 +109,6 @@ pub mod tests {
 
     pub fn validate_database<T: Mode>(db: &DatabaseRef<T>) {
         validate_database_with_size(db, DATABASE_SIZE);
-    }
-
-    pub fn validate_serialized_database(data: &SerializedDatabase) {
-        assert!(data.size().unwrap() >= DATABASE_SIZE);
-
-        let db_info = data.info().unwrap();
-
-        validate_database_info(&db_info);
-    }
-
-    #[test]
-    pub fn test_platform() {
-        assert!(PlatformInfo::is_valid().is_ok())
     }
 
     #[test]

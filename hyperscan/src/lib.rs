@@ -42,7 +42,7 @@ mod compile;
 mod runtime;
 
 pub use crate::common::{
-    Block, BlockDatabase, Database, DatabaseRef, Mode, SerializedDatabase, Streaming, StreamingDatabase, Vectored,
+    Block, BlockDatabase, CBuf, Database, DatabaseRef, Mode, Serialized, Streaming, StreamingDatabase, Vectored,
     VectoredDatabase,
 };
 pub use crate::compile::{
