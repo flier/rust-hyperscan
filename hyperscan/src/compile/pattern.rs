@@ -101,7 +101,7 @@ impl fmt::Display for Flags {
 }
 
 /// A structure containing additional parameters related to an expression.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Ext {
     /// The minimum end offset in the data stream at which this expression should match successfully.
     pub min_offset: Option<u64>,
@@ -151,14 +151,14 @@ impl From<Ext> for ffi::hs_expr_ext_t {
 }
 
 /// Pattern that has matched.
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Pattern {
     /// The expression to parse.
     pub expression: String,
     /// Flags which modify the behaviour of the expression.
     pub flags: Flags,
     /// ID number to be associated with the corresponding pattern in the expressions array.
-    pub id: usize,
+    pub id: Option<usize>,
     /// Extended behaviour for this pattern
     pub ext: Ext,
 }
@@ -166,45 +166,53 @@ pub struct Pattern {
 impl Pattern {
     /// Parse a expression to a pattern
     pub fn parse(s: &str) -> Result<Pattern, Error> {
-        unsafe {
-            let (id, expr) = match s.find(':') {
-                Some(off) => (s.get_unchecked(0..off).parse()?, s.get_unchecked(off + 1..s.len())),
-                None => (0, s),
-            };
+        let (id, expr) = match s.find(':') {
+            Some(off) => (Some(s[..off].parse()?), &s[off + 1..]),
+            None => (None, s),
+        };
 
-            let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
-                (true, Some(end)) if end > 0 => Pattern {
-                    expression: expr.get_unchecked(1..end).into(),
-                    flags: expr.get_unchecked(end + 1..expr.len()).parse()?,
-                    id,
-                    ext: Ext::default(),
-                },
+        let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
+            (true, Some(end)) if end > 0 => Pattern {
+                expression: expr[1..end].into(),
+                flags: expr[end + 1..].parse()?,
+                id,
+                ext: Ext::default(),
+            },
 
-                _ => Pattern {
-                    expression: String::from(expr),
-                    flags: Flags::empty(),
-                    id,
-                    ext: Ext::default(),
-                },
-            };
+            _ => Pattern {
+                expression: expr.into(),
+                flags: Flags::empty(),
+                id,
+                ext: Ext::default(),
+            },
+        };
 
-            debug!("pattern `{}` parsed to `{}`", s, pattern);
+        debug!("pattern `{}` parsed to `{}`", s, pattern);
 
-            Ok(pattern)
-        }
+        Ok(pattern)
     }
 }
 
 impl fmt::Display for Pattern {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}:/{}/{}",
-            self.id,
-            regex_syntax::escape(self.expression.as_str()),
-            self.flags
-        )
+        if let Some(id) = self.id {
+            write!(f, "{}:", id)?;
+        }
+
+        let expr = regex_syntax::escape(self.expression.as_str());
+
+        if self.id.is_some() || !self.flags.is_empty() {
+            write!(f, "/{}/", expr)?;
+        } else {
+            write!(f, "{}", expr)?;
+        }
+
+        if !self.flags.is_empty() {
+            write!(f, "{}", self.flags)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -223,17 +231,28 @@ pub type Patterns = Vec<Pattern>;
 /// Define `Pattern` with flags
 #[macro_export]
 macro_rules! pattern {
-    ($expr:expr) => {{
-        pattern!($expr, flags => Default::default(), id => 0)
+    ( $expr:expr ) => {{
+        pattern! { $expr ; $crate::CompileFlags::default() }
     }};
-    ($expr:expr, flags => $flags:expr) => {{
-        pattern!($expr, flags => $flags, id => 0)
+    ( $expr:expr ; $( $flag:ident )|* ) => {{
+        pattern! { $expr ; $( $crate::CompileFlags:: $flag )|* }
     }};
-    ($expr:expr, flags => $flags:expr, id => $id:expr) => {{
+    ( $expr:expr ; $flags:expr ) => {{
         $crate::Pattern {
             expression: $expr.into(),
             flags: $flags,
-            id: $id,
+            id: None,
+            ext: $crate::ExpressionExt::default(),
+        }
+    }};
+    ( $id:literal => $expr:expr ; $( $flag:ident )|* ) => {{
+        pattern! { $id => $expr ; $( $crate::CompileFlags:: $flag )|* }
+    }};
+    ( $id:literal => $expr:expr ; $flags:expr ) => {{
+        $crate::Pattern {
+            expression: $expr.into(),
+            flags: $flags,
+            id: Some($id),
             ext: $crate::ExpressionExt::default(),
         }
     }};
@@ -242,16 +261,14 @@ macro_rules! pattern {
 /// Define multi `Pattern` with flags and ID
 #[macro_export]
 macro_rules! patterns {
-    ( [ $( $expr:expr ), * ] ) => {{
-        patterns!([ $( $expr ), * ], flags => Default::default())
-    }};
-    ( [ $( $expr:expr ), * ], flags => $flags:expr ) => {{
-        let mut v = Vec::new();
-        $(
-            v.push(pattern!{$expr, flags => $flags, id => v.len() + 1});
-        )*
-
-        v
+    ( $( $expr:expr ),* ) => {
+        vec![ $( pattern! { $expr } ),* ]
+    };
+    ( $( $expr:expr ),* ; $( $flag:ident )|* ) => {
+        patterns! { $( $expr ),*; $( $crate::CompileFlags:: $flag )|* }
+    };
+    ( $( $expr:expr ),* ; $flags:expr ) => {{
+        vec![ $( pattern! { $expr ; $flags } ),* ]
     }};
 }
 
@@ -283,39 +300,45 @@ mod tests {
 
         let p = Pattern::parse("test").unwrap();
 
+        assert_eq!(p, pattern! { "test" });
         assert_eq!(p.expression, "test");
         assert!(p.flags.is_empty());
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let p = Pattern::parse("/test/").unwrap();
 
+        assert_eq!(p, pattern! { "test" });
         assert_eq!(p.expression, "test");
         assert!(p.flags.is_empty());
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let p = Pattern::parse("/test/i").unwrap();
 
+        assert_eq!(p, pattern! { "test"; CASELESS });
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, Flags::CASELESS);
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let p = Pattern::parse("3:/test/i").unwrap();
 
+        assert_eq!(p, pattern! { 3 => "test"; CASELESS });
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, Flags::CASELESS);
-        assert_eq!(p.id, 3);
+        assert_eq!(p.id, Some(3));
 
         let p = Pattern::parse("test/i").unwrap();
 
+        assert_eq!(p, pattern! { "test/i" });
         assert_eq!(p.expression, "test/i");
         assert!(p.flags.is_empty());
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let p = Pattern::parse("/t/e/s/t/i").unwrap();
 
+        assert_eq!(p, pattern! { "t/e/s/t"; CASELESS });
         assert_eq!(p.expression, "t/e/s/t");
         assert_eq!(p.flags, Flags::CASELESS);
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
     }
 
     #[test]
@@ -326,7 +349,7 @@ mod tests {
 
         assert_eq!(p.expression, "test");
         assert!(p.flags.is_empty());
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let info = p.info().unwrap();
 
@@ -345,11 +368,11 @@ mod tests {
     fn test_pattern_build_with_flags() {
         let _ = pretty_env_logger::try_init();
 
-        let p = &pattern! {"test", flags => Flags::CASELESS};
+        let p = &pattern! {"test"; CASELESS};
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, Flags::CASELESS);
-        assert_eq!(p.id, 0);
+        assert_eq!(p.id, None);
 
         let db: BlockDatabase = p.build().unwrap();
 
@@ -360,7 +383,7 @@ mod tests {
     fn test_patterns_build() {
         let _ = pretty_env_logger::try_init();
 
-        let db: BlockDatabase = patterns!(["test", "foo", "bar"]).build().unwrap();
+        let db: BlockDatabase = patterns!("test", "foo", "bar").build().unwrap();
 
         validate_database_with_size(&db, DATABASE_SIZE);
     }
@@ -369,9 +392,7 @@ mod tests {
     fn test_patterns_build_with_flags() {
         let _ = pretty_env_logger::try_init();
 
-        let db: BlockDatabase = patterns!(["test", "foo", "bar"], flags => Flags::CASELESS|Flags::DOTALL)
-            .build()
-            .unwrap();
+        let db: BlockDatabase = patterns!("test", "foo", "bar"; CASELESS | DOTALL).build().unwrap();
 
         validate_database_with_size(&db, DATABASE_SIZE);
     }

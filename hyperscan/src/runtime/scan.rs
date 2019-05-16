@@ -134,16 +134,14 @@ impl Stream {
 #[cfg(test)]
 pub mod tests {
     use crate::common::*;
-    use crate::compile::{Builder, Flags};
+    use crate::compile::Builder;
     use crate::errors::HsError;
 
     #[test]
     fn test_block_scan() {
         let _ = pretty_env_logger::try_init();
 
-        let db: BlockDatabase = pattern! {"test", flags => Flags::CASELESS|Flags::SOM_LEFTMOST}
-            .build()
-            .unwrap();
+        let db: BlockDatabase = pattern! {"test"; CASELESS | SOM_LEFTMOST}.build().unwrap();
         let s = db.alloc().unwrap();
 
         db.scan::<_, ()>("foo test bar", &s, None, None).unwrap();
@@ -170,9 +168,7 @@ pub mod tests {
     fn test_vectored_scan() {
         let _ = pretty_env_logger::try_init();
 
-        let db: VectoredDatabase = pattern! {"test", flags => Flags::CASELESS|Flags::SOM_LEFTMOST}
-            .build()
-            .unwrap();
+        let db: VectoredDatabase = pattern! {"test"; CASELESS|SOM_LEFTMOST}.build().unwrap();
         let s = db.alloc().unwrap();
 
         let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
@@ -203,7 +199,7 @@ pub mod tests {
     fn test_streaming_scan() {
         let _ = pretty_env_logger::try_init();
 
-        let db: StreamingDatabase = pattern! {"test", flags => Flags::CASELESS}.build().unwrap();
+        let db: StreamingDatabase = pattern! {"test"; CASELESS}.build().unwrap();
 
         let s = db.alloc().unwrap();
         let st = db.open_stream().unwrap();

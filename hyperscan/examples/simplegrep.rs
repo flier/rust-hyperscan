@@ -67,7 +67,7 @@ fn main() -> Result<(), Error> {
     // explaining why the pattern didn't compile.
     //
     let _ = args.next();
-    let pattern = pattern!(args.next().unwrap(), flags => CompileFlags::DOTALL);
+    let pattern = pattern! { args.next().unwrap(); DOTALL };
     let input_filename = args.next().unwrap();
 
     let database = pattern.build::<Block>().context("compile pattern")?;

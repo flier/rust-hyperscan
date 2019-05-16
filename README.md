@@ -34,7 +34,7 @@ fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
 }
 
 fn main() {
-    let pattern = &pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST};
+    let pattern = &pattern! {"test"; CASELESS | SOM_LEFTMOST};
     let db: BlockDatabase = pattern.build().unwrap();
     let scratch = db.alloc().unwrap();
 

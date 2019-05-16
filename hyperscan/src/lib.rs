@@ -20,14 +20,14 @@
 //! }
 //!
 //! fn main() {
-//!     let pattern = &pattern!{"test", flags => CompileFlags::CASELESS | CompileFlags::SOM_LEFTMOST};
+//!     let pattern = &pattern! {"test"; CASELESS | SOM_LEFTMOST};
 //!     let db: BlockDatabase = pattern.build().unwrap();
 //!     let scratch = db.alloc().unwrap();
 //!
 //!     db.scan("some test data", &scratch, Some(callback), Some(&db)).unwrap();
 //! }
 //! ```
-#![deny(warnings, missing_docs, rust_2018_compatibility, rust_2018_idioms)]
+#![deny(missing_docs, rust_2018_compatibility, rust_2018_idioms)]
 
 #[macro_use]
 extern crate log;

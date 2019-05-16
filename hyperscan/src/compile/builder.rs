@@ -76,12 +76,12 @@ impl Builder for Patterns {
         let mut flags = Vec::with_capacity(self.len());
         let mut ids = Vec::with_capacity(self.len());
 
-        for pattern in self {
+        for (i, pattern) in self.iter().enumerate() {
             let expr = CString::new(pattern.expression.as_str())?;
 
             expressions.push(expr);
             flags.push(pattern.flags.bits() as c_uint);
-            ids.push(pattern.id as c_uint);
+            ids.push(pattern.id.unwrap_or(i) as u32);
         }
 
         for expr in &expressions {
