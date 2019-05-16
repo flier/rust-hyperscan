@@ -5,6 +5,7 @@ use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
 use crate::common::{Database, DatabaseRef};
 use crate::errors::AsResult;
+use crate::ffi;
 
 foreign_type! {
     /// A large enough region of scratch space to support a given database.

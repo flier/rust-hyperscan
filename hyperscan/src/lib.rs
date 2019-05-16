@@ -27,11 +27,14 @@
 //!     db.scan("some test data", &scratch, Some(callback), Some(&db)).unwrap();
 //! }
 //! ```
+#![deny(warnings, missing_docs, rust_2018_compatibility, rust_2018_idioms)]
 
 #[macro_use]
 extern crate log;
 
-extern crate hyperscan_sys as ffi;
+mod ffi {
+    pub use hyperscan_sys::*;
+}
 
 mod constants;
 #[macro_use]
@@ -42,7 +45,7 @@ mod compile;
 mod runtime;
 
 pub use crate::common::{
-    Block, BlockDatabase, CBuf, Database, DatabaseRef, Mode, Serialized, Streaming, StreamingDatabase, Vectored,
+    Block, BlockDatabase, CBuffer, Database, DatabaseRef, Mode, Serialized, Streaming, StreamingDatabase, Vectored,
     VectoredDatabase,
 };
 pub use crate::compile::{
@@ -52,9 +55,6 @@ pub use crate::compile::{
 pub use crate::constants::*;
 pub use crate::errors::HsError;
 pub use crate::runtime::{Scannable, Scratch, ScratchRef, Stream, StreamRef};
-
-#[cfg(test)]
-extern crate regex;
 
 #[cfg(test)]
 mod tests {

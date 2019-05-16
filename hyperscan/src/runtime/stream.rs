@@ -6,9 +6,11 @@ use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
 use crate::common::{Database, Streaming};
 use crate::errors::AsResult;
+use crate::ffi;
 use crate::runtime::{MatchEventCallback, ScratchRef};
 
 impl Database<Streaming> {
+    /// Provides the size of the stream state allocated by a single stream opened against the given database.
     pub fn stream_size(&self) -> Result<usize, Error> {
         let mut size: usize = 0;
 
@@ -46,6 +48,7 @@ unsafe fn clone_stream(s: *mut ffi::hs_stream_t) -> *mut ffi::hs_stream_t {
 }
 
 impl StreamRef {
+    /// Reset a stream to an initial state.
     pub fn reset<D>(
         &self,
         scratch: &ScratchRef,
@@ -66,6 +69,7 @@ impl StreamRef {
 }
 
 impl Stream {
+    /// Close a stream.
     pub fn close<D>(
         self,
         scratch: &ScratchRef,

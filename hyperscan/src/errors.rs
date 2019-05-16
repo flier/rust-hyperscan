@@ -3,49 +3,64 @@ use core::fmt;
 use failure::{AsFail, Error, Fail};
 
 use crate::compile::Error as CompileError;
+use crate::ffi;
 
 /// Error Codes
 #[derive(Debug, PartialEq, Fail)]
 pub enum HsError {
+    /// A parameter passed to this function was invalid.
     #[fail(display = "A parameter passed to this function was invalid.")]
     Invalid,
 
+    /// A memory allocation failed.
     #[fail(display = "A memory allocation failed.")]
     NoMem,
 
+    /// The engine was terminated by callback.
     #[fail(display = "The engine was terminated by callback.")]
     ScanTerminated,
 
+    /// The pattern compiler failed with more detail.
     #[fail(display = "The pattern compiler failed with more detail, {}.", _0)]
     CompileError(CompileError),
 
+    /// The given database was built for a different version of Hyperscan.
     #[fail(display = "The given database was built for a different version of Hyperscan.")]
     DbVersionError,
 
+    /// The given database was built for a different platform (i.e., CPU type).
     #[fail(display = "The given database was built for a different platform (i.e., CPU type).")]
     DbPlatformError,
 
+    /// The given database was built for a different mode of operation.
     #[fail(display = "The given database was built for a different mode of operation.")]
     DbModeError,
 
+    /// A parameter passed to this function was not correctly aligned.
     #[fail(display = "A parameter passed to this function was not correctly aligned.")]
     BadAlign,
 
+    /// The memory allocator did not correctly return memory suitably aligned.
     #[fail(display = "The memory allocator did not correctly return memory suitably aligned.")]
     BadAlloc,
 
+    /// The scratch region was already in use.
     #[fail(display = "The scratch region was already in use.")]
     ScratchInUse,
 
+    /// Unsupported CPU architecture.
     #[fail(display = "Unsupported CPU architecture.")]
     ArchError,
 
+    /// Provided buffer was too small.
     #[fail(display = "Provided buffer was too small.")]
     InsufficientSpace,
 
+    /// Unexpected internal error.
     #[fail(display = "Unexpected internal error.")]
     UnknownError,
 
+    /// Unknown error code
     #[fail(display = "Unknown error code: {}", _0)]
     Code(ffi::hs_error_t),
 }

@@ -4,18 +4,32 @@ use core::str::FromStr;
 use bitflags::bitflags;
 use failure::{bail, Error};
 
+use crate::ffi;
+
 bitflags! {
+    /// Pattern flags
     pub struct Flags: u32 {
+        /// Set case-insensitive matching.
         const CASELESS = ffi::HS_FLAG_CASELESS;
+        /// Matching a `.` will not exclude newlines.
         const DOTALL = ffi::HS_FLAG_DOTALL;
+        /// Set multi-line anchoring.
         const MULTILINE = ffi::HS_FLAG_MULTILINE;
+        /// Set single-match only mode.
         const SINGLEMATCH = ffi::HS_FLAG_SINGLEMATCH;
+        /// Allow expressions that can match against empty buffers.
         const ALLOWEMPTY = ffi::HS_FLAG_ALLOWEMPTY;
+        /// Enable UTF-8 mode for this expression.
         const UTF8 = ffi::HS_FLAG_UTF8;
+        /// Enable Unicode property support for this expression.
         const UCP = ffi::HS_FLAG_UCP;
+        /// Enable prefiltering mode for this expression.
         const PREFILTER = ffi::HS_FLAG_PREFILTER;
+        /// Enable leftmost start of match reporting.
         const SOM_LEFTMOST = ffi::HS_FLAG_SOM_LEFTMOST;
+        /// Logical combination.
         const COMBINATION = ffi::HS_FLAG_COMBINATION;
+        /// Don't do any match reporting.
         const QUIET = ffi::HS_FLAG_QUIET;
     }
 }
@@ -54,7 +68,7 @@ impl FromStr for Flags {
 }
 
 impl fmt::Display for Flags {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.contains(Flags::CASELESS) {
             write!(f, "i")?
         }
@@ -150,6 +164,7 @@ pub struct Pattern {
 }
 
 impl Pattern {
+    /// Parse a expression to a pattern
     pub fn parse(s: &str) -> Result<Pattern, Error> {
         unsafe {
             let (id, expr) = match s.find(':') {
@@ -182,7 +197,7 @@ impl Pattern {
 
 impl fmt::Display for Pattern {
     #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}:/{}/{}",

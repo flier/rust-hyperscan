@@ -7,6 +7,7 @@ use foreign_types::{foreign_type, ForeignTypeRef};
 
 use crate::common::{Block, Mode, Streaming, Vectored};
 use crate::errors::AsResult;
+use crate::ffi;
 
 foreign_type! {
     /// A compiled pattern database that can then be used to scan data.

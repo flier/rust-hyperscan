@@ -2,7 +2,9 @@ use crate::constants::*;
 
 /// Compile mode
 pub trait Mode {
+    /// Id of mode
     const ID: u32;
+    /// Name of mode
     const NAME: &'static str;
 }
 

@@ -4,6 +4,7 @@ use std::ffi::CString;
 use failure::Error;
 
 use crate::compile::{AsCompileResult, Pattern};
+use crate::ffi;
 
 /// A type containing information related to an expression
 #[derive(Debug, Clone)]

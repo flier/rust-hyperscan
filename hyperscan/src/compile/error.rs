@@ -5,6 +5,7 @@ use failure::AsFail;
 use foreign_types::{foreign_type, ForeignType};
 
 use crate::errors::{AsResult, HsError};
+use crate::ffi;
 
 pub trait AsCompileResult {
     type Output;
@@ -42,13 +43,13 @@ unsafe fn free_compile_error(err: *mut ffi::hs_compile_error_t) {
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.message())
     }
 }
 
 impl fmt::Debug for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Error")
             .field("message", &self.message())
             .field("expression", &self.expression())
@@ -67,11 +68,19 @@ impl Error {
         self.as_ptr().as_ref().unwrap()
     }
 
+    /// A human-readable error message describing the error.
     pub fn message(&self) -> &str {
         unsafe { CStr::from_ptr(self.as_ref().message).to_str().unwrap() }
     }
 
-    pub fn expression(&self) -> usize {
-        unsafe { self.as_ref().expression as usize }
+    /// The zero-based number of the expression that caused the error (if this can be determined).
+    pub fn expression(&self) -> Option<usize> {
+        let n = unsafe { self.as_ref().expression };
+
+        if n < 0 {
+            None
+        } else {
+            Some(n as usize)
+        }
     }
 }

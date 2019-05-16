@@ -6,8 +6,10 @@ use libc::c_uint;
 
 use crate::common::{Block, DatabaseRef, Vectored};
 use crate::errors::AsResult;
+use crate::ffi;
 use crate::runtime::{ScratchRef, Stream};
 
+/// Scannable buffer
 pub trait Scannable: AsRef<[u8]> {}
 
 impl<T> Scannable for T where T: AsRef<[u8]> {}

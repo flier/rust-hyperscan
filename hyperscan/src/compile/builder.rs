@@ -9,6 +9,7 @@ use libc::c_uint;
 use crate::common::{Database, Mode};
 use crate::compile::{AsCompileResult, Flags, Pattern, Patterns};
 use crate::errors::AsResult;
+use crate::ffi;
 
 foreign_type! {
     /// A type containing information on the target platform
@@ -25,10 +26,12 @@ unsafe fn free_platform_info(p: *mut ffi::hs_platform_info_t) {
 }
 
 impl PlatformInfo {
+    /// Test the current system architecture.
     pub fn is_valid() -> Result<(), Error> {
         unsafe { ffi::hs_valid_platform().ok() }
     }
 
+    /// Populates the platform information based on the current host.
     pub fn host() -> Result<PlatformInfo, Error> {
         unsafe {
             let mut platform = mem::zeroed();
@@ -37,6 +40,7 @@ impl PlatformInfo {
         }
     }
 
+    /// Constructs a target platform which may be used to guide the optimisation process of the compile.
     pub fn new(tune: u32, cpu_features: u64) -> PlatformInfo {
         unsafe {
             PlatformInfo::from_ptr(Box::into_raw(Box::new(ffi::hs_platform_info_t {
@@ -80,12 +84,12 @@ impl<T: Mode> Database<T> {
 
 /// The regular expression pattern database builder.
 pub trait Builder {
-    /// This is the function call with which an expression is compiled into
-    /// a Hyperscan database which can be passed to the runtime functions
+    /// Build an expression is compiled into a Hyperscan database which can be passed to the runtime functions
     fn build<T: Mode>(&self) -> Result<Database<T>, Error> {
         self.for_platform(None)
     }
 
+    /// Build an expression is compiled into a Hyperscan database for a target platform.
     fn for_platform<T: Mode>(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error>;
 }
 
