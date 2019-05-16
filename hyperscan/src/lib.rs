@@ -36,10 +36,8 @@ mod ffi {
     pub use hyperscan_sys::*;
 }
 
-mod constants;
-#[macro_use]
-mod errors;
 mod common;
+mod errors;
 #[macro_use]
 mod compile;
 mod runtime;
@@ -49,10 +47,9 @@ pub use crate::common::{
     VectoredDatabase,
 };
 pub use crate::compile::{
-    Builder, Error as CompileError, ExpressionExt, ExpressionInfo, Flags as CompileFlags, Pattern, Patterns,
-    PlatformInfo, PlatformInfoRef,
+    Builder, CpuFeatures, Error as CompileError, ExpressionExt, ExpressionInfo, Flags as CompileFlags, Pattern,
+    Patterns, PlatformInfo, PlatformInfoRef, Tune,
 };
-pub use crate::constants::*;
 pub use crate::errors::HsError;
 pub use crate::runtime::{Scannable, Scratch, ScratchRef, Stream, StreamRef};
 

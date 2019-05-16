@@ -1,57 +1,13 @@
-use core::mem;
 use core::ptr::null_mut;
 use std::ffi::CString;
 
 use failure::Error;
-use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
+use foreign_types::{ForeignType, ForeignTypeRef};
 use libc::c_uint;
 
 use crate::common::{Database, Mode};
-use crate::compile::{AsCompileResult, Flags, Pattern, Patterns};
-use crate::errors::AsResult;
+use crate::compile::{AsCompileResult, Flags, Pattern, Patterns, PlatformInfoRef};
 use crate::ffi;
-
-foreign_type! {
-    /// A type containing information on the target platform
-    /// which may optionally be provided to the compile calls
-    pub type PlatformInfo {
-        type CType = ffi::hs_platform_info_t;
-
-        fn drop = free_platform_info;
-    }
-}
-
-unsafe fn free_platform_info(p: *mut ffi::hs_platform_info_t) {
-    let _ = Box::from_raw(p);
-}
-
-impl PlatformInfo {
-    /// Test the current system architecture.
-    pub fn is_valid() -> Result<(), Error> {
-        unsafe { ffi::hs_valid_platform().ok() }
-    }
-
-    /// Populates the platform information based on the current host.
-    pub fn host() -> Result<PlatformInfo, Error> {
-        unsafe {
-            let mut platform = mem::zeroed();
-
-            ffi::hs_populate_platform(&mut platform).map(|_| PlatformInfo::from_ptr(Box::into_raw(Box::new(platform))))
-        }
-    }
-
-    /// Constructs a target platform which may be used to guide the optimisation process of the compile.
-    pub fn new(tune: u32, cpu_features: u64) -> PlatformInfo {
-        unsafe {
-            PlatformInfo::from_ptr(Box::into_raw(Box::new(ffi::hs_platform_info_t {
-                tune,
-                cpu_features,
-                reserved1: 0,
-                reserved2: 0,
-            })))
-        }
-    }
-}
 
 impl<T: Mode> Database<T> {
     /// The basic regular expression compiler.
@@ -154,15 +110,9 @@ impl Builder for Patterns {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
-    use crate::common::tests::*;
-    use crate::common::*;
-    use crate::compile::Flags;
-
-    #[test]
-    pub fn test_platform() {
-        assert!(PlatformInfo::is_valid().is_ok())
-    }
+    use crate::common::tests::validate_database;
+    use crate::common::BlockDatabase;
+    use crate::compile::{Flags, PlatformInfo};
 
     #[test]
     fn test_database_compile() {
