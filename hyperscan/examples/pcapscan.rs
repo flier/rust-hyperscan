@@ -236,7 +236,7 @@ impl Benchmark {
         self.match_count.store(0, Ordering::Relaxed);
     }
 
-    fn on_match<'a>(_: u32, _: u64, _: u64, _: u32, match_count: Option<Pin<&'a mut AtomicUsize>>) -> u32 {
+    fn on_match<'a>(_: u32, _: u64, _: u64, _: u32, match_count: Option<Pin<&'a AtomicUsize>>) -> u32 {
         match_count.unwrap().fetch_add(1, Ordering::Relaxed);
 
         0
@@ -255,11 +255,7 @@ impl Benchmark {
     fn close_streams(&mut self) -> Result<(), Error> {
         for stream in self.streams.drain(..) {
             stream
-                .close(
-                    &self.scratch,
-                    Some(Self::on_match),
-                    Some(Pin::new(&mut self.match_count)),
-                )
+                .close(&self.scratch, Some(Self::on_match), Some(Pin::new(&self.match_count)))
                 .context("close stream")?;
         }
 
@@ -269,11 +265,7 @@ impl Benchmark {
     fn reset_streams(&mut self) -> Result<(), Error> {
         for ref stream in &self.streams {
             stream
-                .reset(
-                    &self.scratch,
-                    Some(Self::on_match),
-                    Some(Pin::new(&mut self.match_count)),
-                )
+                .reset(&self.scratch, Some(Self::on_match), Some(Pin::new(&self.match_count)))
                 .context("reset stream")?;
         }
 
@@ -291,7 +283,7 @@ impl Benchmark {
                     packet.as_ref().as_slice(),
                     &self.scratch,
                     Some(Self::on_match),
-                    Some(Pin::new(&mut self.match_count)),
+                    Some(Pin::new(&self.match_count)),
                 )
                 .context("scan packet")?;
         }
@@ -308,7 +300,7 @@ impl Benchmark {
                     packet.as_ref().as_slice(),
                     &self.scratch,
                     Some(Self::on_match),
-                    Some(Pin::new(&mut self.match_count)),
+                    Some(Pin::new(&self.match_count)),
                 )
                 .context("scan packet")?;
         }

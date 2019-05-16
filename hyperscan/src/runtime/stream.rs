@@ -1,4 +1,5 @@
 use core::mem;
+use core::ops::Deref;
 use core::pin::Pin;
 use core::ptr::null_mut;
 
@@ -50,19 +51,22 @@ unsafe fn clone_stream(s: *mut ffi::hs_stream_t) -> *mut ffi::hs_stream_t {
 
 impl StreamRef {
     /// Reset a stream to an initial state.
-    pub fn reset<'a, D>(
+    pub fn reset<'a, P: Deref>(
         &self,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<'a, D>,
-        context: Option<Pin<&'a mut D>>,
-    ) -> Result<(), Error> {
+        callback: MatchEventCallback<'a, P>,
+        context: Option<Pin<P>>,
+    ) -> Result<(), Error>
+    where
+        P::Target: Sized,
+    {
         unsafe {
             ffi::hs_reset_stream(
                 self.as_ptr(),
                 0,
                 scratch.as_ptr(),
                 mem::transmute(callback),
-                mem::transmute(context),
+                context.map_or_else(null_mut, |p| &*p as *const _ as *mut _),
             )
             .ok()
         }
@@ -71,18 +75,21 @@ impl StreamRef {
 
 impl Stream {
     /// Close a stream.
-    pub fn close<'a, D>(
+    pub fn close<'a, P: Deref>(
         self,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<'a, D>,
-        context: Option<Pin<&'a mut D>>,
-    ) -> Result<(), Error> {
+        callback: MatchEventCallback<'a, P>,
+        context: Option<Pin<P>>,
+    ) -> Result<(), Error>
+    where
+        P::Target: Sized,
+    {
         unsafe {
             ffi::hs_close_stream(
                 self.as_ptr(),
                 scratch.as_ptr(),
                 mem::transmute(callback),
-                mem::transmute(context),
+                context.map_or_else(null_mut, |p| &*p as *const _ as *mut _),
             )
             .ok()
         }

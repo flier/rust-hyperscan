@@ -1,5 +1,7 @@
 use core::mem;
+use core::ops::Deref;
 use core::pin::Pin;
+use core::ptr::null_mut;
 
 use failure::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
@@ -34,20 +36,22 @@ impl<T> Scannable for T where T: AsRef<[u8]> {}
 ///
 /// Fn(id: u32, from: u64, to: u64, flags: u32) -> bool
 ///
-pub type MatchEventCallback<'a, D> =
-    Option<fn(id: u32, from: u64, to: u64, flags: u32, context: Option<Pin<&'a mut D>>) -> u32>;
+pub type MatchEventCallback<'a, P> =
+    Option<fn(id: u32, from: u64, to: u64, flags: u32, context: Option<Pin<P>>) -> u32>;
 
 impl DatabaseRef<Block> {
     /// pattern matching takes place for block-mode pattern databases.
-    pub fn scan<'a, T, D>(
+    pub fn scan<'a, T, P>(
         &self,
         data: T,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<'a, D>,
-        context: Option<Pin<&'a mut D>>,
+        callback: MatchEventCallback<'a, P>,
+        context: Option<Pin<P>>,
     ) -> Result<(), Error>
     where
         T: Scannable,
+        P: Deref,
+        P::Target: Sized,
     {
         let data = data.as_ref();
 
@@ -59,7 +63,7 @@ impl DatabaseRef<Block> {
                 0,
                 scratch.as_ptr(),
                 mem::transmute(callback),
-                mem::transmute(context),
+                context.map_or_else(null_mut, |p| &*p as *const _ as *mut _),
             )
             .ok()
         }
@@ -68,16 +72,18 @@ impl DatabaseRef<Block> {
 
 impl DatabaseRef<Vectored> {
     /// pattern matching takes place for vectoring-mode pattern databases.
-    pub fn scan<'a, I, T, D>(
+    pub fn scan<'a, I, T, P>(
         &self,
         data: I,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<'a, D>,
-        context: Option<Pin<&'a mut D>>,
+        callback: MatchEventCallback<'a, P>,
+        context: Option<Pin<P>>,
     ) -> Result<(), Error>
     where
         I: IntoIterator<Item = T>,
         T: Scannable,
+        P: Deref,
+        P::Target: Sized,
     {
         let (ptrs, lens): (Vec<_>, Vec<_>) = data
             .into_iter()
@@ -97,7 +103,7 @@ impl DatabaseRef<Vectored> {
                 0,
                 scratch.as_ptr(),
                 mem::transmute(callback),
-                mem::transmute(context),
+                context.map_or_else(null_mut, |p| &*p as *const _ as *mut _),
             )
             .ok()
         }
@@ -106,15 +112,17 @@ impl DatabaseRef<Vectored> {
 
 impl Stream {
     /// pattern matching takes place for stream-mode pattern databases.
-    pub fn scan<'a, T, D>(
+    pub fn scan<'a, T, P>(
         &self,
         data: T,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<'a, D>,
-        context: Option<Pin<&'a mut D>>,
+        callback: MatchEventCallback<'a, P>,
+        context: Option<Pin<P>>,
     ) -> Result<(), Error>
     where
         T: Scannable,
+        P: Deref,
+        P::Target: Sized,
     {
         let data = data.as_ref();
 
@@ -126,7 +134,7 @@ impl Stream {
                 0,
                 scratch.as_ptr(),
                 mem::transmute(callback),
-                mem::transmute(context),
+                context.map_or_else(null_mut, |p| &*p as *const _ as *mut _),
             )
             .ok()
         }
@@ -148,7 +156,7 @@ pub mod tests {
         let db: BlockDatabase = pattern! {"test"; CASELESS | SOM_LEFTMOST}.build().unwrap();
         let s = db.alloc().unwrap();
 
-        db.scan::<_, ()>("foo test bar", &s, None, None).unwrap();
+        db.scan::<_, &()>("foo test bar", &s, None, None).unwrap();
 
         fn callback<T>(id: u32, from: u64, to: u64, flags: u32, _: T) -> u32 {
             assert_eq!(id, 0);
@@ -160,7 +168,7 @@ pub mod tests {
         };
 
         assert_eq!(
-            db.scan::<_, ()>("foo test bar".as_bytes(), &s, Some(callback), None)
+            db.scan::<_, &()>("foo test bar".as_bytes(), &s, Some(callback), None)
                 .err()
                 .unwrap()
                 .downcast_ref::<HsError>(),
@@ -177,7 +185,7 @@ pub mod tests {
 
         let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
 
-        db.scan::<_, _, ()>(data, &s, None, None).unwrap();
+        db.scan::<_, _, &()>(data, &s, None, None).unwrap();
 
         let mut matches = vec![];
 

@@ -37,13 +37,18 @@ unsafe impl<'a> Searcher<'a> for HsSearcher<'a> {
 
     fn next(&mut self) -> SearchStep {
         if self.matches.is_none() {
-            self.matches = Some(VecDeque::new());
-
-            let matches = Pin::new(&mut self.matches);
+            let mut matches = VecDeque::new();
 
             self.db
-                .scan(self.haystack, &self.scratch, Some(on_match), matches.as_pin_mut())
+                .scan(
+                    self.haystack,
+                    &self.scratch,
+                    Some(on_match),
+                    Some(Pin::new(&mut matches)),
+                )
                 .expect("scan");
+
+            self.matches = Some(matches);
         }
 
         self.matches.as_mut().unwrap().pop_front().unwrap_or(SearchStep::Done)
@@ -64,5 +69,9 @@ pub mod tests {
     #[test]
     fn test_searcher() {
         assert_eq!("baaaab".find(pattern! { "a+" }), Some(1));
+        assert_eq!(
+            "baaaab".matches(pattern! { "a+" }).collect::<Vec<_>>(),
+            vec!["a", "aa", "aaa", "aaaa"]
+        );
     }
 }
