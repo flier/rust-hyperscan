@@ -1,20 +1,20 @@
 use core::pin::Pin;
-use core::str::pattern::{Pattern, SearchStep, Searcher};
+use core::str::pattern::{self, SearchStep};
 use std::collections::VecDeque;
 
 use crate::common::BlockDatabase;
 use crate::compile::{self, Builder, Flags};
 use crate::runtime::Scratch;
 
-impl<'a> Pattern<'a> for compile::Pattern {
-    type Searcher = HsSearcher<'a>;
+impl<'a> pattern::Pattern<'a> for compile::Pattern {
+    type Searcher = Searcher<'a>;
 
     fn into_searcher(mut self, haystack: &'a str) -> Self::Searcher {
         self.flags |= Flags::SOM_LEFTMOST;
         let db = self.build().expect("build database");
         let scratch = db.alloc().expect("alloc scratch");
 
-        HsSearcher {
+        Searcher {
             haystack,
             db,
             scratch,
@@ -23,14 +23,14 @@ impl<'a> Pattern<'a> for compile::Pattern {
     }
 }
 
-pub struct HsSearcher<'a> {
+pub struct Searcher<'a> {
     haystack: &'a str,
     db: BlockDatabase,
     scratch: Scratch,
     matches: Option<VecDeque<SearchStep>>,
 }
 
-unsafe impl<'a> Searcher<'a> for HsSearcher<'a> {
+unsafe impl<'a> pattern::Searcher<'a> for Searcher<'a> {
     fn haystack(&self) -> &'a str {
         self.haystack
     }
