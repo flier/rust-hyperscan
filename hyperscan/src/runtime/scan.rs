@@ -1,16 +1,16 @@
 use core::mem;
 use core::ops::Deref;
-use core::pin::Pin;
 use core::ptr::null_mut;
+use std::io::Read;
 
 use failure::Error;
-use foreign_types::{ForeignType, ForeignTypeRef};
+use foreign_types::ForeignTypeRef;
 use libc::c_uint;
 
-use crate::common::{Block, DatabaseRef, Vectored};
+use crate::common::{Block, DatabaseRef, Streaming, Vectored};
 use crate::errors::AsResult;
 use crate::ffi;
-use crate::runtime::{ScratchRef, Stream};
+use crate::runtime::{ScratchRef, StreamRef};
 
 /// Scannable buffer
 pub trait Scannable: AsRef<[u8]> {}
@@ -36,8 +36,7 @@ impl<T> Scannable for T where T: AsRef<[u8]> {}
 ///
 /// Fn(id: u32, from: u64, to: u64, flags: u32) -> bool
 ///
-pub type MatchEventCallback<'a, P> =
-    Option<fn(id: u32, from: u64, to: u64, flags: u32, context: Option<Pin<P>>) -> u32>;
+pub type MatchEventCallback<P> = Option<fn(id: u32, from: u64, to: u64, flags: u32, context: Option<P>) -> u32>;
 
 impl DatabaseRef<Block> {
     /// pattern matching takes place for block-mode pattern databases.
@@ -45,8 +44,8 @@ impl DatabaseRef<Block> {
         &self,
         data: T,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<'a, P>,
-        context: Option<Pin<P>>,
+        callback: MatchEventCallback<P>,
+        context: Option<P>,
     ) -> Result<(), Error>
     where
         T: Scannable,
@@ -76,8 +75,8 @@ impl DatabaseRef<Vectored> {
         &self,
         data: I,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<'a, P>,
-        context: Option<Pin<P>>,
+        callback: MatchEventCallback<P>,
+        context: Option<P>,
     ) -> Result<(), Error>
     where
         I: IntoIterator<Item = T>,
@@ -110,14 +109,45 @@ impl DatabaseRef<Vectored> {
     }
 }
 
-impl Stream {
+const SCAN_BUF_SIZE: usize = 4096;
+
+impl DatabaseRef<Streaming> {
+    /// pattern matching takes place for stream-mode pattern databases.
+    pub fn scan<'a, R, P>(
+        &self,
+        reader: &mut R,
+        scratch: &ScratchRef,
+        callback: MatchEventCallback<P>,
+        context: Option<P>,
+    ) -> Result<(), Error>
+    where
+        R: Read,
+        P: Deref + Copy,
+        P::Target: Sized,
+    {
+        let stream = self.open_stream()?;
+        let mut buf = [0; SCAN_BUF_SIZE];
+
+        while let Ok(len) = reader.read(&mut buf[..]) {
+            if len == 0 {
+                break;
+            }
+
+            stream.scan(&buf[..len], scratch, callback, context)?;
+        }
+
+        stream.close(scratch, callback, context)
+    }
+}
+
+impl StreamRef {
     /// pattern matching takes place for stream-mode pattern databases.
     pub fn scan<'a, T, P>(
         &self,
         data: T,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<'a, P>,
-        context: Option<Pin<P>>,
+        callback: MatchEventCallback<P>,
+        context: Option<P>,
     ) -> Result<(), Error>
     where
         T: Scannable,
@@ -143,8 +173,11 @@ impl Stream {
 
 #[cfg(test)]
 pub mod tests {
+    use core::cell::RefCell;
     use core::pin::Pin;
+    use std::io::Cursor;
 
+    use super::*;
     use crate::common::*;
     use crate::compile::Builder;
     use crate::errors::HsError;
@@ -239,5 +272,39 @@ pub mod tests {
         }
 
         st.close(&s, Some(callback), Some(Pin::new(&mut matches))).unwrap();
+    }
+
+    #[test]
+    fn test_scan_reader() {
+        let mut buf = String::from_utf8(vec![b'x'; SCAN_BUF_SIZE - 2]).unwrap();
+
+        buf.push_str("baaab");
+
+        let db = pattern! { "a+"; SOM_LEFTMOST }.build::<Streaming>().unwrap();
+        let s = db.alloc().unwrap();
+        let mut cur = Cursor::new(buf.as_bytes());
+        let mut matches = vec![];
+
+        fn callback<'a>(
+            _id: u32,
+            from: u64,
+            to: u64,
+            _flags: u32,
+            matches: Option<&RefCell<Pin<&mut Vec<(u64, u64)>>>>,
+        ) -> u32 {
+            matches.unwrap().borrow_mut().push((from, to));
+
+            0
+        }
+
+        db.scan(
+            &mut cur,
+            &s,
+            Some(callback),
+            Some(&RefCell::new(Pin::new(&mut matches))),
+        )
+        .unwrap();
+
+        assert_eq!(matches, vec![(4095, 4096), (4095, 4097), (4095, 4098)]);
     }
 }

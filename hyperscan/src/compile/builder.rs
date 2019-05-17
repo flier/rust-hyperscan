@@ -6,37 +6,8 @@ use foreign_types::{ForeignType, ForeignTypeRef};
 use libc::c_uint;
 
 use crate::common::{Database, Mode};
-use crate::compile::{AsCompileResult, Flags, Pattern, Patterns, PlatformInfoRef};
+use crate::compile::{AsCompileResult, Flags, Pattern, Patterns, PlatformInfoRef, SomHorizon};
 use crate::ffi;
-
-impl<T: Mode> Database<T> {
-    /// The basic regular expression compiler.
-    ///
-    /// This is the function call with which an expression is compiled into a Hyperscan database
-    // which can be passed to the runtime functions.
-    pub fn compile<S: AsRef<str>>(
-        expression: S,
-        flags: Flags,
-        platform: Option<&PlatformInfoRef>,
-    ) -> Result<Database<T>, Error> {
-        let expr = CString::new(expression.as_ref())?;
-        let mut db = null_mut();
-        let mut err = null_mut();
-
-        unsafe {
-            ffi::hs_compile(
-                expr.as_bytes_with_nul().as_ptr() as *const i8,
-                flags.bits(),
-                T::ID,
-                platform.map_or_else(null_mut, ForeignTypeRef::as_ptr),
-                &mut db,
-                &mut err,
-            )
-            .ok_or(err)
-            .map(|_| Database::from_ptr(db))
-        }
-    }
-}
 
 /// The regular expression pattern database builder.
 pub trait Builder {
@@ -57,7 +28,27 @@ impl Builder for Pattern {
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
     fn for_platform<T: Mode>(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
-        Database::compile(&self.expression, self.flags, platform)
+        let expr = CString::new(self.expression.as_bytes())?;
+        let mut mode = T::ID;
+        let mut db = null_mut();
+        let mut err = null_mut();
+
+        if T::ID == ffi::HS_MODE_STREAM && self.flags.contains(Flags::SOM_LEFTMOST) {
+            mode |= self.som.unwrap_or(SomHorizon::Medium) as u32;
+        }
+
+        unsafe {
+            ffi::hs_compile(
+                expr.as_bytes_with_nul().as_ptr() as *const i8,
+                self.flags.bits(),
+                mode,
+                platform.map_or_else(null_mut, ForeignTypeRef::as_ptr),
+                &mut db,
+                &mut err,
+            )
+            .ok_or(err)
+            .map(|_| Database::from_ptr(db))
+        }
     }
 }
 
@@ -75,6 +66,15 @@ impl Builder for Patterns {
         let mut ptrs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
         let mut ids = Vec::with_capacity(self.len());
+        let mut mode = T::ID;
+
+        if T::ID == ffi::HS_MODE_STREAM && self.iter().any(|pattern| pattern.flags.contains(Flags::SOM_LEFTMOST)) {
+            mode |= self
+                .iter()
+                .flat_map(|pattern| pattern.som)
+                .max()
+                .unwrap_or(SomHorizon::Medium) as u32;
+        }
 
         for (i, pattern) in self.iter().enumerate() {
             let expr = CString::new(pattern.expression.as_str())?;
@@ -85,7 +85,7 @@ impl Builder for Patterns {
         }
 
         for expr in &expressions {
-            ptrs.push(expr.as_bytes_with_nul().as_ptr() as *const i8);
+            ptrs.push(expr.as_ptr() as *const i8);
         }
 
         let mut db = null_mut();
@@ -97,7 +97,7 @@ impl Builder for Patterns {
                 flags.as_ptr(),
                 ids.as_ptr(),
                 self.len() as u32,
-                T::ID,
+                mode,
                 platform.map_or_else(null_mut, ForeignTypeRef::as_ptr),
                 &mut db,
                 &mut err,
@@ -105,6 +105,20 @@ impl Builder for Patterns {
             .ok_or(err)
             .map(|_| Database::from_ptr(db))
         }
+    }
+}
+
+impl<T: Mode> Database<T> {
+    /// The basic regular expression compiler.
+    ///
+    /// This is the function call with which an expression is compiled into a Hyperscan database
+    // which can be passed to the runtime functions.
+    pub fn compile<S: AsRef<str>>(
+        expression: S,
+        flags: Flags,
+        platform: Option<&PlatformInfoRef>,
+    ) -> Result<Database<T>, Error> {
+        Pattern::with_flags(expression, flags)?.for_platform(platform)
     }
 }
 

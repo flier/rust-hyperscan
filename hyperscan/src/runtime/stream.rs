@@ -1,26 +1,23 @@
 use core::mem;
 use core::ops::Deref;
-use core::pin::Pin;
 use core::ptr::null_mut;
 
 use failure::Error;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
-use crate::common::{Database, Streaming};
+use crate::common::{DatabaseRef, Streaming};
 use crate::errors::AsResult;
 use crate::ffi;
 use crate::runtime::{MatchEventCallback, ScratchRef};
 
-impl Database<Streaming> {
+impl DatabaseRef<Streaming> {
     /// Provides the size of the stream state allocated by a single stream opened against the given database.
     pub fn stream_size(&self) -> Result<usize, Error> {
         let mut size: usize = 0;
 
         unsafe { ffi::hs_stream_size(self.as_ptr(), &mut size).map(|_| size) }
     }
-}
 
-impl Database<Streaming> {
     /// Open and initialise a stream.
     pub fn open_stream(&self) -> Result<Stream, Error> {
         let mut s = null_mut();
@@ -54,8 +51,8 @@ impl StreamRef {
     pub fn reset<'a, P: Deref>(
         &self,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<'a, P>,
-        context: Option<Pin<P>>,
+        callback: MatchEventCallback<P>,
+        context: Option<P>,
     ) -> Result<(), Error>
     where
         P::Target: Sized,
@@ -78,8 +75,8 @@ impl Stream {
     pub fn close<'a, P: Deref>(
         self,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<'a, P>,
-        context: Option<Pin<P>>,
+        callback: MatchEventCallback<P>,
+        context: Option<P>,
     ) -> Result<(), Error>
     where
         P::Target: Sized,

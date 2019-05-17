@@ -150,6 +150,30 @@ impl From<Ext> for ffi::hs_expr_ext_t {
     }
 }
 
+/// Defines the precision to track start of match offsets in stream state.
+#[repr(u32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum SomHorizon {
+    /// use full precision to track start of match offsets in stream state.
+    ///
+    /// This mode will use the most stream state per pattern,
+    /// but will always return an accurate start of match offset
+    /// regardless of how far back in the past it was found.
+    Large = ffi::HS_MODE_SOM_HORIZON_LARGE,
+    /// use medium precision to track start of match offsets in stream state.
+    ///
+    /// This mode will use less stream state than @ref HS_MODE_SOM_HORIZON_LARGE and
+    /// will limit start of match accuracy to offsets
+    /// within 2^32 bytes of the end of match offset reported.
+    Medium = ffi::HS_MODE_SOM_HORIZON_MEDIUM,
+    /// use limited precision to track start of match offsets in stream state.
+    ///
+    /// This mode will use less stream state than `SomHorizon::Large` and
+    /// will limit start of match accuracy to offsets
+    /// within 2^16 bytes of the end of match offset reported.
+    Small = ffi::HS_MODE_SOM_HORIZON_SMALL,
+}
+
 /// Pattern that has matched.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Pattern {
@@ -161,11 +185,36 @@ pub struct Pattern {
     pub id: Option<usize>,
     /// Extended behaviour for this pattern
     pub ext: Ext,
+    /// The precision to track start of match offsets in stream state.
+    pub som: Option<SomHorizon>,
 }
 
 impl Pattern {
+    /// Construct a pattern with expression.
+    pub fn new<S: AsRef<str>>(expr: S) -> Result<Pattern, Error> {
+        Ok(Pattern {
+            expression: expr.as_ref().to_owned(),
+            flags: Flags::empty(),
+            id: None,
+            ext: Ext::default(),
+            som: None,
+        })
+    }
+
+    /// Construct a pattern with expression and flags.
+    pub fn with_flags<S: AsRef<str>>(expr: S, flags: Flags) -> Result<Pattern, Error> {
+        Ok(Pattern {
+            expression: expr.as_ref().to_owned(),
+            flags,
+            id: None,
+            ext: Ext::default(),
+            som: None,
+        })
+    }
+
     /// Parse a expression to a pattern
-    pub fn parse(s: &str) -> Result<Pattern, Error> {
+    pub fn parse<S: AsRef<str>>(s: S) -> Result<Pattern, Error> {
+        let s = s.as_ref();
         let (id, expr) = match s.find(':') {
             Some(off) => (Some(s[..off].parse()?), &s[off + 1..]),
             None => (None, s),
@@ -177,6 +226,7 @@ impl Pattern {
                 flags: expr[end + 1..].parse()?,
                 id,
                 ext: Ext::default(),
+                som: None,
             },
 
             _ => Pattern {
@@ -184,6 +234,7 @@ impl Pattern {
                 flags: Flags::empty(),
                 id,
                 ext: Ext::default(),
+                som: None,
             },
         };
 
@@ -243,6 +294,7 @@ macro_rules! pattern {
             flags: $flags,
             id: None,
             ext: $crate::ExpressionExt::default(),
+            som: None,
         }
     }};
     ( $id:literal => $expr:expr ; $( $flag:ident )|* ) => {{
@@ -254,6 +306,7 @@ macro_rules! pattern {
             flags: $flags,
             id: Some($id),
             ext: $crate::ExpressionExt::default(),
+            som: None,
         }
     }};
 }

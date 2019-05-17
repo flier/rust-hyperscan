@@ -9,16 +9,16 @@ pub trait Mode {
 }
 
 /// Block scan (non-streaming) database.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Block {}
 
-/// Streaming database.
-#[derive(Debug)]
-pub enum Streaming {}
-
 /// Vectored scanning database.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Vectored {}
+
+/// Streaming database.
+#[derive(Debug, PartialEq)]
+pub enum Streaming {}
 
 impl Mode for Block {
     const ID: u32 = ffi::HS_MODE_BLOCK;
