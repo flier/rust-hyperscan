@@ -73,9 +73,9 @@ impl<T> DatabaseRef<T> {
 pub mod tests {
     use regex::Regex;
 
-    use crate::common::Mode;
-    use crate::common::*;
-    use crate::compile::Flags;
+    use crate::prelude::*;
+
+    use super::*;
 
     pub const DATABASE_SIZE: usize = 872;
 
@@ -116,7 +116,7 @@ pub mod tests {
     fn test_database() {
         let _ = pretty_env_logger::try_init();
 
-        let db = BlockDatabase::compile("test", Flags::empty(), None).unwrap();
+        let db: BlockDatabase = pattern! { "test" }.build().unwrap();
 
         validate_database(&db);
 

@@ -33,7 +33,7 @@ use std::process::exit;
 
 use failure::{Error, ResultExt};
 
-use hyperscan::*;
+use hyperscan::prelude::*;
 
 /**
  * Fill a data buffer from the given filename, returning it and filling @a
@@ -71,7 +71,7 @@ fn main() -> Result<(), Error> {
     let pattern = pattern! { args.next().unwrap(); DOTALL };
     let input_filename = args.next().unwrap();
 
-    let database = pattern.build::<Block>().context("compile pattern")?;
+    let database: BlockDatabase = pattern.build().context("compile pattern")?;
 
     // Next, we read the input data file into a buffer.
     let input_data = read_input_data(&input_filename).context("read input file")?;

@@ -72,8 +72,7 @@ impl<T> Database<T> {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::common::*;
-    use crate::compile::Builder;
+    use crate::prelude::*;
 
     const SCRATCH_SIZE: usize = 2000;
 

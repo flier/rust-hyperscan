@@ -108,8 +108,9 @@ impl<T> DatabaseRef<T> {
 #[cfg(test)]
 pub mod tests {
     use crate::common::database::tests::*;
-    use crate::common::*;
-    use crate::compile::Flags;
+    use crate::prelude::*;
+
+    use super::*;
 
     pub fn validate_serialized_database<S: Serialized>(data: &S) {
         assert!(data.size().unwrap() >= DATABASE_SIZE);
@@ -121,7 +122,7 @@ pub mod tests {
     fn test_database_serialize() {
         let _ = pretty_env_logger::try_init();
 
-        let db = StreamingDatabase::compile("test", Flags::empty(), None).unwrap();
+        let db: StreamingDatabase = pattern! { "test" }.build().unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -134,13 +135,13 @@ pub mod tests {
     fn test_database_deserialize() {
         let _ = pretty_env_logger::try_init();
 
-        let db = VectoredDatabase::compile("test", Flags::empty(), None).unwrap();
+        let db: VectoredDatabase = pattern! { "test" }.build().unwrap();
 
         let data = db.serialize().unwrap();
 
         validate_serialized_database(&data);
 
-        let db = data.deserialize::<Vectored>().unwrap();
+        let db: VectoredDatabase = data.deserialize().unwrap();
 
         validate_database(&db);
     }
@@ -149,7 +150,7 @@ pub mod tests {
     fn test_database_deserialize_at() {
         let _ = pretty_env_logger::try_init();
 
-        let mut db = BlockDatabase::compile("test", Flags::empty(), None).unwrap();
+        let mut db: BlockDatabase = pattern! { "test" }.build().unwrap();
 
         let data = db.serialize().unwrap();
 

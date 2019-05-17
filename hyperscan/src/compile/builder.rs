@@ -125,8 +125,8 @@ impl<T: Mode> Database<T> {
 #[cfg(test)]
 pub mod tests {
     use crate::common::tests::validate_database;
-    use crate::common::BlockDatabase;
     use crate::compile::{Flags, PlatformInfo};
+    use crate::prelude::*;
 
     #[test]
     fn test_database_compile() {

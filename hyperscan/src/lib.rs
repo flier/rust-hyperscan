@@ -8,9 +8,9 @@
 //!
 //! use std::pin::Pin;
 //!
-//! use hyperscan::*;
+//! use hyperscan::prelude::*;
 //!
-//! fn callback(id: u32, from: u64, to: u64, flags: u32, expr: Option<Pin<&mut &str>>) -> u32 {
+//! fn callback(id: u32, from: u64, to: u64, flags: u32, expr: Option<Pin<&String>>) -> u32 {
 //!     assert_eq!(id, 0);
 //!     assert_eq!(from, 5);
 //!     assert_eq!(to, 9);
@@ -23,11 +23,11 @@
 //!
 //! fn main() {
 //!     let pattern = &pattern! {"test"; CASELESS | SOM_LEFTMOST};
-//!     let db = pattern.build::<Block>().unwrap();
+//!     let db: BlockDatabase = pattern.build().unwrap();
 //!     let scratch = db.alloc().unwrap();
-//!     let mut expr = pattern.expression.as_str();
+//!     let expr = Pin::new(&pattern.expression);
 //!
-//!     db.scan("some test data", &scratch, Some(callback), Some(Pin::new(&mut expr))).unwrap();
+//!     db.scan("some test data", &scratch, Some(callback), Some(expr)).unwrap();
 //! }
 //! ```
 #![deny(missing_docs, rust_2018_compatibility, rust_2018_idioms)]
@@ -56,6 +56,14 @@ pub use crate::compile::{
 };
 pub use crate::errors::HsError;
 pub use crate::runtime::{Scannable, Scratch, ScratchRef, Stream, StreamRef};
+
+/// The `hyperscan` Prelude
+pub mod prelude {
+    pub use crate::{
+        pattern, BlockDatabase, Builder, CompileFlags, Database, Mode, Pattern, Patterns, Scratch, Stream,
+        StreamingDatabase, VectoredDatabase,
+    };
+}
 
 #[cfg(test)]
 mod tests {

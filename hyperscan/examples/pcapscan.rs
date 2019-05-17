@@ -41,7 +41,7 @@ use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::udp::UdpPacket;
 use pnet::packet::{Packet, PrimitiveValues};
 
-use hyperscan::{BlockDatabase, Builder, Database, Mode, Patterns, Scratch, Stream, StreamingDatabase};
+use hyperscan::prelude::*;
 
 /**
  * This function will read in the file with the specified name, with an

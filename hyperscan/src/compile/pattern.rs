@@ -328,8 +328,7 @@ macro_rules! patterns {
 #[cfg(test)]
 mod tests {
     use crate::common::tests::*;
-    use crate::common::BlockDatabase;
-    use crate::compile::Builder;
+    use crate::prelude::*;
 
     use super::*;
 

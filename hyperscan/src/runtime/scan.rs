@@ -177,10 +177,10 @@ pub mod tests {
     use core::pin::Pin;
     use std::io::Cursor;
 
-    use super::*;
-    use crate::common::*;
-    use crate::compile::Builder;
     use crate::errors::HsError;
+    use crate::prelude::*;
+
+    use super::*;
 
     #[test]
     fn test_block_scan() {
