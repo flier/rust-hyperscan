@@ -10,14 +10,14 @@
 //!
 //! use hyperscan::prelude::*;
 //!
-//! fn callback(id: u32, from: u64, to: u64, expr: Option<Pin<&String>>) -> bool {
+//! fn callback(id: u32, from: u64, to: u64, expr: Option<Pin<&String>>) -> Matching {
 //!     assert_eq!(id, 0);
 //!     assert_eq!(from, 5);
 //!     assert_eq!(to, 9);
 //!
 //!     println!("found pattern {} : {} @ [{}, {})", id, expr.unwrap(), from, to);
 //!
-//!     false
+//!     Matching::Continue
 //! }
 //!
 //! fn main() {
@@ -54,12 +54,12 @@ pub use crate::compile::{
     Patterns, Platform, PlatformRef, SomHorizon, Tune,
 };
 pub use crate::errors::HsError;
-pub use crate::runtime::{Scannable, Scratch, ScratchRef, Stream, StreamRef};
+pub use crate::runtime::{Matching, Scannable, Scratch, ScratchRef, Stream, StreamRef};
 
 /// The `hyperscan` Prelude
 pub mod prelude {
     pub use crate::{
-        pattern, BlockDatabase, Builder, CompileFlags, Database, Mode, Pattern, Patterns, Scratch, Stream,
+        pattern, BlockDatabase, Builder, CompileFlags, Database, Matching, Mode, Pattern, Patterns, Scratch, Stream,
         StreamingDatabase, VectoredDatabase,
     };
 }

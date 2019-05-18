@@ -1,10 +1,10 @@
-use core::pin::Pin;
+use core::cell::RefCell;
 use core::str::pattern::{self, SearchStep};
 use std::collections::VecDeque;
 
 use crate::common::BlockDatabase;
 use crate::compile::{self, Builder, Flags};
-use crate::runtime::Scratch;
+use crate::runtime::{Matching, Scratch};
 
 impl<'a> pattern::Pattern<'a> for compile::Pattern {
     type Searcher = Searcher<'a>;
@@ -27,7 +27,7 @@ pub struct Searcher<'a> {
     haystack: &'a str,
     db: BlockDatabase,
     scratch: Scratch,
-    matches: Option<VecDeque<SearchStep>>,
+    matches: Option<RefCell<VecDeque<SearchStep>>>,
 }
 
 unsafe impl<'a> pattern::Searcher<'a> for Searcher<'a> {
@@ -37,31 +37,31 @@ unsafe impl<'a> pattern::Searcher<'a> for Searcher<'a> {
 
     fn next(&mut self) -> SearchStep {
         if self.matches.is_none() {
-            let mut matches = VecDeque::new();
+            let matches = RefCell::new(VecDeque::new());
 
             self.db
-                .scan(
-                    self.haystack,
-                    &self.scratch,
-                    Some(on_match),
-                    Some(Pin::new(&mut matches)),
-                )
+                .scan(self.haystack, &self.scratch, Some(on_match), Some(&matches))
                 .expect("scan");
 
             self.matches = Some(matches);
         }
 
-        self.matches.as_mut().unwrap().pop_front().unwrap_or(SearchStep::Done)
+        self.matches
+            .as_mut()
+            .unwrap()
+            .borrow_mut()
+            .pop_front()
+            .unwrap_or(SearchStep::Done)
     }
 }
 
-fn on_match<'a>(_id: u32, from: u64, to: u64, _flags: u32, matches: Option<Pin<&'a mut VecDeque<SearchStep>>>) -> u32 {
+fn on_match(_id: u32, from: u64, to: u64, matches: Option<&RefCell<VecDeque<SearchStep>>>) -> Matching {
     matches
         .expect("match")
-        .as_mut()
-        .push_back(dbg!(SearchStep::Match(from as usize, to as usize)));
+        .borrow_mut()
+        .push_back(SearchStep::Match(from as usize, to as usize));
 
-    0
+    Matching::Continue
 }
 
 #[cfg(test)]

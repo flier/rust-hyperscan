@@ -35,7 +35,15 @@ impl<T> Scannable for T where T: AsRef<[u8]> {}
 ///
 /// Fn(id: u32, from: u64, to: u64, flags: u32) -> bool
 ///
-pub type MatchEventCallback<D> = fn(id: u32, from: u64, to: u64, data: Option<D>) -> bool;
+pub type MatchEventCallback<D> = fn(id: u32, from: u64, to: u64, data: Option<D>) -> Matching;
+
+/// Indicating whether or not matching should continue on the target data.
+pub enum Matching {
+    /// The matching should continue
+    Continue,
+    /// The matching should cease
+    Break,
+}
 
 pub struct MatchContext<D: Clone> {
     pub callback: MatchEventCallback<D>,
@@ -59,10 +67,9 @@ where
     ) -> c_int {
         let ctxt = (context as *mut Pin<Box<MatchContext<D>>>).as_mut().unwrap();
 
-        if (ctxt.callback)(id, from, to, ctxt.data.clone()) {
-            1
-        } else {
-            0
+        match (ctxt.callback)(id, from, to, ctxt.data.clone()) {
+            Matching::Continue => 0,
+            Matching::Break => 1,
         }
     }
 }
@@ -230,12 +237,12 @@ pub mod tests {
 
         db.scan::<_, &()>("foo test bar", &s, None, None).unwrap();
 
-        fn callback<T>(id: u32, from: u64, to: u64, _: T) -> bool {
+        fn callback<T>(id: u32, from: u64, to: u64, _: T) -> Matching {
             assert_eq!(id, 0);
             assert_eq!(from, 4);
             assert_eq!(to, 8);
 
-            true
+            Matching::Break
         };
 
         assert_eq!(
@@ -254,23 +261,23 @@ pub mod tests {
         let db: VectoredDatabase = pattern! {"test"; CASELESS|SOM_LEFTMOST}.build().unwrap();
         let s = db.alloc().unwrap();
 
-        let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
+        let data = vec!["foo", "test", "bar"];
 
         db.scan::<_, _, &()>(data, &s, None, None).unwrap();
 
         let matches = RefCell::new(vec![]);
 
-        fn callback(id: u32, from: u64, to: u64, matches: Option<&RefCell<Vec<(u64, u64)>>>) -> bool {
+        fn callback(id: u32, from: u64, to: u64, matches: Option<&RefCell<Vec<(u64, u64)>>>) -> Matching {
             assert_eq!(id, 0);
             assert_eq!(from, 3);
             assert_eq!(to, 7);
 
             matches.unwrap().borrow_mut().push((from, to));
 
-            true
+            Matching::Break
         };
 
-        let data = vec!["foo".as_bytes(), "test".as_bytes(), "bar".as_bytes()];
+        let data = vec!["foo", "test", "bar"];
 
         assert_eq!(
             db.scan(data, &s, Some(callback), Some(&matches))
@@ -293,10 +300,10 @@ pub mod tests {
         let data = vec!["foo t", "es", "t bar"];
         let matches = RefCell::new(vec![]);
 
-        fn callback(_id: u32, from: u64, to: u64, matches: Option<&RefCell<Vec<(u64, u64)>>>) -> bool {
+        fn callback(_id: u32, from: u64, to: u64, matches: Option<&RefCell<Vec<(u64, u64)>>>) -> Matching {
             matches.unwrap().borrow_mut().push((from, to));
 
-            false
+            Matching::Continue
         }
 
         for d in data {
@@ -321,10 +328,10 @@ pub mod tests {
         let mut cur = Cursor::new(buf.as_bytes());
         let matches = RefCell::new(vec![]);
 
-        fn callback(_id: u32, from: u64, to: u64, matches: Option<&RefCell<Vec<(u64, u64)>>>) -> bool {
+        fn callback(_id: u32, from: u64, to: u64, matches: Option<&RefCell<Vec<(u64, u64)>>>) -> Matching {
             matches.unwrap().borrow_mut().push((from, to));
 
-            false
+            Matching::Continue
         }
 
         db.scan(&mut cur, &s, Some(callback), Some(&matches)).unwrap();

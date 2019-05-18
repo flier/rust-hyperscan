@@ -97,10 +97,10 @@ fn main() -> Result<(), Error> {
     println!("Scanning {} bytes with Hyperscan", input_data.len());
 
     // This is the function that will be called for each match that occurs.
-    fn event_handler<'a>(_: u32, _: u64, to: u64, expression: Option<String>) -> bool {
+    fn event_handler<'a>(_: u32, _: u64, to: u64, expression: Option<String>) -> Matching {
         println!("Match for pattern \"{}\" at offset {}", expression.unwrap(), to);
 
-        false
+        Matching::Continue
     };
 
     let _ = database

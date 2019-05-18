@@ -235,10 +235,10 @@ impl Benchmark {
         self.match_count.store(0, Ordering::Relaxed);
     }
 
-    fn on_match<'a>(_id: u32, _from: u64, _to: u64, match_count: Option<&AtomicUsize>) -> bool {
+    fn on_match<'a>(_id: u32, _from: u64, _to: u64, match_count: Option<&AtomicUsize>) -> Matching {
         match_count.unwrap().fetch_add(1, Ordering::Relaxed);
 
-        false
+        Matching::Continue
     }
 
     // Open a Hyperscan stream for each stream in stream_ids
