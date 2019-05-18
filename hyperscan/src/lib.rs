@@ -6,11 +6,9 @@
 //! #[macro_use]
 //! extern crate hyperscan;
 //!
-//! use std::pin::Pin;
-//!
 //! use hyperscan::prelude::*;
 //!
-//! fn callback(id: u32, from: u64, to: u64, expr: Option<Pin<&String>>) -> Matching {
+//! fn callback(id: u32, from: u64, to: u64, expr: Option<&str>) -> Matching {
 //!     assert_eq!(id, 0);
 //!     assert_eq!(from, 5);
 //!     assert_eq!(to, 9);
@@ -24,9 +22,8 @@
 //!     let pattern = &pattern! {"test"; CASELESS | SOM_LEFTMOST};
 //!     let db: BlockDatabase = pattern.build().unwrap();
 //!     let scratch = db.alloc().unwrap();
-//!     let expr = Pin::new(&pattern.expression);
 //!
-//!     db.scan("some test data", &scratch, Some(callback), Some(expr)).unwrap();
+//!     db.scan("some test data", &scratch, Some(callback), Some(&pattern.expression)).unwrap();
 //! }
 //! ```
 #![deny(missing_docs, rust_2018_compatibility, rust_2018_idioms)]

@@ -53,7 +53,7 @@ impl StreamRef {
         context: Option<D>,
     ) -> Result<(), Error>
     where
-        D: Clone + Unpin,
+        D: Clone,
     {
         let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
 
@@ -83,7 +83,7 @@ impl Stream {
         context: Option<D>,
     ) -> Result<(), Error>
     where
-        D: Clone + Unpin,
+        D: Clone,
     {
         let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
 

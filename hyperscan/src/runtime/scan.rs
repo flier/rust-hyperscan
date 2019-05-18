@@ -52,10 +52,10 @@ pub struct MatchContext<D: Clone> {
 
 impl<D> MatchContext<D>
 where
-    D: Clone + Unpin,
+    D: Clone,
 {
     pub fn new(callback: MatchEventCallback<D>, data: Option<D>) -> Pin<Box<Self>> {
-        Pin::new(Box::new(Self { callback, data }))
+        Box::pin(Self { callback, data })
     }
 
     pub unsafe extern "C" fn stub(
@@ -85,7 +85,7 @@ impl DatabaseRef<Block> {
     ) -> Result<(), Error>
     where
         T: Scannable,
-        D: Clone + Unpin,
+        D: Clone,
     {
         let data = data.as_ref();
         let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
@@ -121,7 +121,7 @@ impl DatabaseRef<Vectored> {
     where
         I: IntoIterator<Item = T>,
         T: Scannable,
-        D: Clone + Unpin,
+        D: Clone,
     {
         let (ptrs, lens): (Vec<_>, Vec<_>) = data
             .into_iter()
@@ -166,7 +166,7 @@ impl DatabaseRef<Streaming> {
     ) -> Result<(), Error>
     where
         R: Read,
-        D: Clone + Unpin,
+        D: Clone,
     {
         let stream = self.open_stream()?;
         let mut buf = [0; SCAN_BUF_SIZE];
@@ -194,7 +194,7 @@ impl StreamRef {
     ) -> Result<(), Error>
     where
         T: Scannable,
-        D: Clone + Unpin,
+        D: Clone,
     {
         let data = data.as_ref();
         let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
