@@ -1,5 +1,3 @@
-use core::mem;
-use core::ops::Deref;
 use core::ptr::null_mut;
 
 use failure::Error;
@@ -8,7 +6,7 @@ use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 use crate::common::{DatabaseRef, Streaming};
 use crate::errors::AsResult;
 use crate::ffi;
-use crate::runtime::{MatchEventCallback, ScratchRef};
+use crate::runtime::{MatchContext, MatchEventCallback, ScratchRef};
 
 impl DatabaseRef<Streaming> {
     /// Provides the size of the stream state allocated by a single stream opened against the given database.
@@ -48,22 +46,28 @@ unsafe fn clone_stream(s: *mut ffi::hs_stream_t) -> *mut ffi::hs_stream_t {
 
 impl StreamRef {
     /// Reset a stream to an initial state.
-    pub fn reset<'a, P: Deref>(
+    pub fn reset<D>(
         &self,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<P>,
-        context: Option<P>,
+        callback: Option<MatchEventCallback<D>>,
+        context: Option<D>,
     ) -> Result<(), Error>
     where
-        P::Target: Sized,
+        D: Clone + Unpin,
     {
+        let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
+
         unsafe {
             ffi::hs_reset_stream(
                 self.as_ptr(),
                 0,
                 scratch.as_ptr(),
-                mem::transmute(callback),
-                context.map_or_else(null_mut, |p| &*p as *const _ as *mut _),
+                if ctxt.is_some() {
+                    Some(MatchContext::<D>::stub)
+                } else {
+                    None
+                },
+                ctxt.as_mut().map_or_else(null_mut, |ctxt| ctxt as *mut _ as *mut _),
             )
             .ok()
         }
@@ -72,21 +76,27 @@ impl StreamRef {
 
 impl Stream {
     /// Close a stream.
-    pub fn close<'a, P: Deref>(
+    pub fn close<D>(
         self,
         scratch: &ScratchRef,
-        callback: MatchEventCallback<P>,
-        context: Option<P>,
+        callback: Option<MatchEventCallback<D>>,
+        context: Option<D>,
     ) -> Result<(), Error>
     where
-        P::Target: Sized,
+        D: Clone + Unpin,
     {
+        let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
+
         unsafe {
             ffi::hs_close_stream(
                 self.as_ptr(),
                 scratch.as_ptr(),
-                mem::transmute(callback),
-                context.map_or_else(null_mut, |p| &*p as *const _ as *mut _),
+                if ctxt.is_some() {
+                    Some(MatchContext::<D>::stub)
+                } else {
+                    None
+                },
+                ctxt.as_mut().map_or_else(null_mut, |ctxt| ctxt as *mut _ as *mut _),
             )
             .ok()
         }

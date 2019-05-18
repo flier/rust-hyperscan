@@ -10,15 +10,14 @@
 //!
 //! use hyperscan::prelude::*;
 //!
-//! fn callback(id: u32, from: u64, to: u64, flags: u32, expr: Option<Pin<&String>>) -> u32 {
+//! fn callback(id: u32, from: u64, to: u64, expr: Option<Pin<&String>>) -> bool {
 //!     assert_eq!(id, 0);
 //!     assert_eq!(from, 5);
 //!     assert_eq!(to, 9);
-//!     assert_eq!(flags, 0);
 //!
 //!     println!("found pattern {} : {} @ [{}, {})", id, expr.unwrap(), from, to);
 //!
-//!     0
+//!     false
 //! }
 //!
 //! fn main() {
