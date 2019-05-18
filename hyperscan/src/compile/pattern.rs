@@ -245,7 +245,6 @@ impl Pattern {
 }
 
 impl fmt::Display for Pattern {
-    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(id) = self.id {
             write!(f, "{}:", id)?;
@@ -270,7 +269,6 @@ impl fmt::Display for Pattern {
 impl FromStr for Pattern {
     type Err = Error;
 
-    #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Pattern::parse(s)
     }

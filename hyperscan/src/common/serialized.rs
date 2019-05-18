@@ -1,6 +1,6 @@
 use core::fmt;
 use core::ops::Deref;
-use core::ptr;
+use core::ptr::{null_mut, NonNull};
 use core::slice;
 use std::ffi::CStr;
 
@@ -13,25 +13,25 @@ use crate::ffi;
 
 /// A type representing an owned, C-compatible buffer.
 #[derive(Debug)]
-pub struct CBuffer(*const i8, usize);
+pub struct CBuffer<T>(NonNull<T>, usize);
 
-impl Drop for CBuffer {
+impl<T> Drop for CBuffer<T> {
     fn drop(&mut self) {
-        unsafe { libc::free(self.0 as *mut _) }
+        unsafe { libc::free(self.0.as_ptr() as *mut _) }
     }
 }
 
-impl Deref for CBuffer {
-    type Target = [u8];
+impl<T> Deref for CBuffer<T> {
+    type Target = [T];
 
     fn deref(&self) -> &Self::Target {
         self.as_ref()
     }
 }
 
-impl AsRef<[u8]> for CBuffer {
-    fn as_ref(&self) -> &[u8] {
-        unsafe { slice::from_raw_parts(self.0 as *const _, self.1) }
+impl<T> AsRef<[T]> for CBuffer<T> {
+    fn as_ref(&self) -> &[T] {
+        unsafe { slice::from_raw_parts(self.0.as_ptr(), self.1) }
     }
 }
 
@@ -62,7 +62,7 @@ impl<T: AsRef<[u8]>> Serialized for T {
 
     fn info(&self) -> Result<String, Error> {
         let buf = self.as_ref();
-        let mut p = ptr::null_mut();
+        let mut p = null_mut();
 
         unsafe {
             ffi::hs_serialized_database_info(buf.as_ptr() as *const _, buf.len(), &mut p).and_then(|_| {
@@ -79,7 +79,7 @@ impl<T: AsRef<[u8]>> Serialized for T {
 
     fn deserialize<M>(&self) -> Result<Database<M>, Error> {
         let buf = self.as_ref();
-        let mut db = ptr::null_mut();
+        let mut db = null_mut();
 
         unsafe {
             ffi::hs_deserialize_database(buf.as_ptr() as *const i8, buf.len(), &mut db).map(|_| Database::from_ptr(db))
@@ -89,11 +89,14 @@ impl<T: AsRef<[u8]>> Serialized for T {
 
 impl<T> DatabaseRef<T> {
     /// Serialize a pattern database to a stream of bytes.
-    pub fn serialize(&self) -> Result<CBuffer, Error> {
-        let mut ptr = ptr::null_mut();
+    pub fn serialize(&self) -> Result<CBuffer<u8>, Error> {
+        let mut ptr = null_mut();
         let mut size: usize = 0;
 
-        unsafe { ffi::hs_serialize_database(self.as_ptr(), &mut ptr, &mut size).map(|_| CBuffer(ptr as *mut _, size)) }
+        unsafe {
+            ffi::hs_serialize_database(self.as_ptr(), &mut ptr, &mut size)
+                .map(|_| CBuffer(NonNull::new_unchecked(ptr).cast(), size))
+        }
     }
 
     /// Reconstruct a pattern database from a stream of bytes
