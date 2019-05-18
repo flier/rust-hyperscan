@@ -52,7 +52,7 @@ pub use crate::common::{
 };
 pub use crate::compile::{
     Builder, CpuFeatures, Error as CompileError, ExpressionExt, ExpressionInfo, Flags as CompileFlags, Pattern,
-    Patterns, PlatformInfo, PlatformInfoRef, SomHorizon, Tune,
+    Patterns, Platform, PlatformRef, SomHorizon, Tune,
 };
 pub use crate::errors::HsError;
 pub use crate::runtime::{Scannable, Scratch, ScratchRef, Stream, StreamRef};

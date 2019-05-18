@@ -52,7 +52,7 @@ bitflags! {
 foreign_type! {
     /// A type containing information on the target platform
     /// which may optionally be provided to the compile calls
-    pub type PlatformInfo {
+    pub type Platform {
         type CType = ffi::hs_platform_info_t;
 
         fn drop = free_platform_info;
@@ -63,25 +63,25 @@ unsafe fn free_platform_info(p: *mut ffi::hs_platform_info_t) {
     let _ = Box::from_raw(p);
 }
 
-impl PlatformInfo {
+impl Platform {
     /// Test the current system architecture.
     pub fn is_valid() -> Result<(), Error> {
         unsafe { ffi::hs_valid_platform().ok() }
     }
 
     /// Populates the platform information based on the current host.
-    pub fn host() -> Result<PlatformInfo, Error> {
+    pub fn host() -> Result<Platform, Error> {
         unsafe {
             let mut platform = mem::zeroed();
 
-            ffi::hs_populate_platform(&mut platform).map(|_| PlatformInfo::from_ptr(Box::into_raw(Box::new(platform))))
+            ffi::hs_populate_platform(&mut platform).map(|_| Platform::from_ptr(Box::into_raw(Box::new(platform))))
         }
     }
 
     /// Constructs a target platform which may be used to guide the optimisation process of the compile.
-    pub fn new(tune: Tune, cpu_features: CpuFeatures) -> PlatformInfo {
+    pub fn new(tune: Tune, cpu_features: CpuFeatures) -> Platform {
         unsafe {
-            PlatformInfo::from_ptr(Box::into_raw(Box::new(ffi::hs_platform_info_t {
+            Platform::from_ptr(Box::into_raw(Box::new(ffi::hs_platform_info_t {
                 tune: tune as u32,
                 cpu_features: cpu_features.bits(),
                 reserved1: 0,
@@ -97,6 +97,6 @@ pub mod tests {
 
     #[test]
     pub fn test_platform() {
-        assert!(PlatformInfo::is_valid().is_ok())
+        assert!(Platform::is_valid().is_ok())
     }
 }

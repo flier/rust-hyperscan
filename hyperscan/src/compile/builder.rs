@@ -6,7 +6,7 @@ use foreign_types::{ForeignType, ForeignTypeRef};
 use libc::c_uint;
 
 use crate::common::{Database, Mode};
-use crate::compile::{AsCompileResult, Flags, Pattern, Patterns, PlatformInfoRef, SomHorizon};
+use crate::compile::{AsCompileResult, Flags, Pattern, Patterns, PlatformRef, SomHorizon};
 use crate::ffi;
 
 /// The regular expression pattern database builder.
@@ -17,7 +17,7 @@ pub trait Builder {
     }
 
     /// Build an expression is compiled into a Hyperscan database for a target platform.
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error>;
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Error>;
 }
 
 impl Builder for Pattern {
@@ -27,7 +27,7 @@ impl Builder for Pattern {
     /// / This is the function call with which an expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Error> {
         let expr = CString::new(self.expression.as_bytes())?;
         let mut mode = T::ID;
         let mut db = null_mut();
@@ -61,7 +61,7 @@ impl Builder for Patterns {
     /// Each expression can be labelled with a unique integer
     // which is passed into the match callback to identify the pattern that has matched.
     ///
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformInfoRef>) -> Result<Database<T>, Error> {
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Error> {
         let mut expressions = Vec::with_capacity(self.len());
         let mut ptrs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
@@ -116,7 +116,7 @@ impl<T: Mode> Database<T> {
     pub fn compile<S: AsRef<str>>(
         expression: S,
         flags: Flags,
-        platform: Option<&PlatformInfoRef>,
+        platform: Option<&PlatformRef>,
     ) -> Result<Database<T>, Error> {
         Pattern::with_flags(expression, flags)?.for_platform(platform)
     }
@@ -125,13 +125,13 @@ impl<T: Mode> Database<T> {
 #[cfg(test)]
 pub mod tests {
     use crate::common::tests::validate_database;
-    use crate::compile::{Flags, PlatformInfo};
+    use crate::compile::{Flags, Platform};
     use crate::prelude::*;
 
     #[test]
     fn test_database_compile() {
         let _ = pretty_env_logger::try_init();
-        let info = PlatformInfo::host().unwrap();
+        let info = Platform::host().unwrap();
 
         let db = BlockDatabase::compile("test", Flags::empty(), Some(&info)).unwrap();
 
