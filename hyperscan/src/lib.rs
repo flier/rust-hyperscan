@@ -1,5 +1,14 @@
 //! Hyperscan is a high-performance regular expression matching library.
 //!
+//! # Usage
+//!
+//! This crate is on crates.io and can be used by adding `hyperscan` to your dependencies in your project's Cargo.toml.
+//!
+//! ```toml
+//! [dependencies]
+//! hyperscan = "0.2"
+//! ```
+//!
 //! # Examples
 //!
 //! ```
@@ -40,6 +49,7 @@ mod common;
 mod errors;
 #[macro_use]
 mod compile;
+pub mod regex;
 mod runtime;
 
 pub use crate::common::{
