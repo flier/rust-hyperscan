@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use failure::Error;
 
-use crate::compile::{Builder as _, Flags, Pattern, Patterns};
+use crate::compile::Flags;
 use crate::regex::Regex;
 
 /// A configurable builder for a regular expression.
@@ -32,7 +30,7 @@ impl Builder<String> {
     pub fn new(pattern: &str) -> Self {
         Builder {
             expr: pattern.to_owned(),
-            flags: Flags::UTF8,
+            flags: Flags::empty(),
         }
     }
 
@@ -41,9 +39,7 @@ impl Builder<String> {
     /// Note that calling `as_str` on the resulting Regex will produce the pattern given to new verbatim.
     /// Notably, it will not incorporate any of the flags set on this builder.
     pub fn build(&self) -> Result<Regex, Error> {
-        Pattern::with_flags(&self.expr, self.flags)?
-            .build()
-            .map(|db| Regex(Arc::new(db)))
+        Regex::with_flags(&self.expr, self.flags)
     }
 }
 
