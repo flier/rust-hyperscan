@@ -102,6 +102,10 @@ pub trait SerializableDatabase<T: Database, S: SerializedDatabase>: Database {
 pub trait SerializedDatabase {
     fn len(&self) -> usize;
 
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     fn as_slice(&self) -> &[u8];
 
     fn deserialize<T: SerializableDatabase<D, S>, D: Database, S: SerializedDatabase>(&self) -> Result<D, Error> {
@@ -178,8 +182,8 @@ impl PlatformInfo {
 
     pub fn new(tune: u32, cpu_features: u64) -> PlatformInfo {
         PlatformInfo(Some(RefCell::new(hs_platform_info_t {
-            tune: tune,
-            cpu_features: cpu_features,
+            tune,
+            cpu_features,
             reserved1: 0,
             reserved2: 0,
         })))
@@ -350,7 +354,7 @@ pub trait VectoredScanner<T: Scannable, S: Scratch> {
     /// takes place for vectoring-mode pattern databases.
     fn scan<D>(
         &self,
-        data: &Vec<T>,
+        data: &[T],
         flags: ScanFlags,
         scratch: &S,
         callback: Option<MatchEventCallback<D>>,

@@ -1,6 +1,6 @@
-use std::ptr;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
+use std::ptr;
 
 use libc;
 
@@ -72,8 +72,8 @@ impl<T: Send> AsRef<T> for CPtr<T> {
 
 #[cfg(test)]
 pub mod tests {
-    use std::ptr;
     use std::mem;
+    use std::ptr;
 
     use libc;
     use regex::Regex;
@@ -96,9 +96,7 @@ pub mod tests {
             assert!(*p != ptr::null_mut());
             assert_eq!((*p.0).bar, 32);
 
-            assert!(Regex::new(r"CPtr\(\w+\)")
-                .unwrap()
-                .is_match(&format!("{:?}", p)));
+            assert!(Regex::new(r"CPtr\(\w+\)").unwrap().is_match(&format!("{:?}", p)));
         }
     }
 }

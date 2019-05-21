@@ -38,7 +38,7 @@ impl<T: Type> RawDatabase<T> {
         trace!("construct {} database {:p}", T::name(), db);
 
         RawDatabase {
-            db: db,
+            db,
             _marker: PhantomData,
         }
     }
@@ -199,7 +199,7 @@ impl RawSerializedDatabase {
     unsafe fn from_raw_parts(bytes: *mut u8, len: usize) -> RawSerializedDatabase {
         RawSerializedDatabase {
             p: CPtr::from_ptr(bytes),
-            len: len,
+            len,
         }
     }
 }
@@ -220,7 +220,7 @@ impl SerializedDatabase for [u8] {
     }
 
     fn as_slice(&self) -> &[u8] {
-        self.as_ref()
+        self
     }
 }
 
@@ -302,11 +302,9 @@ pub mod tests {
 
         validate_database(&db);
 
-        assert!(
-            Regex::new(r"RawDatabase<Block>\{db: \w+\}")
-                .unwrap()
-                .is_match(&format!("{:?}", db))
-        );
+        assert!(Regex::new(r"RawDatabase<Block>\{db: \w+\}")
+            .unwrap()
+            .is_match(&format!("{:?}", db)));
     }
 
     #[test]
@@ -322,11 +320,9 @@ pub mod tests {
         validate_serialized_database(&data);
         validate_serialized_database(data.as_slice());
 
-        assert!(
-            Regex::new(r"RawSerializedDatabase\{p: \w+, len: \d+\}")
-                .unwrap()
-                .is_match(&format!("{:?}", data))
-        );
+        assert!(Regex::new(r"RawSerializedDatabase\{p: \w+, len: \d+\}")
+            .unwrap()
+            .is_match(&format!("{:?}", data)));
     }
 
     #[test]

@@ -164,7 +164,7 @@ impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
     #[inline]
     fn scan<D>(
         &self,
-        data: &Vec<T>,
+        data: &[T],
         flags: ScanFlags,
         scratch: &S,
         callback: Option<MatchEventCallback<D>>,
@@ -194,7 +194,7 @@ impl<T: Scannable, S: Scratch> VectoredScanner<T, S> for VectoredDatabase {
 
         trace!(
             "vectored scan {} bytes in {} parts with {} database at {:p}",
-            lens.iter().fold(0, |sum, len| sum + len),
+            lens.iter().sum::<u32>(),
             lens.len(),
             self.database_name(),
             **self
@@ -350,7 +350,7 @@ pub mod tests {
     fn test_scratch() {
         let _ = env_logger::try_init();
 
-        let db: BlockDatabase = pattern!{"test"}.build().unwrap();
+        let db: BlockDatabase = pattern! {"test"}.build().unwrap();
 
         assert!(*db != ptr::null_mut());
 
@@ -366,7 +366,7 @@ pub mod tests {
 
         assert!(s2.size().unwrap() > SCRATCH_SIZE);
 
-        let db2: VectoredDatabase = pattern!{"foobar"}.build().unwrap();
+        let db2: VectoredDatabase = pattern! {"foobar"}.build().unwrap();
 
         assert!(s2.realloc(&db2).unwrap().size().unwrap() > s.size().unwrap());
     }
@@ -375,7 +375,7 @@ pub mod tests {
     fn test_block_scan() {
         let _ = env_logger::try_init();
 
-        let db: BlockDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
+        let db: BlockDatabase = pattern! {"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
             .build()
             .unwrap();
         let s = RawScratch::alloc(&db).unwrap();
@@ -403,7 +403,7 @@ pub mod tests {
     fn test_vectored_scan() {
         let _ = env_logger::try_init();
 
-        let db: VectoredDatabase = pattern!{"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
+        let db: VectoredDatabase = pattern! {"test", flags => HS_FLAG_CASELESS|HS_FLAG_SOM_LEFTMOST}
             .build()
             .unwrap();
         let s = RawScratch::alloc(&db).unwrap();
@@ -433,7 +433,7 @@ pub mod tests {
     fn test_streaming_scan() {
         let _ = env_logger::try_init();
 
-        let db: StreamingDatabase = pattern!{"test", flags => HS_FLAG_CASELESS}.build().unwrap();
+        let db: StreamingDatabase = pattern! {"test", flags => HS_FLAG_CASELESS}.build().unwrap();
 
         let s = RawScratch::alloc(&db).unwrap();
         let st = db.open_stream(0).unwrap();

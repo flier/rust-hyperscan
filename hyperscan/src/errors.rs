@@ -1,7 +1,6 @@
 use std::error;
 use std::ffi::CStr;
 use std::fmt;
-use std::ptr;
 use std::string::ToString;
 
 use constants::*;
@@ -155,7 +154,7 @@ impl Drop for RawCompileError {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            if self.0 != ptr::null_mut() {
+            if !self.0.is_null() {
                 assert_hs_error!(hs_free_compile_error(self.0));
             }
         }

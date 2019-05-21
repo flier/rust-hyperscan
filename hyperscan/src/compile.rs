@@ -65,7 +65,7 @@ impl fmt::Display for CompileFlags {
 
 impl CompileFlags {
     #[inline]
-    pub fn is_set(&self, flag: u32) -> bool {
+    pub fn is_set(self, flag: u32) -> bool {
         self.0 & flag == flag
     }
 
@@ -120,33 +120,28 @@ pub struct Pattern {
 
 impl Pattern {
     pub fn parse(s: &str) -> Result<Pattern, Error> {
-        unsafe {
-            let (id, expr) = match s.find(':') {
-                Some(off) => (
-                    try!(s.slice_unchecked(0, off).parse()),
-                    s.slice_unchecked(off + 1, s.len()),
-                ),
-                None => (0, s),
-            };
+        let (id, expr) = match s.find(':') {
+            Some(off) => (s[0..off].parse()?, &s[off + 1..]),
+            None => (0, s),
+        };
 
-            let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
-                (true, Some(end)) if end > 0 => Pattern {
-                    expression: String::from(expr.slice_unchecked(1, end)),
-                    flags: try!(CompileFlags::parse(expr.slice_unchecked(end + 1, expr.len()))),
-                    id: id,
-                },
+        let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
+            (true, Some(end)) if end > 0 => Pattern {
+                expression: expr[1..end].to_owned(),
+                flags: CompileFlags::parse(&expr[end + 1..])?,
+                id,
+            },
 
-                _ => Pattern {
-                    expression: String::from(expr),
-                    flags: CompileFlags::default(),
-                    id: id,
-                },
-            };
+            _ => Pattern {
+                expression: String::from(expr),
+                flags: CompileFlags::default(),
+                id,
+            },
+        };
 
-            debug!("pattern `{}` parsed to `{}`", s, pattern);
+        debug!("pattern `{}` parsed to `{}`", s, pattern);
 
-            Ok(pattern)
-        }
+        Ok(pattern)
     }
 }
 
@@ -436,7 +431,7 @@ pub mod tests {
     fn test_pattern_build() {
         let _ = env_logger::try_init();
 
-        let p = &pattern!{"test"};
+        let p = &pattern! {"test"};
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, CompileFlags(0));
@@ -459,7 +454,7 @@ pub mod tests {
     fn test_pattern_build_with_flags() {
         let _ = env_logger::try_init();
 
-        let p = &pattern!{"test", flags => HS_FLAG_CASELESS};
+        let p = &pattern! {"test", flags => HS_FLAG_CASELESS};
 
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, CompileFlags(HS_FLAG_CASELESS));
