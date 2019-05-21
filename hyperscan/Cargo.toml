@@ -7,7 +7,7 @@ homepage = "https://github.com/flier/rust-hyperscan"
 repository = "https://github.com/flier/rust-hyperscan"
 documentation = "https://docs.rs/crate/hyperscan/"
 license = "Apache-2.0"
-readme = "README.md"
+readme = "../README.md"
 keywords = ["regex", "hyperscan", "streaming"]
 
 [dependencies]
