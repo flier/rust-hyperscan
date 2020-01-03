@@ -18,7 +18,7 @@ gen = ["bindgen"]
 
 [build-dependencies]
 log = "0.4"
-env_logger = "0.5"
+env_logger = "0.7"
 pkg-config = "0.3"
 
-bindgen = { version = "0.37", optional = true }
+bindgen = { version = "0.52", optional = true }
