@@ -39,10 +39,10 @@ use hyperscan::*;
  * length with its length. Returns NULL on failure.
  */
 fn read_input_data(input_filename: &str) -> Result<String, io::Error> {
-    let mut f = try!(File::open(input_filename));
+    let mut f = File::open(input_filename)?;
     let mut buf = String::new();
 
-    try!(f.read_to_string(&mut buf));
+    f.read_to_string(&mut buf)?;
 
     Ok(buf)
 }

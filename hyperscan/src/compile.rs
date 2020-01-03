@@ -33,31 +33,31 @@ impl Into<u32> for CompileFlags {
 impl fmt::Display for CompileFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.is_set(HS_FLAG_CASELESS) {
-            try!(write!(f, "i"))
+            write!(f, "i")?
         }
         if self.is_set(HS_FLAG_MULTILINE) {
-            try!(write!(f, "m"))
+            write!(f, "m")?
         }
         if self.is_set(HS_FLAG_DOTALL) {
-            try!(write!(f, "s"))
+            write!(f, "s")?
         }
         if self.is_set(HS_FLAG_SINGLEMATCH) {
-            try!(write!(f, "H"))
+            write!(f, "H")?
         }
         if self.is_set(HS_FLAG_ALLOWEMPTY) {
-            try!(write!(f, "V"))
+            write!(f, "V")?
         }
         if self.is_set(HS_FLAG_UTF8) {
-            try!(write!(f, "8"))
+            write!(f, "8")?
         }
         if self.is_set(HS_FLAG_UCP) {
-            try!(write!(f, "W"))
+            write!(f, "W")?
         }
         if self.is_set(HS_FLAG_COMBINATION) {
-            try!(write!(f, "C"))
+            write!(f, "C")?
         }
         if self.is_set(HS_FLAG_QUIET) {
-            try!(write!(f, "Q"))
+            write!(f, "Q")?
         }
         Ok(())
     }
@@ -169,7 +169,7 @@ impl FromStr for Pattern {
 
 impl Expression for Pattern {
     fn info(&self) -> Result<ExpressionInfo, Error> {
-        let expr = try!(CString::new(self.expression.as_str()));
+        let expr = CString::new(self.expression.as_str())?;
         let mut info: CPtr<hs_expr_info_t> = CPtr::null();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
@@ -244,7 +244,7 @@ impl<T: Type> RawDatabase<T> {
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
     pub fn compile(expression: &str, flags: u32, platform: &PlatformInfo) -> Result<RawDatabase<T>, Error> {
-        let expr = try!(CString::new(expression));
+        let expr = CString::new(expression)?;
         let mut db: RawDatabasePtr = ptr::null_mut();
         let mut err: RawCompileErrorPtr = ptr::null_mut();
 
@@ -302,7 +302,7 @@ impl<T: Type> DatabaseBuilder<RawDatabase<T>> for Patterns {
         let mut ids = Vec::with_capacity(self.len());
 
         for pattern in self {
-            let expr = try!(CString::new(pattern.expression.as_str()));
+            let expr = CString::new(pattern.expression.as_str())?;
 
             expressions.push(expr);
             flags.push(pattern.flags.0 as c_uint);

@@ -119,7 +119,7 @@ impl<T: Type> ScratchAllocator<RawScratch> for RawDatabase<T> {
 
     #[inline]
     fn realloc(&self, s: &mut RawScratch) -> Result<&Self, Error> {
-        try!(s.realloc(self));
+        s.realloc(self)?;
 
         Ok(self)
     }

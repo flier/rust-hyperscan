@@ -104,7 +104,7 @@ macro_rules! build_database {
     ($builder:expr, $mode:expr) => {{
         let now = Instant::now();
 
-        let db = try!($builder.build());
+        let db = $builder.build()?;
 
         println!("Hyperscan {} mode database compiled in {}ms", $mode, now.elapsed().ms());
 
@@ -119,7 +119,7 @@ macro_rules! build_database {
  */
 fn databases_from_file(filename: &str) -> Result<(StreamingDatabase, BlockDatabase), Error> {
     // do the actual file reading and string handling
-    let patterns = try!(parse_file(filename));
+    let patterns = parse_file(filename)?;
 
     println!("Compiling Hyperscan databases with {} patterns.", patterns.len());
 
@@ -130,7 +130,7 @@ fn databases_from_file(filename: &str) -> Result<(StreamingDatabase, BlockDataba
 }
 
 fn parse_file(filename: &str) -> Result<Patterns, io::Error> {
-    let f = try!(File::open(filename));
+    let f = File::open(filename)?;
     let patterns = io::BufReader::new(f)
         .lines()
         .filter_map(|line: Result<String, io::Error>| -> Option<Pattern> {
@@ -203,9 +203,9 @@ struct Benchmark {
 
 impl Benchmark {
     fn new(db_streaming: StreamingDatabase, db_block: BlockDatabase) -> Result<Benchmark, hyperscan::Error> {
-        let mut s = try!(db_streaming.alloc());
+        let mut s = db_streaming.alloc()?;
 
-        try!(s.realloc(&db_block));
+        s.realloc(&db_block)?;
 
         Ok(Benchmark {
             packets: Vec::new(),
@@ -254,7 +254,7 @@ impl Benchmark {
     }
 
     fn read_streams(&mut self, pcap_file: &str) -> Result<(), pcap::Error> {
-        let mut capture = try!(pcap::Capture::from_file(Path::new(pcap_file)));
+        let mut capture = pcap::Capture::from_file(Path::new(pcap_file))?;
 
         while let Ok(ref packet) = capture.next() {
             if let Some((key, payload)) = Self::decode_packet(&packet) {

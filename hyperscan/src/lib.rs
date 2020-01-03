@@ -3,9 +3,6 @@
 //! # Examples
 //!
 //! ```
-//! #[macro_use]
-//! extern crate hyperscan;
-//!
 //! use hyperscan::*;
 //!
 //! fn callback(id: u32, from: u64, to: u64, flags: u32, _: &BlockDatabase) -> u32 {
