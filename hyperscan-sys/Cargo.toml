@@ -11,6 +11,9 @@ license = "Apache-2.0"
 readme = "README.md"
 keywords = ["regex", "hyperscan", "streaming"]
 
+[lib]
+doctest=false
+
 [features]
 gen = ["bindgen"]
 

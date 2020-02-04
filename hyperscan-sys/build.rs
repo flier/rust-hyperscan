@@ -70,6 +70,8 @@ fn generate_binding(_: &str, out_file: &Path) {
         fs::copy("src/macos/raw.rs", out_file).expect("fail to copy bindings");
     } else if cfg!(target_os = "linux") {
         fs::copy("src/linux/raw.rs", out_file).expect("fail to copy bindings");
+    } else if cfg!(target_os = "windows") {
+        fs::copy("src/windows/raw.rs", out_file).expect("fail to copy bindings");
     } else {
         panic!(
             "target `{}` haven't binding file, generate it with `cargo build --features gen`",
@@ -96,7 +98,7 @@ fn main() {
 
     if cfg!(any(target_os = "macos", target_os = "freebsd")) {
         println!("cargo:rustc-link-lib=dylib=c++");
-    } else {
+    } else if cfg!(not(target_os = "windows")) {
         println!("cargo:rustc-link-lib=dylib=stdc++");
         println!("cargo:rustc-link-lib=dylib=gcc");
     }
