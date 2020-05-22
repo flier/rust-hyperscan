@@ -31,7 +31,7 @@ impl AsCompileResult for ffi::hs_error_t {
 
 foreign_type! {
     /// Providing details of the compile error condition.
-    pub type Error: Send + Sync {
+    pub unsafe type Error: Send + Sync {
         type CType = ffi::hs_compile_error_t;
 
         fn drop = free_compile_error;

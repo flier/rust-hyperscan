@@ -17,16 +17,16 @@ log = "0.4"
 bitflags = "1.0"
 libc = "0.2"
 regex-syntax = "0.6"
-foreign-types = "0.4"
+foreign-types = "0.5"
 
 hyperscan-sys = { version = "0.2.0", path = "../hyperscan-sys" }
 
 [dev-dependencies]
-pretty_env_logger = "0.3"
+pretty_env_logger = "0.4"
 regex = "1.1"
 getopts = "0.2"
 pcap = "0.7"
-pnet = "0.22"
+pnet = "0.26"
 byteorder = "1.2"
 
 [build-dependencies]

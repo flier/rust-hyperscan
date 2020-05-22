@@ -11,7 +11,7 @@ use crate::ffi;
 
 foreign_type! {
     /// A compiled pattern database that can then be used to scan data.
-    pub type Database<T>: Send + Sync {
+    pub unsafe type Database<T>: Send + Sync {
         type CType = ffi::hs_database_t;
         type PhantomData = PhantomData<T>;
 

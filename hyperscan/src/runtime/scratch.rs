@@ -9,7 +9,7 @@ use crate::ffi;
 
 foreign_type! {
     /// A large enough region of scratch space to support a given database.
-    pub type Scratch {
+    pub unsafe type Scratch {
         type CType = ffi::hs_scratch_t;
 
         fn drop = free_scratch;

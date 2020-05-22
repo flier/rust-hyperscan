@@ -26,7 +26,7 @@ impl DatabaseRef<Streaming> {
 
 foreign_type! {
     /// A pattern matching state can be maintained across multiple blocks of target data
-    pub type Stream {
+    pub unsafe type Stream {
         type CType = ffi::hs_stream_t;
 
         fn drop = drop_stream;

@@ -21,10 +21,10 @@ libc = "0.2"
 [build-dependencies]
 log = "0.4"
 failure = "0.1"
-pretty_env_logger = "0.3"
+pretty_env_logger = "0.4"
 pkg-config = "0.3"
 
-bindgen = { version = "0.49", optional = true }
+bindgen = { version = "0.54", optional = true }
 
 [lib]
 doctest = false
