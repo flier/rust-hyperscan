@@ -31,8 +31,8 @@ use std::process::exit;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
+use anyhow::{Context, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt};
-use failure::{Error, ResultExt};
 use getopts::Options;
 use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
 use pnet::packet::ip::IpNextHeaderProtocols;
@@ -47,7 +47,7 @@ use hyperscan::prelude::*;
  * expression per line, ignoring lines starting with '#' and build a Hyperscan
  * database for it.
  */
-fn read_databases(filename: &str) -> Result<(StreamingDatabase, BlockDatabase), Error> {
+fn read_databases(filename: &str) -> Result<(StreamingDatabase, BlockDatabase)> {
     // do the actual file reading and string handling
     let patterns = parse_file(filename)?;
 
@@ -56,13 +56,13 @@ fn read_databases(filename: &str) -> Result<(StreamingDatabase, BlockDatabase), 
     Ok((build_database(&patterns)?, build_database(&patterns)?))
 }
 
-fn parse_file(filename: &str) -> Result<Patterns, Error> {
+fn parse_file(filename: &str) -> Result<Patterns> {
     let f = File::open(filename)?;
 
     io::BufReader::new(f)
         .lines()
         .flat_map(|line| {
-            line.map_err(Error::from)
+            line.map_err(Error::new)
                 .and_then(|line| {
                     let line = line.trim();
 
@@ -77,7 +77,7 @@ fn parse_file(filename: &str) -> Result<Patterns, Error> {
         .collect()
 }
 
-fn build_database<B: Builder, T: Mode>(builder: &B) -> Result<Database<T>, Error> {
+fn build_database<B: Builder, T: Mode>(builder: &B) -> Result<Database<T>> {
     let now = Instant::now();
 
     let db = builder.build::<T>()?;
@@ -143,7 +143,7 @@ struct Benchmark {
 }
 
 impl Benchmark {
-    fn new(streaming_db: StreamingDatabase, block_db: BlockDatabase) -> Result<Benchmark, Error> {
+    fn new(streaming_db: StreamingDatabase, block_db: BlockDatabase) -> Result<Benchmark> {
         let mut s = streaming_db.alloc()?;
 
         block_db.realloc(&mut s)?;
@@ -242,30 +242,30 @@ impl Benchmark {
     }
 
     // Open a Hyperscan stream for each stream in stream_ids
-    fn open_streams(&mut self) -> Result<(), Error> {
+    fn open_streams(&mut self) -> Result<()> {
         self.streams = iter::repeat_with(|| self.streaming_db.open_stream())
             .take(self.sessions.len())
-            .collect::<Result<Vec<_>, Error>>()?;
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(())
     }
 
     // Close all open Hyperscan streams (potentially generating any end-anchored matches)
-    fn close_streams(&mut self) -> Result<(), Error> {
+    fn close_streams(&mut self) -> Result<()> {
         for stream in self.streams.drain(..) {
             stream
                 .close(&self.scratch, Some(Self::on_match), Some(&self.match_count))
-                .context("close stream")?;
+                .with_context(|| "close stream")?;
         }
 
         Ok(())
     }
 
-    fn reset_streams(&mut self) -> Result<(), Error> {
+    fn reset_streams(&mut self) -> Result<()> {
         for ref stream in &self.streams {
             stream
                 .reset(&self.scratch, Some(Self::on_match), Some(&self.match_count))
-                .context("reset stream")?;
+                .with_context(|| "reset stream")?;
         }
 
         Ok(())
@@ -273,7 +273,7 @@ impl Benchmark {
 
     // Scan each packet (in the ordering given in the PCAP file)
     // through Hyperscan using the streaming interface.
-    fn scan_streams(&mut self) -> Result<(), Error> {
+    fn scan_streams(&mut self) -> Result<()> {
         for (i, ref packet) in self.packets.iter().enumerate() {
             let ref stream = self.streams[self.stream_ids[i]];
 
@@ -284,7 +284,7 @@ impl Benchmark {
                     Some(Self::on_match),
                     Some(&self.match_count),
                 )
-                .context("scan packet")?;
+                .with_context(|| "scan packet")?;
         }
 
         Ok(())
@@ -292,7 +292,7 @@ impl Benchmark {
 
     // Scan each packet (in the ordering given in the PCAP file)
     // through Hyperscan using the block-mode interface.
-    fn scan_block(&mut self) -> Result<(), Error> {
+    fn scan_block(&mut self) -> Result<()> {
         for ref packet in &self.packets {
             self.block_db
                 .scan(
@@ -301,14 +301,14 @@ impl Benchmark {
                     Some(Self::on_match),
                     Some(&self.match_count),
                 )
-                .context("scan packet")?;
+                .with_context(|| "scan packet")?;
         }
 
         Ok(())
     }
 
     // Display some information about the compiled database and scanned data.
-    fn display_stats(&self) -> Result<(), Error> {
+    fn display_stats(&self) -> Result<()> {
         let num_packets = self.packets.len();
         let num_streams = self.sessions.len();
         let num_bytes = self.bytes();
@@ -344,7 +344,7 @@ impl Benchmark {
 }
 
 // Main entry point.
-fn main() -> Result<(), Error> {
+fn main() -> Result<()> {
     pretty_env_logger::init();
 
     // Process command line arguments.

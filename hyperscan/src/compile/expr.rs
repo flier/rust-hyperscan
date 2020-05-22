@@ -1,7 +1,7 @@
-use core::ptr::null_mut;
 use std::ffi::CString;
+use std::ptr::null_mut;
 
-use failure::Error;
+use anyhow::Result;
 
 use crate::compile::{AsCompileResult, Pattern};
 use crate::ffi;
@@ -33,7 +33,7 @@ impl Pattern {
     /// The information provided in ExpressionInfo
     /// includes the minimum and maximum width of a pattern match.
     ///
-    pub fn info(&self) -> Result<Info, Error> {
+    pub fn info(&self) -> Result<Info> {
         let expr = CString::new(self.expression.as_str())?;
         let ext = self.ext.into();
         let mut info = null_mut();

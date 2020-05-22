@@ -4,7 +4,7 @@ extern crate log;
 use std::env;
 use std::path::{Path, PathBuf};
 
-use failure::{err_msg, Error, ResultExt};
+use anyhow::{Context, Error};
 
 struct Library {
     pub libs: Vec<String>,
@@ -44,11 +44,7 @@ fn find_hyperscan() -> Result<Library, Error> {
                 },
             )
         })
-        .or_else(|_| {
-            Err(err_msg(
-                "please download and install hyperscan from https://www.hyperscan.io/",
-            ))
-        })
+        .map_err(|_| Error::msg("please download and install hyperscan from https://www.hyperscan.io/"))
 }
 
 #[cfg(feature = "gen")]
@@ -72,18 +68,16 @@ fn generate_binding(hyperscan_include_path: &str, out_file: &Path) -> Result<(),
         .derive_copy(false)
         .derive_default(true)
         .generate()
-        .map_err(|_| err_msg("generate binding files"))?
+        .map_err(|_| Error::msg("generate binding files"))?
         .write_to_file(out_file)
-        .context("write wrapper")?;
-
-    Ok(())
+        .with_context(|| "write wrapper")
 }
 
 #[cfg(not(feature = "gen"))]
 fn generate_binding(_: &str, out_file: &Path) -> Result<(), Error> {
-    std::fs::copy("src/raw.rs", out_file).context("copy binding file")?;
-
-    Ok(())
+    std::fs::copy("src/raw.rs", out_file)
+        .map(|_| ())
+        .with_context(|| "copy binding file")
 }
 
 fn main() -> Result<(), Error> {

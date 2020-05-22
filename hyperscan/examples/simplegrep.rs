@@ -30,7 +30,7 @@ use std::io::Read;
 use std::path::Path;
 use std::process::exit;
 
-use failure::{Error, ResultExt};
+use anyhow::{Context, Result};
 
 use hyperscan::prelude::*;
 
@@ -47,7 +47,7 @@ fn read_input_data(input_filename: &str) -> Result<String, io::Error> {
     Ok(buf)
 }
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<()> {
     pretty_env_logger::init();
 
     let mut args = env::args();
@@ -70,10 +70,10 @@ fn main() -> Result<(), Error> {
     let pattern = pattern! { args.next().unwrap(); DOTALL };
     let input_filename = args.next().unwrap();
 
-    let database: BlockDatabase = pattern.build().context("compile pattern")?;
+    let database: BlockDatabase = pattern.build().with_context(|| "compile pattern")?;
 
     // Next, we read the input data file into a buffer.
-    let input_data = read_input_data(&input_filename).context("read input file")?;
+    let input_data = read_input_data(&input_filename).with_context(|| "read input file")?;
 
     // Finally, we issue a call to hs_scan, which will search the input buffer
     // for the pattern represented in the bytecode. Note that in order to do
@@ -92,7 +92,7 @@ fn main() -> Result<(), Error> {
     // match event.
     //
 
-    let scratch = database.alloc().context("allocate scratch space")?;
+    let scratch = database.alloc().with_context(|| "allocate scratch space")?;
 
     println!("Scanning {} bytes with Hyperscan", input_data.len());
 
@@ -105,7 +105,7 @@ fn main() -> Result<(), Error> {
 
     let _ = database
         .scan(&input_data, &scratch, Some(event_handler), Some(pattern.expression))
-        .context("scan input buffer")?;
+        .with_context(|| "scan input buffer")?;
 
     Ok(())
 }

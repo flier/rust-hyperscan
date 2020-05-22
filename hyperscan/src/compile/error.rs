@@ -1,7 +1,6 @@
-use core::fmt;
 use std::ffi::CStr;
+use std::fmt;
 
-use failure::AsFail;
 use foreign_types::{foreign_type, ForeignType};
 
 use crate::errors::{AsResult, HsError};
@@ -9,14 +8,14 @@ use crate::ffi;
 
 pub trait AsCompileResult {
     type Output;
-    type Error: AsFail;
+    type Error: fmt::Display;
 
     fn ok_or(self, err: *mut ffi::hs_compile_error_t) -> Result<Self::Output, Self::Error>;
 }
 
 impl AsCompileResult for ffi::hs_error_t {
     type Output = ();
-    type Error = failure::Error;
+    type Error = anyhow::Error;
 
     fn ok_or(self, err: *mut ffi::hs_compile_error_t) -> Result<Self::Output, Self::Error> {
         if self == ffi::HS_SUCCESS as ffi::hs_error_t {

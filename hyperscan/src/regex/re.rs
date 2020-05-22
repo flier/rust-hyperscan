@@ -1,10 +1,10 @@
-use core::cell::RefCell;
+use std::cell::RefCell;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
 
-use failure::Error;
+use anyhow::Result;
 
 use crate::common::BlockDatabase;
 use crate::compile::{Builder, Flags, Pattern};
@@ -44,8 +44,8 @@ impl<'t> Match<'t> {
     fn new(haystack: &'t str, start: usize, end: usize) -> Match<'t> {
         Match {
             text: haystack,
-            start: start,
-            end: end,
+            start,
+            end,
         }
     }
 }
@@ -65,11 +65,11 @@ impl Regex {
     /// Once compiled, it can be used repeatedly to search, split or replace text in a string.
     ///
     /// If an invalid expression is given, then an error is returned.
-    pub fn new(re: &str) -> Result<Regex, Error> {
+    pub fn new(re: &str) -> Result<Regex> {
         Self::with_flags(re, Flags::empty())
     }
 
-    pub(crate) fn with_flags(re: &str, flags: Flags) -> Result<Regex, Error> {
+    pub(crate) fn with_flags(re: &str, flags: Flags) -> Result<Regex> {
         Pattern::with_flags(re, flags | Flags::SOM_LEFTMOST | Flags::UTF8)?
             .build()
             .map(|db| Regex(Arc::new(db)))

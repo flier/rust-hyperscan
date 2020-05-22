@@ -1,8 +1,8 @@
-use core::pin::Pin;
-use core::ptr::null_mut;
 use std::io::Read;
+use std::pin::Pin;
+use std::ptr::null_mut;
 
-use failure::Error;
+use anyhow::Result;
 use foreign_types::ForeignTypeRef;
 use libc::{c_int, c_uint, c_ulonglong, c_void};
 
@@ -82,7 +82,7 @@ impl DatabaseRef<Block> {
         scratch: &ScratchRef,
         callback: Option<MatchEventCallback<D>>,
         context: Option<D>,
-    ) -> Result<(), Error>
+    ) -> Result<()>
     where
         T: Scannable,
         D: Clone,
@@ -117,7 +117,7 @@ impl DatabaseRef<Vectored> {
         scratch: &ScratchRef,
         callback: Option<MatchEventCallback<D>>,
         context: Option<D>,
-    ) -> Result<(), Error>
+    ) -> Result<()>
     where
         I: IntoIterator<Item = T>,
         T: Scannable,
@@ -163,7 +163,7 @@ impl DatabaseRef<Streaming> {
         scratch: &ScratchRef,
         callback: Option<MatchEventCallback<D>>,
         context: Option<D>,
-    ) -> Result<(), Error>
+    ) -> Result<()>
     where
         R: Read,
         D: Clone,
@@ -191,7 +191,7 @@ impl StreamRef {
         scratch: &ScratchRef,
         callback: Option<MatchEventCallback<D>>,
         context: Option<D>,
-    ) -> Result<(), Error>
+    ) -> Result<()>
     where
         T: Scannable,
         D: Clone,
@@ -220,7 +220,7 @@ impl StreamRef {
 
 #[cfg(test)]
 pub mod tests {
-    use core::cell::RefCell;
+    use std::cell::RefCell;
     use std::io::Cursor;
 
     use crate::errors::HsError;

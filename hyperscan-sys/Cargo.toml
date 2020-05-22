@@ -19,8 +19,8 @@ gen = ["bindgen"]
 libc = "0.2"
 
 [build-dependencies]
+anyhow = "1.0"
 log = "0.4"
-failure = "0.1"
 pretty_env_logger = "0.4"
 pkg-config = "0.3"
 

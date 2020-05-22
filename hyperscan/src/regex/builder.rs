@@ -1,4 +1,4 @@
-use failure::Error;
+use anyhow::Result;
 
 use crate::compile::Flags;
 use crate::regex::Regex;
@@ -38,7 +38,7 @@ impl Builder<String> {
     ///
     /// Note that calling `as_str` on the resulting Regex will produce the pattern given to new verbatim.
     /// Notably, it will not incorporate any of the flags set on this builder.
-    pub fn build(&self) -> Result<Regex, Error> {
+    pub fn build(&self) -> Result<Regex> {
         Regex::with_flags(&self.expr, self.flags)
     }
 }

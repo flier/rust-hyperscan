@@ -1,7 +1,7 @@
-use core::mem;
+use std::mem;
 
+use anyhow::Result;
 use bitflags::bitflags;
-use failure::Error;
 use foreign_types::{foreign_type, ForeignType};
 
 use crate::errors::AsResult;
@@ -65,12 +65,12 @@ unsafe fn free_platform_info(p: *mut ffi::hs_platform_info_t) {
 
 impl Platform {
     /// Test the current system architecture.
-    pub fn is_valid() -> Result<(), Error> {
+    pub fn is_valid() -> Result<()> {
         unsafe { ffi::hs_valid_platform().ok() }
     }
 
     /// Populates the platform information based on the current host.
-    pub fn host() -> Result<Platform, Error> {
+    pub fn host() -> Result<Platform> {
         unsafe {
             let mut platform = mem::zeroed();
 

@@ -1,7 +1,7 @@
-use core::ptr::null_mut;
 use std::ffi::CString;
+use std::ptr::null_mut;
 
-use failure::Error;
+use anyhow::Result;
 use foreign_types::{ForeignType, ForeignTypeRef};
 use libc::c_uint;
 
@@ -12,12 +12,12 @@ use crate::ffi;
 /// The regular expression pattern database builder.
 pub trait Builder {
     /// Build an expression is compiled into a Hyperscan database which can be passed to the runtime functions
-    fn build<T: Mode>(&self) -> Result<Database<T>, Error> {
+    fn build<T: Mode>(&self) -> Result<Database<T>> {
         self.for_platform(None)
     }
 
     /// Build an expression is compiled into a Hyperscan database for a target platform.
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Error>;
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>>;
 }
 
 impl Builder for Pattern {
@@ -27,7 +27,7 @@ impl Builder for Pattern {
     /// / This is the function call with which an expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Error> {
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>> {
         let expr = CString::new(self.expression.as_bytes())?;
         let mut mode = T::ID;
         let mut db = null_mut();
@@ -61,7 +61,7 @@ impl Builder for Patterns {
     /// Each expression can be labelled with a unique integer
     // which is passed into the match callback to identify the pattern that has matched.
     ///
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Error> {
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>> {
         let mut expressions = Vec::with_capacity(self.len());
         let mut ptrs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
@@ -113,11 +113,7 @@ impl<T: Mode> Database<T> {
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
-    pub fn compile<S: AsRef<str>>(
-        expression: S,
-        flags: Flags,
-        platform: Option<&PlatformRef>,
-    ) -> Result<Database<T>, Error> {
+    pub fn compile<S: AsRef<str>>(expression: S, flags: Flags, platform: Option<&PlatformRef>) -> Result<Database<T>> {
         Pattern::with_flags(expression, flags)?.for_platform(platform)
     }
 }

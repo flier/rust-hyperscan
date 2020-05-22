@@ -1,8 +1,8 @@
-use core::fmt;
-use core::str::FromStr;
+use std::fmt;
+use std::str::FromStr;
 
+use anyhow::{bail, Error, Result};
 use bitflags::bitflags;
-use failure::{bail, Error};
 
 use crate::ffi;
 
@@ -191,7 +191,7 @@ pub struct Pattern {
 
 impl Pattern {
     /// Construct a pattern with expression.
-    pub fn new<S: AsRef<str>>(expr: S) -> Result<Pattern, Error> {
+    pub fn new<S: AsRef<str>>(expr: S) -> Result<Pattern> {
         Ok(Pattern {
             expression: expr.as_ref().to_owned(),
             flags: Flags::empty(),
@@ -202,7 +202,7 @@ impl Pattern {
     }
 
     /// Construct a pattern with expression and flags.
-    pub fn with_flags<S: AsRef<str>>(expr: S, flags: Flags) -> Result<Pattern, Error> {
+    pub fn with_flags<S: AsRef<str>>(expr: S, flags: Flags) -> Result<Pattern> {
         Ok(Pattern {
             expression: expr.as_ref().to_owned(),
             flags,
@@ -213,7 +213,7 @@ impl Pattern {
     }
 
     /// Parse a expression to a pattern
-    pub fn parse<S: AsRef<str>>(s: S) -> Result<Pattern, Error> {
+    pub fn parse<S: AsRef<str>>(s: S) -> Result<Pattern> {
         let s = s.as_ref();
         let (id, expr) = match s.find(':') {
             Some(off) => (Some(s[..off].parse()?), &s[off + 1..]),

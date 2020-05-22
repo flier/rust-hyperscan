@@ -1,8 +1,8 @@
-use core::marker::PhantomData;
-use core::ptr;
 use std::ffi::CStr;
+use std::marker::PhantomData;
+use std::ptr;
 
-use failure::Error;
+use anyhow::Result;
 use foreign_types::{foreign_type, ForeignTypeRef};
 
 use crate::common::{Block, Mode, Streaming, Vectored};
@@ -47,14 +47,14 @@ where
 
 impl<T> DatabaseRef<T> {
     /// Provides the size of the given database in bytes.
-    pub fn size(&self) -> Result<usize, Error> {
+    pub fn size(&self) -> Result<usize> {
         let mut size: usize = 0;
 
         unsafe { ffi::hs_database_size(self.as_ptr(), &mut size).map(|_| size) }
     }
 
     /// Utility function providing information about a database.
-    pub fn info(&self) -> Result<String, Error> {
+    pub fn info(&self) -> Result<String> {
         let mut p = ptr::null_mut();
 
         unsafe {

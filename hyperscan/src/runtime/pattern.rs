@@ -1,6 +1,6 @@
-use core::cell::RefCell;
-use core::str::pattern::{self, SearchStep};
+use std::cell::RefCell;
 use std::collections::VecDeque;
+use std::str::pattern::{self, SearchStep};
 
 use crate::common::BlockDatabase;
 use crate::compile::{self, Builder, Flags};

@@ -1,6 +1,6 @@
-use core::ptr::null_mut;
+use std::ptr::null_mut;
 
-use failure::Error;
+use anyhow::Result;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
 use crate::common::{DatabaseRef, Streaming};
@@ -10,14 +10,14 @@ use crate::runtime::{MatchContext, MatchEventCallback, ScratchRef};
 
 impl DatabaseRef<Streaming> {
     /// Provides the size of the stream state allocated by a single stream opened against the given database.
-    pub fn stream_size(&self) -> Result<usize, Error> {
+    pub fn stream_size(&self) -> Result<usize> {
         let mut size: usize = 0;
 
         unsafe { ffi::hs_stream_size(self.as_ptr(), &mut size).map(|_| size) }
     }
 
     /// Open and initialise a stream.
-    pub fn open_stream(&self) -> Result<Stream, Error> {
+    pub fn open_stream(&self) -> Result<Stream> {
         let mut s = null_mut();
 
         unsafe { ffi::hs_open_stream(self.as_ptr(), 0, &mut s).map(|_| Stream::from_ptr(s)) }
@@ -51,7 +51,7 @@ impl StreamRef {
         scratch: &ScratchRef,
         callback: Option<MatchEventCallback<D>>,
         context: Option<D>,
-    ) -> Result<(), Error>
+    ) -> Result<()>
     where
         D: Clone,
     {
@@ -81,7 +81,7 @@ impl Stream {
         scratch: &ScratchRef,
         callback: Option<MatchEventCallback<D>>,
         context: Option<D>,
-    ) -> Result<(), Error>
+    ) -> Result<()>
     where
         D: Clone,
     {
