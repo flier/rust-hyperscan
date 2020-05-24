@@ -18,9 +18,9 @@
 //! use hyperscan::prelude::*;
 //!
 //! fn main() {
-//!     let pattern = &pattern! {"test"; CASELESS | SOM_LEFTMOST};
+//!     let pattern = pattern! {"test"; CASELESS | SOM_LEFTMOST};
 //!     let db: BlockDatabase = pattern.build().unwrap();
-//!     let scratch = db.alloc().unwrap();
+//!     let scratch = db.alloc_scratch().unwrap();
 //!
 //!     db.scan("some test data", &scratch, |id, from, to, _flags| {
 //!         assert_eq!(id, 0);

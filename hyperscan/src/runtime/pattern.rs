@@ -12,7 +12,7 @@ impl<'a> pattern::Pattern<'a> for compile::Pattern {
     fn into_searcher(mut self, haystack: &'a str) -> Self::Searcher {
         self.flags |= Flags::SOM_LEFTMOST;
         let db = self.build().expect("build database");
-        let scratch = db.alloc().expect("alloc scratch");
+        let scratch = db.alloc_scratch().expect("alloc scratch");
 
         Searcher {
             haystack,

@@ -81,7 +81,7 @@ fn main() -> Result<()> {
     // match event.
     //
 
-    let scratch = database.alloc().with_context(|| "allocate scratch space")?;
+    let scratch = database.alloc_scratch().with_context(|| "allocate scratch space")?;
 
     println!("Scanning {} bytes with Hyperscan", input_data.len());
 

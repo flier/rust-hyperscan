@@ -88,7 +88,7 @@ impl Regex {
     pub fn is_match(&self, text: &str) -> bool {
         let mut matched = false;
 
-        let s = self.0.alloc().unwrap();
+        let s = self.0.alloc_scratch().unwrap();
         let _ = self.0.scan(text, &s, |_, _, _, _| {
             matched = true;
 
@@ -116,7 +116,7 @@ impl Regex {
     pub fn find<'t>(&self, text: &'t str) -> Option<Match<'t>> {
         let mut matched = vec![];
 
-        let s = self.0.alloc().unwrap();
+        let s = self.0.alloc_scratch().unwrap();
         let _ = self.0.scan(text, &s, |_, from, to, _| {
             matched.push((from as usize, to as usize));
 

@@ -60,11 +60,23 @@ impl ScratchRef {
 
 impl<T> Database<T> {
     /// Allocate a "scratch" space for use by Hyperscan.
+    pub fn alloc_scratch(&self) -> Result<Scratch> {
+        unsafe { Scratch::alloc(self) }
+    }
+
+    /// Reallocate a "scratch" space for use by Hyperscan.
+    pub fn realloc_scratch<'a>(&'a self, s: &'a mut Scratch) -> Result<&'a mut Scratch> {
+        unsafe { s.realloc(self) }.map(|_| s)
+    }
+
+    /// Allocate a "scratch" space for use by Hyperscan.
+    #[deprecated = "use `alloc_scratch` instead"]
     pub fn alloc(&self) -> Result<Scratch> {
         unsafe { Scratch::alloc(self) }
     }
 
     /// Reallocate a "scratch" space for use by Hyperscan.
+    #[deprecated = "use `realloc_scratch` instead"]
     pub fn realloc(&self, s: &mut Scratch) -> Result<()> {
         unsafe { s.realloc(self) }
     }
@@ -82,7 +94,7 @@ pub mod tests {
 
         let db: BlockDatabase = pattern! {"test"}.build().unwrap();
 
-        let s = db.alloc().unwrap();
+        let s = db.alloc_scratch().unwrap();
 
         assert!(s.size().unwrap() > SCRATCH_SIZE);
 
@@ -92,7 +104,7 @@ pub mod tests {
 
         let db2: VectoredDatabase = pattern! {"foobar"}.build().unwrap();
 
-        db2.realloc(&mut s2).unwrap();
+        db2.realloc_scratch(&mut s2).unwrap();
 
         assert!(s2.size().unwrap() > s.size().unwrap());
     }

@@ -153,7 +153,7 @@ pub mod tests {
         let _ = pretty_env_logger::try_init();
 
         let db: BlockDatabase = pattern! {"test"; CASELESS | SOM_LEFTMOST}.build().unwrap();
-        let s = db.alloc().unwrap();
+        let s = db.alloc_scratch().unwrap();
 
         db.scan("foo test bar", &s, |_, _, _, _| Matching::Continue).unwrap();
 
@@ -179,7 +179,7 @@ pub mod tests {
         let _ = pretty_env_logger::try_init();
 
         let db: VectoredDatabase = pattern! {"test"; CASELESS|SOM_LEFTMOST}.build().unwrap();
-        let s = db.alloc().unwrap();
+        let s = db.alloc_scratch().unwrap();
 
         let data = vec!["foo", "test", "bar"];
 
@@ -214,7 +214,7 @@ pub mod tests {
 
         let db: StreamingDatabase = pattern! {"test"; SOM_LEFTMOST}.build().unwrap();
 
-        let s = db.alloc().unwrap();
+        let s = db.alloc_scratch().unwrap();
         let st = db.open_stream().unwrap();
 
         let data = vec!["foo t", "es", "t bar"];
@@ -244,7 +244,7 @@ pub mod tests {
         buf.push_str("baaab");
 
         let db = pattern! { "a+"; SOM_LEFTMOST }.build::<Streaming>().unwrap();
-        let s = db.alloc().unwrap();
+        let s = db.alloc_scratch().unwrap();
         let mut cur = Cursor::new(buf.as_bytes());
         let mut matches = vec![];
 

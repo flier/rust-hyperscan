@@ -143,9 +143,9 @@ struct Benchmark {
 
 impl Benchmark {
     fn new(streaming_db: StreamingDatabase, block_db: BlockDatabase) -> Result<Benchmark> {
-        let mut s = streaming_db.alloc()?;
+        let mut s = streaming_db.alloc_scratch()?;
 
-        block_db.realloc(&mut s)?;
+        block_db.realloc_scratch(&mut s)?;
 
         Ok(Benchmark {
             packets: Vec::new(),
