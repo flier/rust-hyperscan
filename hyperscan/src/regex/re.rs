@@ -61,11 +61,11 @@ impl Regex {
     /// Once compiled, it can be used repeatedly to search, split or replace text in a string.
     ///
     /// If an invalid expression is given, then an error is returned.
-    pub fn new(re: &str) -> Result<Regex> {
+    pub fn new<S: Into<String>>(re: S) -> Result<Regex> {
         Self::with_flags(re, Flags::empty())
     }
 
-    pub(crate) fn with_flags(re: &str, flags: Flags) -> Result<Regex> {
+    pub(crate) fn with_flags<S: Into<String>>(re: S, flags: Flags) -> Result<Regex> {
         Pattern::with_flags(re, flags | Flags::SOM_LEFTMOST | Flags::UTF8)?
             .build()
             .map(|db| Regex(Arc::new(db)))

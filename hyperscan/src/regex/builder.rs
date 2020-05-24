@@ -27,9 +27,9 @@ impl Builder<String> {
     /// Create a new regular expression builder with the given pattern.
     ///
     /// If the pattern is invalid, then an error will be returned when build is called.
-    pub fn new(pattern: &str) -> Self {
+    pub fn new<S: Into<String>>(pattern: S) -> Self {
         Builder {
-            expr: pattern.to_owned(),
+            expr: pattern.into(),
             flags: Flags::empty(),
         }
     }

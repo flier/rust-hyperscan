@@ -113,7 +113,11 @@ impl<T: Mode> Database<T> {
     ///
     /// This is the function call with which an expression is compiled into a Hyperscan database
     // which can be passed to the runtime functions.
-    pub fn compile<S: AsRef<str>>(expression: S, flags: Flags, platform: Option<&PlatformRef>) -> Result<Database<T>> {
+    pub fn compile<S: Into<String>>(
+        expression: S,
+        flags: Flags,
+        platform: Option<&PlatformRef>,
+    ) -> Result<Database<T>> {
         Pattern::with_flags(expression, flags)?.for_platform(platform)
     }
 }

@@ -191,9 +191,9 @@ pub struct Pattern {
 
 impl Pattern {
     /// Construct a pattern with expression.
-    pub fn new<S: AsRef<str>>(expr: S) -> Result<Pattern> {
+    pub fn new<S: Into<String>>(expr: S) -> Result<Pattern> {
         Ok(Pattern {
-            expression: expr.as_ref().to_owned(),
+            expression: expr.into(),
             flags: Flags::empty(),
             id: None,
             ext: Ext::default(),
@@ -202,9 +202,9 @@ impl Pattern {
     }
 
     /// Construct a pattern with expression and flags.
-    pub fn with_flags<S: AsRef<str>>(expr: S, flags: Flags) -> Result<Pattern> {
+    pub fn with_flags<S: Into<String>>(expr: S, flags: Flags) -> Result<Pattern> {
         Ok(Pattern {
-            expression: expr.as_ref().to_owned(),
+            expression: expr.into(),
             flags,
             id: None,
             ext: Ext::default(),
