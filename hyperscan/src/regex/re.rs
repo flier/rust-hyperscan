@@ -1,8 +1,4 @@
-use std::cell::RefCell;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
+use std::sync::Arc;
 
 use anyhow::Result;
 
@@ -90,18 +86,16 @@ impl Regex {
     /// assert!(Regex::new(r"\b\w{13}\b").unwrap().is_match(text));
     /// ```
     pub fn is_match(&self, text: &str) -> bool {
-        let matched = AtomicBool::new(false);
-
-        fn matching(_id: u32, _from: u64, _to: u64, data: Option<&AtomicBool>) -> Matching {
-            data.unwrap().store(true, Ordering::Relaxed);
-
-            Matching::Break
-        }
+        let mut matched = false;
 
         let s = self.0.alloc().unwrap();
-        let _ = self.0.scan(text, &s, Some(matching), Some(&matched));
+        let _ = self.0.scan(text, &s, |_, _, _, _| {
+            matched = true;
 
-        matched.load(Ordering::Relaxed)
+            Matching::Break
+        });
+
+        matched
     }
 
     /// Returns the start and end byte range of the leftmost-first match in text. If no match exists, then None is returned.
@@ -120,19 +114,16 @@ impl Regex {
     /// assert_eq!(mat.end(), 15);
     /// ```
     pub fn find<'t>(&self, text: &'t str) -> Option<Match<'t>> {
-        let matched = RefCell::new(vec![]);
-
-        fn matching(_id: u32, from: u64, to: u64, data: Option<&RefCell<Vec<(usize, usize)>>>) -> Matching {
-            data.unwrap().borrow_mut().push((from as usize, to as usize));
-
-            Matching::Break
-        }
+        let mut matched = vec![];
 
         let s = self.0.alloc().unwrap();
-        let _ = self.0.scan(text, &s, Some(matching), Some(&matched));
+        let _ = self.0.scan(text, &s, |_, from, to, _| {
+            matched.push((from as usize, to as usize));
+
+            Matching::Break
+        });
 
         matched
-            .into_inner()
             .first()
             .map(|&(start, end)| Match::new(&text[start..end], start, end))
     }

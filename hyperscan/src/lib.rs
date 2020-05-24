@@ -17,22 +17,20 @@
 //!
 //! use hyperscan::prelude::*;
 //!
-//! fn callback(id: u32, from: u64, to: u64, expr: Option<&str>) -> Matching {
-//!     assert_eq!(id, 0);
-//!     assert_eq!(from, 5);
-//!     assert_eq!(to, 9);
-//!
-//!     println!("found pattern {} : {} @ [{}, {})", id, expr.unwrap(), from, to);
-//!
-//!     Matching::Continue
-//! }
-//!
 //! fn main() {
 //!     let pattern = &pattern! {"test"; CASELESS | SOM_LEFTMOST};
 //!     let db: BlockDatabase = pattern.build().unwrap();
 //!     let scratch = db.alloc().unwrap();
 //!
-//!     db.scan("some test data", &scratch, Some(callback), Some(&pattern.expression)).unwrap();
+//!     db.scan("some test data", &scratch, |id, from, to, _flags| {
+//!         assert_eq!(id, 0);
+//!         assert_eq!(from, 5);
+//!         assert_eq!(to, 9);
+//!
+//!         println!("found pattern {} : {} @ [{}, {})", id, pattern.expression, from, to);
+//!
+//!         Matching::Continue
+//!     }).unwrap();
 //! }
 //! ```
 #![deny(missing_docs, rust_2018_compatibility, rust_2018_idioms)]

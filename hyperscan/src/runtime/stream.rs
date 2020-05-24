@@ -1,3 +1,4 @@
+use std::mem;
 use std::ptr::null_mut;
 
 use anyhow::Result;
@@ -6,7 +7,7 @@ use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 use crate::common::{DatabaseRef, Streaming};
 use crate::errors::AsResult;
 use crate::ffi;
-use crate::runtime::{MatchContext, MatchEventCallback, ScratchRef};
+use crate::runtime::{split_closure, Matching, ScratchRef};
 
 impl DatabaseRef<Streaming> {
     /// Provides the size of the stream state allocated by a single stream opened against the given database.
@@ -46,28 +47,19 @@ unsafe fn clone_stream(s: *mut ffi::hs_stream_t) -> *mut ffi::hs_stream_t {
 
 impl StreamRef {
     /// Reset a stream to an initial state.
-    pub fn reset<D>(
-        &self,
-        scratch: &ScratchRef,
-        callback: Option<MatchEventCallback<D>>,
-        context: Option<D>,
-    ) -> Result<()>
+    pub fn reset<F>(&self, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
-        D: Clone,
+        F: FnMut(u32, u64, u64, u32) -> Matching,
     {
-        let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
+        let (callback, userdata) = unsafe { split_closure(&mut on_match_event) };
 
         unsafe {
             ffi::hs_reset_stream(
                 self.as_ptr(),
                 0,
                 scratch.as_ptr(),
-                if ctxt.is_some() {
-                    Some(MatchContext::<D>::stub)
-                } else {
-                    None
-                },
-                ctxt.as_mut().map_or_else(null_mut, |ctxt| ctxt as *mut _ as *mut _),
+                Some(mem::transmute(callback)),
+                userdata,
             )
             .ok()
         }
@@ -76,27 +68,18 @@ impl StreamRef {
 
 impl Stream {
     /// Close a stream.
-    pub fn close<D>(
-        self,
-        scratch: &ScratchRef,
-        callback: Option<MatchEventCallback<D>>,
-        context: Option<D>,
-    ) -> Result<()>
+    pub fn close<F>(self, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
-        D: Clone,
+        F: FnMut(u32, u64, u64, u32) -> Matching,
     {
-        let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
+        let (callback, userdata) = unsafe { split_closure(&mut on_match_event) };
 
         unsafe {
             ffi::hs_close_stream(
                 self.as_ptr(),
                 scratch.as_ptr(),
-                if ctxt.is_some() {
-                    Some(MatchContext::<D>::stub)
-                } else {
-                    None
-                },
-                ctxt.as_mut().map_or_else(null_mut, |ctxt| ctxt as *mut _ as *mut _),
+                Some(mem::transmute(callback)),
+                userdata,
             )
             .ok()
         }

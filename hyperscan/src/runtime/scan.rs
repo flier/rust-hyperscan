@@ -1,94 +1,44 @@
 use std::io::Read;
-use std::pin::Pin;
-use std::ptr::null_mut;
+use std::mem;
 
 use anyhow::Result;
 use foreign_types::ForeignTypeRef;
-use libc::{c_int, c_uint, c_ulonglong, c_void};
+use libc::c_uint;
 
 use crate::common::{Block, DatabaseRef, Streaming, Vectored};
 use crate::errors::AsResult;
 use crate::ffi;
-use crate::runtime::{ScratchRef, StreamRef};
+use crate::runtime::{split_closure, ScratchRef, StreamRef};
 
 /// Scannable buffer
 pub trait Scannable: AsRef<[u8]> {}
 
 impl<T> Scannable for T where T: AsRef<[u8]> {}
 
-/// Definition of the match event callback function type.
-///
-/// This callback function will be invoked whenever a match is located in the
-/// target data during the execution of a scan. The details of the match are
-/// passed in as parameters to the callback function, and the callback function
-/// should return a value indicating whether or not matching should continue on
-/// the target data. If no callbacks are desired from a scan call, NULL may be
-/// provided in order to suppress match production.
-///
-/// This callback function should not attempt to call Hyperscan API functions on
-/// the same stream nor should it attempt to reuse the scratch space allocated
-/// for the API calls that caused it to be triggered. Making another call to the
-/// Hyperscan library with completely independent parameters should work (for
-/// example, scanning a different database in a new stream and with new scratch
-/// space), but reusing data structures like stream state and/or scratch space
-/// will produce undefined behavior.
-///
-/// Fn(id: u32, from: u64, to: u64, flags: u32) -> bool
-///
-pub type MatchEventCallback<D> = fn(id: u32, from: u64, to: u64, data: Option<D>) -> Matching;
-
 /// Indicating whether or not matching should continue on the target data.
+#[repr(i32)]
 pub enum Matching {
     /// The matching should continue
-    Continue,
+    Continue = 0,
     /// The matching should cease
-    Break,
+    Break = 1,
 }
 
-pub struct MatchContext<D: Clone> {
-    pub callback: MatchEventCallback<D>,
-    pub data: Option<D>,
-}
-
-impl<D> MatchContext<D>
-where
-    D: Clone,
-{
-    pub fn new(callback: MatchEventCallback<D>, data: Option<D>) -> Pin<Box<Self>> {
-        Box::pin(Self { callback, data })
-    }
-
-    pub unsafe extern "C" fn stub(
-        id: c_uint,
-        from: c_ulonglong,
-        to: c_ulonglong,
-        _flags: c_uint,
-        context: *mut c_void,
-    ) -> c_int {
-        let ctxt = (context as *mut Pin<Box<MatchContext<D>>>).as_mut().unwrap();
-
-        match (ctxt.callback)(id, from, to, ctxt.data.clone()) {
-            Matching::Continue => 0,
-            Matching::Break => 1,
-        }
+impl Default for Matching {
+    fn default() -> Self {
+        Matching::Continue
     }
 }
 
 impl DatabaseRef<Block> {
     /// pattern matching takes place for block-mode pattern databases.
-    pub fn scan<T, D>(
-        &self,
-        data: T,
-        scratch: &ScratchRef,
-        callback: Option<MatchEventCallback<D>>,
-        context: Option<D>,
-    ) -> Result<()>
+    pub fn scan<T, F>(&self, data: T, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         T: Scannable,
-        D: Clone,
+        F: FnMut(u32, u64, u64, u32) -> Matching,
     {
         let data = data.as_ref();
-        let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
+        let (callback, userdata) = unsafe { split_closure(&mut on_match_event) };
 
         unsafe {
             ffi::hs_scan(
@@ -97,12 +47,8 @@ impl DatabaseRef<Block> {
                 data.len() as u32,
                 0,
                 scratch.as_ptr(),
-                if ctxt.is_some() {
-                    Some(MatchContext::<D>::stub)
-                } else {
-                    None
-                },
-                ctxt.as_mut().map_or_else(null_mut, |ctxt| ctxt as *mut _ as *mut _),
+                Some(mem::transmute(callback)),
+                userdata,
             )
             .ok()
         }
@@ -111,17 +57,11 @@ impl DatabaseRef<Block> {
 
 impl DatabaseRef<Vectored> {
     /// pattern matching takes place for vectoring-mode pattern databases.
-    pub fn scan<I, T, D>(
-        &self,
-        data: I,
-        scratch: &ScratchRef,
-        callback: Option<MatchEventCallback<D>>,
-        context: Option<D>,
-    ) -> Result<()>
+    pub fn scan<I, T, F>(&self, data: I, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         I: IntoIterator<Item = T>,
         T: Scannable,
-        D: Clone,
+        F: FnMut(u32, u64, u64, u32) -> Matching,
     {
         let (ptrs, lens): (Vec<_>, Vec<_>) = data
             .into_iter()
@@ -131,7 +71,7 @@ impl DatabaseRef<Vectored> {
                 (buf.as_ptr() as *const i8, buf.len() as c_uint)
             })
             .unzip();
-        let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
+        let (callback, userdata) = unsafe { split_closure(&mut on_match_event) };
 
         unsafe {
             ffi::hs_scan_vector(
@@ -141,12 +81,8 @@ impl DatabaseRef<Vectored> {
                 ptrs.len() as u32,
                 0,
                 scratch.as_ptr(),
-                if ctxt.is_some() {
-                    Some(MatchContext::<D>::stub)
-                } else {
-                    None
-                },
-                ctxt.as_mut().map_or_else(null_mut, |ctxt| ctxt as *mut _ as *mut _),
+                Some(mem::transmute(callback)),
+                userdata,
             )
             .ok()
         }
@@ -157,16 +93,10 @@ const SCAN_BUF_SIZE: usize = 4096;
 
 impl DatabaseRef<Streaming> {
     /// pattern matching takes place for stream-mode pattern databases.
-    pub fn scan<R, D>(
-        &self,
-        reader: &mut R,
-        scratch: &ScratchRef,
-        callback: Option<MatchEventCallback<D>>,
-        context: Option<D>,
-    ) -> Result<()>
+    pub fn scan<R, F>(&self, reader: &mut R, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         R: Read,
-        D: Clone,
+        F: FnMut(u32, u64, u64, u32) -> Matching,
     {
         let stream = self.open_stream()?;
         let mut buf = [0; SCAN_BUF_SIZE];
@@ -176,28 +106,22 @@ impl DatabaseRef<Streaming> {
                 break;
             }
 
-            stream.scan(&buf[..len], scratch, callback, context.clone())?;
+            stream.scan(&buf[..len], scratch, &mut on_match_event)?;
         }
 
-        stream.close(scratch, callback, context)
+        stream.close(scratch, &mut on_match_event)
     }
 }
 
 impl StreamRef {
     /// pattern matching takes place for stream-mode pattern databases.
-    pub fn scan<T, D>(
-        &self,
-        data: T,
-        scratch: &ScratchRef,
-        callback: Option<MatchEventCallback<D>>,
-        context: Option<D>,
-    ) -> Result<()>
+    pub fn scan<T, F>(&self, data: T, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         T: Scannable,
-        D: Clone,
+        F: FnMut(u32, u64, u64, u32) -> Matching,
     {
         let data = data.as_ref();
-        let mut ctxt = callback.map(|callback| MatchContext::new(callback, context));
+        let (callback, userdata) = unsafe { split_closure(&mut on_match_event) };
 
         unsafe {
             ffi::hs_scan_stream(
@@ -206,12 +130,8 @@ impl StreamRef {
                 data.len() as u32,
                 0,
                 scratch.as_ptr(),
-                if ctxt.is_some() {
-                    Some(MatchContext::<D>::stub)
-                } else {
-                    None
-                },
-                ctxt.as_mut().map_or_else(null_mut, |ctxt| ctxt as *mut _ as *mut _),
+                Some(mem::transmute(callback)),
+                userdata,
             )
             .ok()
         }
@@ -235,9 +155,9 @@ pub mod tests {
         let db: BlockDatabase = pattern! {"test"; CASELESS | SOM_LEFTMOST}.build().unwrap();
         let s = db.alloc().unwrap();
 
-        db.scan::<_, &()>("foo test bar", &s, None, None).unwrap();
+        db.scan("foo test bar", &s, |_, _, _, _| Matching::Continue).unwrap();
 
-        fn callback<T>(id: u32, from: u64, to: u64, _: T) -> Matching {
+        let callback = |id, from, to, _| {
             assert_eq!(id, 0);
             assert_eq!(from, 4);
             assert_eq!(to, 8);
@@ -246,7 +166,7 @@ pub mod tests {
         };
 
         assert_eq!(
-            db.scan::<_, &()>("foo test bar".as_bytes(), &s, Some(callback), None)
+            db.scan("foo test bar".as_bytes(), &s, callback)
                 .err()
                 .unwrap()
                 .downcast_ref::<HsError>(),
@@ -263,29 +183,29 @@ pub mod tests {
 
         let data = vec!["foo", "test", "bar"];
 
-        db.scan::<_, _, &()>(data, &s, None, None).unwrap();
+        db.scan(data, &s, |_, _, _, _| Matching::Continue).unwrap();
 
         let matches = RefCell::new(vec![]);
-
-        fn callback(id: u32, from: u64, to: u64, matches: Option<&RefCell<Vec<(u64, u64)>>>) -> Matching {
-            assert_eq!(id, 0);
-            assert_eq!(from, 3);
-            assert_eq!(to, 7);
-
-            matches.unwrap().borrow_mut().push((from, to));
-
-            Matching::Break
-        };
 
         let data = vec!["foo", "test", "bar"];
 
         assert_eq!(
-            db.scan(data, &s, Some(callback), Some(&matches))
-                .err()
-                .unwrap()
-                .downcast_ref::<HsError>(),
+            db.scan(data, &s, |id, from, to, _| {
+                assert_eq!(id, 0);
+                assert_eq!(from, 3);
+                assert_eq!(to, 7);
+
+                matches.borrow_mut().push((from, to));
+
+                Matching::Break
+            })
+            .err()
+            .unwrap()
+            .downcast_ref::<HsError>(),
             Some(&HsError::ScanTerminated)
         );
+
+        assert_eq!(matches.into_inner(), vec![(3, 7)]);
     }
 
     #[test]
@@ -298,21 +218,21 @@ pub mod tests {
         let st = db.open_stream().unwrap();
 
         let data = vec!["foo t", "es", "t bar"];
-        let matches = RefCell::new(vec![]);
+        let mut matches = vec![];
 
-        fn callback(_id: u32, from: u64, to: u64, matches: Option<&RefCell<Vec<(u64, u64)>>>) -> Matching {
-            matches.unwrap().borrow_mut().push((from, to));
+        let mut callback = |_, from, to, _| {
+            matches.push((from, to));
 
             Matching::Continue
-        }
+        };
 
         for d in data {
-            st.scan(d, &s, Some(callback), Some(&matches)).unwrap();
+            st.scan(d, &s, &mut callback).unwrap();
         }
 
-        st.close(&s, Some(callback), Some(&matches)).unwrap();
+        st.close(&s, &mut callback).unwrap();
 
-        assert_eq!(matches.borrow().as_slice(), &[(4, 8)]);
+        assert_eq!(matches, vec![(4, 8)]);
     }
 
     #[test]
@@ -326,16 +246,15 @@ pub mod tests {
         let db = pattern! { "a+"; SOM_LEFTMOST }.build::<Streaming>().unwrap();
         let s = db.alloc().unwrap();
         let mut cur = Cursor::new(buf.as_bytes());
-        let matches = RefCell::new(vec![]);
+        let mut matches = vec![];
 
-        fn callback(_id: u32, from: u64, to: u64, matches: Option<&RefCell<Vec<(u64, u64)>>>) -> Matching {
-            matches.unwrap().borrow_mut().push((from, to));
+        db.scan(&mut cur, &s, |_, from, to, _| {
+            matches.push((from, to));
 
             Matching::Continue
-        }
+        })
+        .unwrap();
 
-        db.scan(&mut cur, &s, Some(callback), Some(&matches)).unwrap();
-
-        assert_eq!(matches.borrow().as_slice(), &[(4095, 4096), (4095, 4097), (4095, 4098)]);
+        assert_eq!(matches, vec![(4095, 4096), (4095, 4097), (4095, 4098)]);
     }
 }

@@ -235,12 +235,6 @@ impl Benchmark {
         self.match_count.store(0, Ordering::Relaxed);
     }
 
-    fn on_match<'a>(_id: u32, _from: u64, _to: u64, match_count: Option<&AtomicUsize>) -> Matching {
-        match_count.unwrap().fetch_add(1, Ordering::Relaxed);
-
-        Matching::Continue
-    }
-
     // Open a Hyperscan stream for each stream in stream_ids
     fn open_streams(&mut self) -> Result<()> {
         self.streams = iter::repeat_with(|| self.streaming_db.open_stream())
@@ -253,8 +247,13 @@ impl Benchmark {
     // Close all open Hyperscan streams (potentially generating any end-anchored matches)
     fn close_streams(&mut self) -> Result<()> {
         for stream in self.streams.drain(..) {
+            let match_count = &self.match_count;
             stream
-                .close(&self.scratch, Some(Self::on_match), Some(&self.match_count))
+                .close(&self.scratch, |_, _, _, _| {
+                    match_count.fetch_add(1, Ordering::Relaxed);
+
+                    Matching::Continue
+                })
                 .with_context(|| "close stream")?;
         }
 
@@ -264,7 +263,11 @@ impl Benchmark {
     fn reset_streams(&mut self) -> Result<()> {
         for ref stream in &self.streams {
             stream
-                .reset(&self.scratch, Some(Self::on_match), Some(&self.match_count))
+                .reset(&self.scratch, |_, _, _, _| {
+                    self.match_count.fetch_add(1, Ordering::Relaxed);
+
+                    Matching::Continue
+                })
                 .with_context(|| "reset stream")?;
         }
 
@@ -278,12 +281,11 @@ impl Benchmark {
             let ref stream = self.streams[self.stream_ids[i]];
 
             stream
-                .scan(
-                    packet.as_ref().as_slice(),
-                    &self.scratch,
-                    Some(Self::on_match),
-                    Some(&self.match_count),
-                )
+                .scan(packet.as_ref().as_slice(), &self.scratch, |_, _, _, _| {
+                    self.match_count.fetch_add(1, Ordering::Relaxed);
+
+                    Matching::Continue
+                })
                 .with_context(|| "scan packet")?;
         }
 
@@ -295,12 +297,11 @@ impl Benchmark {
     fn scan_block(&mut self) -> Result<()> {
         for ref packet in &self.packets {
             self.block_db
-                .scan(
-                    packet.as_ref().as_slice(),
-                    &self.scratch,
-                    Some(Self::on_match),
-                    Some(&self.match_count),
-                )
+                .scan(packet.as_ref().as_slice(), &self.scratch, |_, _, _, _| {
+                    self.match_count.fetch_add(1, Ordering::Relaxed);
+
+                    Matching::Continue
+                })
                 .with_context(|| "scan packet")?;
         }
 
