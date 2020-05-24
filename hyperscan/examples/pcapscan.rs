@@ -20,25 +20,24 @@
 //
 //
 use std::collections::HashMap;
-use std::env;
 use std::fs::File;
 use std::io;
 use std::io::BufRead;
 use std::iter;
 use std::net::SocketAddrV4;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt};
-use getopts::Options;
 use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::udp::UdpPacket;
 use pnet::packet::{Packet, PrimitiveValues};
+use structopt::StructOpt;
 
 use hyperscan::prelude::*;
 
@@ -47,17 +46,17 @@ use hyperscan::prelude::*;
  * expression per line, ignoring lines starting with '#' and build a Hyperscan
  * database for it.
  */
-fn read_databases(filename: &str) -> Result<(StreamingDatabase, BlockDatabase)> {
+fn read_databases<P: AsRef<Path>>(path: P) -> Result<(StreamingDatabase, BlockDatabase)> {
     // do the actual file reading and string handling
-    let patterns = parse_file(filename)?;
+    let patterns = parse_file(path)?;
 
     println!("Compiling Hyperscan databases with {} patterns.", patterns.len());
 
     Ok((build_database(&patterns)?, build_database(&patterns)?))
 }
 
-fn parse_file(filename: &str) -> Result<Patterns> {
-    let f = File::open(filename)?;
+fn parse_file<P: AsRef<Path>>(path: P) -> Result<Patterns> {
+    let f = File::open(path)?;
 
     io::BufReader::new(f)
         .lines()
@@ -194,8 +193,8 @@ impl Benchmark {
         }
     }
 
-    fn read_streams(&mut self, pcap_file: &str) -> Result<(), pcap::Error> {
-        let mut capture = pcap::Capture::from_file(Path::new(pcap_file))?;
+    fn read_streams<P: AsRef<Path>>(&mut self, path: P) -> Result<(), pcap::Error> {
+        let mut capture = pcap::Capture::from_file(path)?;
 
         while let Ok(ref packet) = capture.next() {
             if let Some((key, payload)) = Self::decode_packet(&packet) {
@@ -344,52 +343,34 @@ impl Benchmark {
     }
 }
 
+#[derive(Debug, StructOpt)]
+#[structopt(name = "simplegrep", about = "An example search a given input file for a pattern.")]
+struct Opt {
+    /// repeat times
+    #[structopt(short = "n")]
+    repeats: usize,
+
+    /// pattern file
+    #[structopt(parse(from_os_str))]
+    pattern_file: PathBuf,
+
+    /// pcap file
+    #[structopt(parse(from_os_str))]
+    pcap_file: PathBuf,
+}
+
 // Main entry point.
 fn main() -> Result<()> {
     pretty_env_logger::init();
 
-    // Process command line arguments.
-    let args: Vec<String> = env::args().collect();
-    let prog = Path::new(&args[0]).file_name().unwrap().to_str().unwrap();
-    let mut opts = Options::new();
-
-    opts.optopt("n", "", "repeat times", "repeats");
-
-    let usage = || {
-        let brief = format!("Usage: {} [options] <pattern file> <pcap file>", prog);
-
-        print!("{}", opts.usage(&brief));
-    };
-
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
-        Err(_) => {
-            usage();
-            exit(-1);
-        }
-    };
-
-    let repeat_count: usize = match matches.opt_str("n") {
-        Some(s) => match s.parse() {
-            Ok(n) => n,
-            Err(err) => {
-                eprintln!("ERROR: Unable to parse repeats `{}`: {}\n", s, err);
-                exit(-1);
-            }
-        },
-        None => 1,
-    };
-
-    if matches.free.len() != 2 {
-        usage();
-        exit(-1);
-    }
-
-    let pattern_file = matches.free[0].as_str();
-    let pcap_file = matches.free[1].as_str();
+    let Opt {
+        repeats,
+        pattern_file,
+        pcap_file,
+    } = Opt::from_args();
 
     // Read our pattern set in and build Hyperscan databases from it.
-    println!("Pattern file: {}", pattern_file);
+    println!("Pattern file: {:?}", pattern_file);
 
     let (streaming_db, block_db) = match read_databases(pattern_file) {
         Ok((streaming_db, block_db)) => (streaming_db, block_db),
@@ -402,15 +383,15 @@ fn main() -> Result<()> {
     // Read our input PCAP file in
     let mut bench = Benchmark::new(streaming_db, block_db)?;
 
-    println!("PCAP input file: {}", pcap_file);
+    println!("PCAP input file: {:?}", pcap_file);
 
     if let Err(err) = bench.read_streams(pcap_file) {
         eprintln!("Unable to read packets from PCAP file. Exiting. {}\n", err);
         exit(-1);
     }
 
-    if repeat_count != 1 {
-        println!("Repeating PCAP scan {} times.", repeat_count);
+    if repeats != 1 {
+        println!("Repeating PCAP scan {} times.", repeats);
     }
 
     bench.display_stats()?;
@@ -419,7 +400,7 @@ fn main() -> Result<()> {
     let mut streaming_scan = Duration::from_secs(0);
     let mut streaming_open_close = Duration::from_secs(0);
 
-    for i in 0..repeat_count {
+    for i in 0..repeats {
         if i == 0 {
             // Open streams.
             let now = Instant::now();
@@ -445,16 +426,16 @@ fn main() -> Result<()> {
 
     // Collect data from streaming mode scans.
     let bytes = bench.bytes();
-    let total_bytes = (bytes * 8 * repeat_count) as f64;
+    let total_bytes = (bytes * 8 * repeats) as f64;
     let tput_stream_scanning = total_bytes * 1000.0 / streaming_scan.as_millis() as f64;
     let tput_stream_overhead = total_bytes * 1000.0 / (streaming_scan + streaming_open_close).as_millis() as f64;
     let matches_stream = bench.matches();
-    let match_rate_stream = (matches_stream as f64) / ((bytes * repeat_count) as f64 / 1024.0);
+    let match_rate_stream = (matches_stream as f64) / ((bytes * repeats) as f64 / 1024.0);
 
     // Scan all our packets in block mode.
     bench.clear_matches();
     let now = Instant::now();
-    for _ in 0..repeat_count {
+    for _ in 0..repeats {
         bench.scan_block()?;
     }
     let scan_block = now.elapsed();
@@ -462,7 +443,7 @@ fn main() -> Result<()> {
     // Collect data from block mode scans.
     let tput_block_scanning = total_bytes * 1000.0 / scan_block.as_millis() as f64;
     let matches_block = bench.matches();
-    let match_rate_block = (matches_block as f64) / ((bytes * repeat_count) as f64 / 1024.0);
+    let match_rate_block = (matches_block as f64) / ((bytes * repeats) as f64 / 1024.0);
 
     println!("\nStreaming mode:\n");
     println!("  Total matches: {}", matches_stream);

@@ -23,42 +23,29 @@
 //
 //
 
-use std::env;
-use std::fs::File;
-use std::io;
-use std::io::Read;
-use std::path::Path;
-use std::process::exit;
+use std::fs;
+use std::path::PathBuf;
 
 use anyhow::{Context, Result};
+use structopt::StructOpt;
 
 use hyperscan::prelude::*;
 
-/**
- * Fill a data buffer from the given filename, returning it and filling @a
- * length with its length. Returns NULL on failure.
- */
-fn read_input_data(input_filename: &str) -> Result<String, io::Error> {
-    let mut f = File::open(input_filename)?;
-    let mut buf = String::new();
+#[derive(Debug, StructOpt)]
+#[structopt(name = "simplegrep", about = "An example search a given input file for a pattern.")]
+struct Opt {
+    /// Regex pattern
+    pattern: String,
 
-    f.read_to_string(&mut buf)?;
-
-    Ok(buf)
+    /// Input file
+    #[structopt(parse(from_os_str))]
+    input: PathBuf,
 }
 
 fn main() -> Result<()> {
     pretty_env_logger::init();
 
-    let mut args = env::args();
-
-    if args.len() != 3 {
-        eprintln!(
-            "Usage: {} <pattern> <input file>\n",
-            Path::new(&args.next().unwrap()).file_name().unwrap().to_str().unwrap()
-        );
-        exit(-1);
-    }
+    let opt = Opt::from_args();
 
     // First, we attempt to compile the pattern provided on the command line.
     // We assume 'DOTALL' semantics, meaning that the '.' meta-character will
@@ -66,14 +53,16 @@ fn main() -> Result<()> {
     // either return a compiled Hyperscan database, or an error message
     // explaining why the pattern didn't compile.
     //
-    let _ = args.next();
-    let pattern = pattern! { args.next().unwrap(); DOTALL };
-    let input_filename = args.next().unwrap();
+    let pattern = Pattern::with_flags(
+        opt.pattern,
+        CompileFlags::DOTALL | CompileFlags::MULTILINE | CompileFlags::SOM_LEFTMOST,
+    )
+    .with_context(|| "parse pattern")?;
 
     let database: BlockDatabase = pattern.build().with_context(|| "compile pattern")?;
 
     // Next, we read the input data file into a buffer.
-    let input_data = read_input_data(&input_filename).with_context(|| "read input file")?;
+    let input_data = fs::read_to_string(opt.input).with_context(|| "read input file")?;
 
     // Finally, we issue a call to hs_scan, which will search the input buffer
     // for the pattern represented in the bytecode. Note that in order to do
@@ -96,13 +85,17 @@ fn main() -> Result<()> {
 
     println!("Scanning {} bytes with Hyperscan", input_data.len());
 
-    let _ = database
-        .scan(&input_data, &scratch, |_, _, to, _| {
-            println!("Match for pattern \"{}\" at offset {}", pattern.expression, to);
+    database
+        .scan(&input_data, &scratch, |_, from, to, _| {
+            println!(
+                "Match for pattern \"{}\" at offset {}..{}: {}",
+                pattern.expression,
+                from,
+                to,
+                &input_data[from as usize..to as usize]
+            );
 
             Matching::Continue
         })
-        .with_context(|| "scan input buffer")?;
-
-    Ok(())
+        .with_context(|| "scan input buffer")
 }
