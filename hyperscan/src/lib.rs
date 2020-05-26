@@ -63,14 +63,16 @@ pub use crate::common::Streaming;
 #[doc(hidden)]
 #[deprecated = "use `VectoredMode` instead"]
 pub use crate::common::Vectored;
-
 pub use crate::common::{
     Block as BlockMode, BlockDatabase, Database, DatabaseRef, Mode, Serialized as SerializedDatabase,
     Streaming as StreamingMode, StreamingDatabase, Vectored as VectoredMode, VectoredDatabase,
 };
+#[doc(hidden)]
+#[deprecated = "use `PatternFlags` instead"]
+pub use crate::compile::Flags as CompileFlags;
 pub use crate::compile::{
     Builder as DatabaseBuilder, Builder, CpuFeatures, Error as CompileError, ExpressionExt, ExpressionInfo,
-    Flags as CompileFlags, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
+    Flags as PatternFlags, Literal, LiteralFlags, Literals, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
 };
 pub use crate::errors::HsError;
 pub use crate::runtime::{Matching, Scannable, Scratch, ScratchRef, Stream, StreamRef};

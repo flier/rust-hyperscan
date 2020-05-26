@@ -58,7 +58,7 @@ impl FromStr for Flags {
                 'C' => flags |= Flags::COMBINATION,
                 'Q' => flags |= Flags::QUIET,
                 _ => {
-                    bail!("invalid compile flag: {}", c);
+                    bail!("invalid pattern flag: {}", c);
                 }
             }
         }
