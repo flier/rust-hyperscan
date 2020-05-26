@@ -8,7 +8,7 @@ where
 }
 
 pub trait Split<Args, Ret> {
-    type Trampoline;
+    type Trampoline: Copy;
 
     const TRAMPOLINE: Self::Trampoline;
 }

@@ -51,13 +51,26 @@ mod compile;
 pub mod regex;
 mod runtime;
 
+#[doc(hidden)]
+#[deprecated = "use `BlockMode` instead"]
+pub use crate::common::Block;
+#[doc(hidden)]
+#[deprecated = "use `SerializedDatabase` instead"]
+pub use crate::common::Serialized;
+#[doc(hidden)]
+#[deprecated = "use `StreamingMode` instead"]
+pub use crate::common::Streaming;
+#[doc(hidden)]
+#[deprecated = "use `VectoredMode` instead"]
+pub use crate::common::Vectored;
+
 pub use crate::common::{
-    Block, BlockDatabase, CBuffer, Database, DatabaseRef, Mode, Serialized, Streaming, StreamingDatabase, Vectored,
-    VectoredDatabase,
+    Block as BlockMode, BlockDatabase, Database, DatabaseRef, Mode, Serialized as SerializedDatabase,
+    Streaming as StreamingMode, StreamingDatabase, Vectored as VectoredMode, VectoredDatabase,
 };
 pub use crate::compile::{
-    Builder, CpuFeatures, Error as CompileError, ExpressionExt, ExpressionInfo, Flags as CompileFlags, Pattern,
-    Patterns, Platform, PlatformRef, SomHorizon, Tune,
+    Builder as DatabaseBuilder, Builder, CpuFeatures, Error as CompileError, ExpressionExt, ExpressionInfo,
+    Flags as CompileFlags, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
 };
 pub use crate::errors::HsError;
 pub use crate::runtime::{Matching, Scannable, Scratch, ScratchRef, Stream, StreamRef};

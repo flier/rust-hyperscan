@@ -196,13 +196,11 @@ impl Regex {
     /// word characters:
     ///
     /// ```rust
-    /// # extern crate regex; use regex::Regex;
-    /// # fn main() {
+    /// # use hyperscan::regex::Regex;
     /// let text = "Retroactively relinquishing remunerations is reprehensible.";
     /// for mat in Regex::new(r"\b\w{13}\b").unwrap().find_iter(text) {
     ///     println!("{:?}", mat);
     /// }
-    /// # }
     /// ```
     pub fn find_iter<'t>(&self, text: &'t str) -> Matches<'t> {
         let mut matched = Vec::<Range<usize>>::new();
@@ -237,11 +235,9 @@ impl Regex {
     ///
     /// ```rust
     /// # use hyperscan::regex::Regex;
-    /// # fn main() {
     /// let re = Regex::new(r"[ \t]+").unwrap();
     /// let fields: Vec<&str> = re.split("a b \t  c\td    e").collect();
     /// assert_eq!(fields, vec!["a", "b", "c", "d", "e"]);
-    /// # }
     /// ```
     pub fn split<'t>(&self, text: &'t str) -> Split<'t> {
         Split {
@@ -264,11 +260,9 @@ impl Regex {
     ///
     /// ```rust
     /// # use hyperscan::regex::Regex;
-    /// # fn main() {
     /// let re = Regex::new(r"\W+").unwrap();
     /// let fields: Vec<&str> = re.splitn("Hey! How are you?", 3).collect();
     /// assert_eq!(fields, vec!("Hey", "How", "are you?"));
-    /// # }
     /// ```
     pub fn splitn<'t>(&self, text: &'t str, limit: usize) -> SplitN<'t> {
         SplitN {
