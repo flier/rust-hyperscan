@@ -34,7 +34,8 @@
 //! }
 //! ```
 #![deny(missing_docs, rust_2018_compatibility, rust_2018_idioms)]
-#![cfg_attr(unstable, feature(pattern))]
+#![cfg_attr(test, deny(warnings))]
+#![cfg_attr(feature = "pattern", feature(pattern))]
 
 #[macro_use]
 extern crate log;

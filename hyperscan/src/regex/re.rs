@@ -213,10 +213,8 @@ impl Regex {
 
             match matched.last() {
                 Some(last) if last.start == range.start && last.end < range.end => {
-                    *matched.last_mut().unwrap() = range;
-                }
-                Some(last) if last.contains(&range.start) => {
                     // only the non-overlapping match should be return
+                    *matched.last_mut().unwrap() = range;
                 }
                 _ => matched.push(range),
             }

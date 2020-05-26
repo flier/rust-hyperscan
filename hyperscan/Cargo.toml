@@ -11,6 +11,11 @@ readme = "README.md"
 keywords = ["regex", "hyperscan", "streaming"]
 edition = "2018"
 
+[features]
+default = []
+pattern = ["regex/pattern"]
+unstable = ["pattern"]
+
 [dependencies]
 thiserror = "1.0"
 anyhow = "1.0"

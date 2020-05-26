@@ -1,5 +1,5 @@
 mod closure;
-#[cfg(unstable)]
+#[cfg(feature = "pattern")]
 mod pattern;
 mod scan;
 mod scratch;
