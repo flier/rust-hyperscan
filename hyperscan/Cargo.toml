@@ -29,6 +29,7 @@ regex = "1.1"
 pcap = "0.7"
 pnet = "0.26"
 byteorder = "1.2"
+doc-comment = "0.3"
 
 [build-dependencies]
 rustc_version = "0.2"

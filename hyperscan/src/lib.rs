@@ -69,6 +69,13 @@ pub mod prelude {
     };
 }
 
+#[cfg(doctest)]
+#[macro_use]
+extern crate doc_comment;
+
+#[cfg(doctest)]
+doctest!("../../README.md");
+
 #[cfg(test)]
 mod tests {
     pub use super::common::tests::*;
