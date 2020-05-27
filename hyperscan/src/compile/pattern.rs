@@ -174,7 +174,7 @@ pub enum SomHorizon {
     Small = ffi::HS_MODE_SOM_HORIZON_SMALL,
 }
 
-/// Pattern that has matched.
+/// The pattern with basic regular expression.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Pattern {
     /// The expression to parse.
@@ -212,7 +212,7 @@ impl Pattern {
         })
     }
 
-    /// Parse a expression to a pattern
+    /// Parse a basic regular expression to a pattern.
     pub fn parse<S: AsRef<str>>(s: S) -> Result<Pattern> {
         let s = s.as_ref();
         let (id, expr) = match s.find(':') {

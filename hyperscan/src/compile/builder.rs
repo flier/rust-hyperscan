@@ -217,10 +217,10 @@ impl<T: Mode> Database<T> {
     /// into a Hyperscan database which can be passed to the runtime functions.
     pub fn compile_literal<S: Into<String>>(
         expression: S,
-        flags: Flags,
+        flags: LiteralFlags,
         platform: Option<&PlatformRef>,
     ) -> Result<Database<T>> {
-        Pattern::with_flags(expression, flags)?.for_platform(platform)
+        Literal::with_flags(expression, flags)?.for_platform(platform)
     }
 }
 

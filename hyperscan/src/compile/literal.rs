@@ -62,7 +62,7 @@ impl fmt::Display for Flags {
     }
 }
 
-/// The pure literal expression that has matched.
+/// The pattern with pure literal expression.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Literal {
     /// The expression to parse.
@@ -96,7 +96,7 @@ impl Literal {
         })
     }
 
-    /// Parse a expression to a literal
+    /// Parse a pure literal expression to a literal
     pub fn parse<S: AsRef<str>>(s: S) -> Result<Literal> {
         let s = s.as_ref();
         let (id, expr) = match s.find(':') {
