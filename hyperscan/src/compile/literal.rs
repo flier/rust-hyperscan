@@ -1,8 +1,10 @@
 use std::fmt;
+use std::iter::FromIterator;
 use std::str::FromStr;
 
 use anyhow::{bail, Error, Result};
 use bitflags::bitflags;
+use derive_more::{Deref, DerefMut, From, Index, IndexMut, Into, IntoIterator};
 
 use crate::{compile::SomHorizon, ffi};
 
@@ -157,7 +159,17 @@ impl FromStr for Literal {
 }
 
 /// Vec of `Literal`
-pub type Literals = Vec<Literal>;
+#[repr(transparent)]
+#[derive(Clone, Debug, Deref, DerefMut, From, Index, IndexMut, Into, IntoIterator)]
+#[deref(forward)]
+#[deref_mut(forward)]
+pub struct Literals(Vec<Literal>);
+
+impl FromIterator<Literal> for Literals {
+    fn from_iter<T: IntoIterator<Item = Literal>>(iter: T) -> Self {
+        Self(Vec::from_iter(iter))
+    }
+}
 
 /// Define `Literal` with flags
 #[macro_export]
@@ -193,13 +205,13 @@ macro_rules! literal {
 #[macro_export]
 macro_rules! literals {
     ( $( $expr:expr ),* ) => {
-        vec![ $( literal! { $expr } ),* ]
+        Literals(vec![ $( literal! { $expr } ),* ])
     };
     ( $( $expr:expr ),* ; $( $flag:ident )|* ) => {
         literals! { $( $expr ),*; $( $crate::LiteralFlags:: $flag )|* }
     };
     ( $( $expr:expr ),* ; $flags:expr ) => {{
-        vec![ $( literal! { $expr ; $flags } ),* ]
+        Literals(vec![ $( literal! { $expr ; $flags } ),* ])
     }};
 }
 

@@ -20,9 +20,8 @@
 //
 //
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs;
 use std::io;
-use std::io::BufRead;
 use std::iter;
 use std::net::SocketAddrV4;
 use std::path::{Path, PathBuf};
@@ -30,13 +29,15 @@ use std::process::exit;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Result};
 use byteorder::{BigEndian, ReadBytesExt};
-use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
-use pnet::packet::ip::IpNextHeaderProtocols;
-use pnet::packet::ipv4::Ipv4Packet;
-use pnet::packet::udp::UdpPacket;
-use pnet::packet::{Packet, PrimitiveValues};
+use pnet::packet::{
+    ethernet::{EtherTypes, EthernetPacket},
+    ip::IpNextHeaderProtocols,
+    ipv4::Ipv4Packet,
+    udp::UdpPacket,
+    Packet, PrimitiveValues,
+};
 use structopt::StructOpt;
 
 use hyperscan::prelude::*;
@@ -48,32 +49,11 @@ use hyperscan::prelude::*;
  */
 fn read_databases<P: AsRef<Path>>(path: P) -> Result<(StreamingDatabase, BlockDatabase)> {
     // do the actual file reading and string handling
-    let patterns = parse_file(path)?;
+    let patterns: Patterns = fs::read_to_string(path)?.parse()?;
 
     println!("Compiling Hyperscan databases with {} patterns.", patterns.len());
 
     Ok((build_database(&patterns)?, build_database(&patterns)?))
-}
-
-fn parse_file<P: AsRef<Path>>(path: P) -> Result<Patterns> {
-    let f = File::open(path)?;
-
-    io::BufReader::new(f)
-        .lines()
-        .flat_map(|line| {
-            line.map_err(Error::new)
-                .and_then(|line| {
-                    let line = line.trim();
-
-                    if line.is_empty() || line.starts_with('#') {
-                        Ok(None)
-                    } else {
-                        line.parse().map(Some)
-                    }
-                })
-                .transpose()
-        })
-        .collect()
 }
 
 fn build_database<B: Builder, T: Mode>(builder: &B) -> Result<Database<T>> {

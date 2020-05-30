@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::ptr;
@@ -32,7 +33,7 @@ pub type VectoredDatabase = Database<Vectored>;
 
 impl<T> Database<T>
 where
-    T: Mode,
+    T: Mode + 'static,
 {
     /// Provides the id of compiled mode of the given database.
     pub fn id(&self) -> u32 {
@@ -42,6 +43,26 @@ where
     /// Provides the name of compiled mode of the given database.
     pub fn name(&self) -> &'static str {
         T::NAME
+    }
+
+    /// Provides the `TypeId` of compiled mode of the given database.
+    pub fn mode(&self) -> TypeId {
+        TypeId::of::<T>()
+    }
+
+    /// The given database is a block database.
+    pub fn is_block(&self) -> bool {
+        self.mode() == TypeId::of::<Block>()
+    }
+
+    /// The given database is a block database.
+    pub fn is_vectored(&self) -> bool {
+        self.mode() == TypeId::of::<Vectored>()
+    }
+
+    /// The given database is a block database.
+    pub fn is_streaming(&self) -> bool {
+        self.mode() == TypeId::of::<Streaming>()
     }
 }
 

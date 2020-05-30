@@ -1,8 +1,10 @@
 use std::fmt;
+use std::iter::FromIterator;
 use std::str::FromStr;
 
 use anyhow::{bail, Error, Result};
 use bitflags::bitflags;
+use derive_more::{Deref, DerefMut, From, Index, IndexMut, Into, IntoIterator};
 
 use crate::ffi;
 
@@ -215,7 +217,7 @@ impl Pattern {
     /// Parse a basic regular expression to a pattern.
     pub fn parse<S: AsRef<str>>(s: S) -> Result<Pattern> {
         let s = s.as_ref();
-        let (id, expr) = match s.find(':') {
+        let (id, expr) = match s.find(":/") {
             Some(off) => (Some(s[..off].parse()?), &s[off + 1..]),
             None => (None, s),
         };
@@ -275,7 +277,36 @@ impl FromStr for Pattern {
 }
 
 /// Vec of `Pattern`
-pub type Patterns = Vec<Pattern>;
+#[repr(transparent)]
+#[derive(Clone, Debug, Deref, DerefMut, From, Index, IndexMut, Into, IntoIterator)]
+#[deref(forward)]
+#[deref_mut(forward)]
+pub struct Patterns(Vec<Pattern>);
+
+impl FromIterator<Pattern> for Patterns {
+    fn from_iter<T: IntoIterator<Item = Pattern>>(iter: T) -> Self {
+        Self(Vec::from_iter(iter))
+    }
+}
+
+impl FromStr for Patterns {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.lines()
+            .flat_map(|line| {
+                let line = line.trim();
+
+                if line.is_empty() || line.starts_with('#') {
+                    None
+                } else {
+                    Some(line.parse())
+                }
+            })
+            .collect::<Result<Vec<_>>>()
+            .map(Self)
+    }
+}
 
 /// Define `Pattern` with flags
 #[macro_export]
@@ -313,13 +344,13 @@ macro_rules! pattern {
 #[macro_export]
 macro_rules! patterns {
     ( $( $expr:expr ),* ) => {
-        vec![ $( pattern! { $expr } ),* ]
+        Patterns(vec![ $( pattern! { $expr } ),* ])
     };
     ( $( $expr:expr ),* ; $( $flag:ident )|* ) => {
         patterns! { $( $expr ),*; $( $crate::CompileFlags:: $flag )|* }
     };
     ( $( $expr:expr ),* ; $flags:expr ) => {{
-        vec![ $( pattern! { $expr ; $flags } ),* ]
+        Patterns(vec![ $( pattern! { $expr ; $flags } ),* ])
     }};
 }
 
