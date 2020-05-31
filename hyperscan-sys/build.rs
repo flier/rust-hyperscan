@@ -18,7 +18,7 @@ fn find_hyperscan() -> Result<Library> {
         .and_then(|prefix| {
             debug!("building with Hyperscan @ HYPERSCAN_ROOT={}", prefix);
 
-            let mut libs = vec![];
+            let mut libs = vec!["c++".into()];
             let mut link_paths = vec![];
             let mut include_paths = vec![];
 
