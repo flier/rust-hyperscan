@@ -196,22 +196,31 @@ impl CompileError {
     }
 }
 
-pub trait AsCompileResult {
+pub trait AsCompileResult: Sized {
     type Output;
-    type Error: fmt::Display;
+    type Err: fmt::Display;
 
-    fn ok_or(self, err: *mut ffi::ch_compile_error_t) -> Result<Self::Output, Self::Error>;
+    fn ok_or(self, err: *mut ffi::ch_compile_error_t) -> Result<Self::Output, Self::Err> {
+        self.ok_or_else(|| err)
+    }
+
+    fn ok_or_else<F>(self, err: F) -> Result<Self::Output, Self::Err>
+    where
+        F: FnOnce() -> *mut ffi::ch_compile_error_t;
 }
 
 impl AsCompileResult for ffi::ch_error_t {
     type Output = ();
-    type Error = anyhow::Error;
+    type Err = anyhow::Error;
 
-    fn ok_or(self, err: *mut ffi::ch_compile_error_t) -> Result<Self::Output, Self::Error> {
+    fn ok_or_else<F>(self, err: F) -> Result<Self::Output, Self::Err>
+    where
+        F: FnOnce() -> *mut ffi::ch_compile_error_t,
+    {
         if self == ffi::CH_SUCCESS as ffi::ch_error_t {
             Ok(())
-        } else if self == ffi::CH_COMPILER_ERROR && !err.is_null() {
-            Err(Error::CompileError(unsafe { CompileError::from_ptr(err) }).into())
+        } else if self == ffi::CH_COMPILER_ERROR {
+            Err(Error::CompileError(unsafe { CompileError::from_ptr(err()) }).into())
         } else {
             Err(Error::from(self).into())
         }

@@ -1,4 +1,5 @@
 use std::ffi::CString;
+use std::mem::MaybeUninit;
 use std::ptr::null_mut;
 
 use anyhow::Error;
@@ -37,8 +38,8 @@ impl Builder for Pattern {
     fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err> {
         let expr = CString::new(self.expression.as_bytes())?;
         let mut mode = T::ID;
-        let mut db = null_mut();
-        let mut err = null_mut();
+        let mut db = MaybeUninit::uninit();
+        let mut err = MaybeUninit::uninit();
 
         if T::ID == ffi::HS_MODE_STREAM && self.flags.contains(Flags::SOM_LEFTMOST) {
             mode |= self.som.unwrap_or(SomHorizon::Medium) as u32;
@@ -50,11 +51,11 @@ impl Builder for Pattern {
                 self.flags.bits(),
                 mode,
                 platform.map_or_else(null_mut, ForeignTypeRef::as_ptr),
-                &mut db,
-                &mut err,
+                db.as_mut_ptr(),
+                err.as_mut_ptr(),
             )
-            .ok_or(err)
-            .map(|_| Database::from_ptr(db))
+            .ok_or_else(|| err.assume_init())
+            .map(|_| Database::from_ptr(db.assume_init()))
         }
     }
 }
@@ -97,8 +98,8 @@ impl Builder for Patterns {
             ptrs.push(expr.as_ptr() as *const i8);
         }
 
-        let mut db = null_mut();
-        let mut err = null_mut();
+        let mut db = MaybeUninit::uninit();
+        let mut err = MaybeUninit::uninit();
 
         unsafe {
             ffi::hs_compile_multi(
@@ -108,11 +109,11 @@ impl Builder for Patterns {
                 self.len() as u32,
                 mode,
                 platform.map_or_else(null_mut, ForeignTypeRef::as_ptr),
-                &mut db,
-                &mut err,
+                db.as_mut_ptr(),
+                err.as_mut_ptr(),
             )
-            .ok_or(err)
-            .map(|_| Database::from_ptr(db))
+            .ok_or_else(|| err.assume_init())
+            .map(|_| Database::from_ptr(db.assume_init()))
         }
     }
 }
@@ -128,8 +129,8 @@ impl Builder for Literal {
     ///
     fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err> {
         let mut mode = T::ID;
-        let mut db = null_mut();
-        let mut err = null_mut();
+        let mut db = MaybeUninit::uninit();
+        let mut err = MaybeUninit::uninit();
 
         if T::ID == ffi::HS_MODE_STREAM && self.flags.contains(LiteralFlags::SOM_LEFTMOST) {
             mode |= self.som.unwrap_or(SomHorizon::Medium) as u32;
@@ -142,11 +143,11 @@ impl Builder for Literal {
                 self.expression.len(),
                 mode,
                 platform.map_or_else(null_mut, ForeignTypeRef::as_ptr),
-                &mut db,
-                &mut err,
+                db.as_mut_ptr(),
+                err.as_mut_ptr(),
             )
-            .ok_or(err)
-            .map(|_| Database::from_ptr(db))
+            .ok_or_else(|| err.assume_init())
+            .map(|_| Database::from_ptr(db.assume_init()))
         }
     }
 }
@@ -188,8 +189,8 @@ impl Builder for Literals {
             ids.push(pattern.id.unwrap_or(i) as u32);
         }
 
-        let mut db = null_mut();
-        let mut err = null_mut();
+        let mut db = MaybeUninit::uninit();
+        let mut err = MaybeUninit::uninit();
 
         unsafe {
             ffi::hs_compile_lit_multi(
@@ -200,11 +201,11 @@ impl Builder for Literals {
                 self.len() as u32,
                 mode,
                 platform.map_or_else(null_mut, ForeignTypeRef::as_ptr),
-                &mut db,
-                &mut err,
+                db.as_mut_ptr(),
+                err.as_mut_ptr(),
             )
-            .ok_or(err)
-            .map(|_| Database::from_ptr(db))
+            .ok_or_else(|| err.assume_init())
+            .map(|_| Database::from_ptr(db.assume_init()))
         }
     }
 }

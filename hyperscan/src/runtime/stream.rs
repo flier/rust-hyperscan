@@ -1,5 +1,4 @@
-use std::mem;
-use std::ptr::null_mut;
+use std::mem::{self, MaybeUninit};
 
 use anyhow::Result;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
@@ -12,16 +11,16 @@ use crate::runtime::{split_closure, Matching, ScratchRef};
 impl DatabaseRef<Streaming> {
     /// Provides the size of the stream state allocated by a single stream opened against the given database.
     pub fn stream_size(&self) -> Result<usize> {
-        let mut size: usize = 0;
+        let mut size = MaybeUninit::uninit();
 
-        unsafe { ffi::hs_stream_size(self.as_ptr(), &mut size).map(|_| size) }
+        unsafe { ffi::hs_stream_size(self.as_ptr(), size.as_mut_ptr()).map(|_| size.assume_init()) }
     }
 
     /// Open and initialise a stream.
     pub fn open_stream(&self) -> Result<Stream> {
-        let mut s = null_mut();
+        let mut s = MaybeUninit::uninit();
 
-        unsafe { ffi::hs_open_stream(self.as_ptr(), 0, &mut s).map(|_| Stream::from_ptr(s)) }
+        unsafe { ffi::hs_open_stream(self.as_ptr(), 0, s.as_mut_ptr()).map(|_| Stream::from_ptr(s.assume_init())) }
     }
 }
 
@@ -38,11 +37,11 @@ foreign_type! {
 fn drop_stream(_s: *mut ffi::hs_stream_t) {}
 
 unsafe fn clone_stream(s: *mut ffi::hs_stream_t) -> *mut ffi::hs_stream_t {
-    let mut p = null_mut();
+    let mut p = MaybeUninit::uninit();
 
-    ffi::hs_copy_stream(&mut p, s).expect("copy stream");
+    ffi::hs_copy_stream(p.as_mut_ptr(), s).expect("copy stream");
 
-    p
+    p.assume_init()
 }
 
 impl StreamRef {

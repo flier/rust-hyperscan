@@ -6,22 +6,31 @@ use foreign_types::{foreign_type, ForeignType};
 use crate::errors::{AsResult, HsError};
 use crate::ffi;
 
-pub trait AsCompileResult {
+pub trait AsCompileResult: Sized {
     type Output;
-    type Error: fmt::Display;
+    type Err;
 
-    fn ok_or(self, err: *mut ffi::hs_compile_error_t) -> Result<Self::Output, Self::Error>;
+    fn ok_or(self, err: *mut ffi::hs_compile_error_t) -> Result<Self::Output, Self::Err> {
+        self.ok_or_else(|| err)
+    }
+
+    fn ok_or_else<F>(self, err: F) -> Result<Self::Output, Self::Err>
+    where
+        F: FnOnce() -> *mut ffi::hs_compile_error_t;
 }
 
 impl AsCompileResult for ffi::hs_error_t {
     type Output = ();
-    type Error = anyhow::Error;
+    type Err = anyhow::Error;
 
-    fn ok_or(self, err: *mut ffi::hs_compile_error_t) -> Result<Self::Output, Self::Error> {
+    fn ok_or_else<F>(self, err: F) -> Result<Self::Output, Self::Err>
+    where
+        F: FnOnce() -> *mut ffi::hs_compile_error_t,
+    {
         if self == ffi::HS_SUCCESS as ffi::hs_error_t {
             Ok(())
-        } else if self == ffi::HS_COMPILER_ERROR && !err.is_null() {
-            Err(HsError::CompileError(unsafe { Error::from_ptr(err) }).into())
+        } else if self == ffi::HS_COMPILER_ERROR {
+            Err(HsError::CompileError(unsafe { Error::from_ptr(err()) }).into())
         } else {
             Err(HsError::from(self).into())
         }

@@ -1,4 +1,5 @@
-use std::ptr::{null_mut, NonNull};
+use std::mem::MaybeUninit;
+use std::ptr::NonNull;
 
 use anyhow::Result;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
@@ -22,9 +23,9 @@ unsafe fn free_scratch(s: *mut ffi::hs_scratch_t) {
 }
 
 unsafe fn clone_scratch(s: *mut ffi::hs_scratch_t) -> *mut ffi::hs_scratch_t {
-    let mut p = null_mut();
-    ffi::hs_clone_scratch(s, &mut p).expect("clone scratch");
-    p
+    let mut p = MaybeUninit::uninit();
+    ffi::hs_clone_scratch(s, p.as_mut_ptr()).expect("clone scratch");
+    p.assume_init()
 }
 
 impl Scratch {
@@ -34,9 +35,8 @@ impl Scratch {
     /// or concurrent caller, is required.
     ///
     unsafe fn alloc<T>(db: &DatabaseRef<T>) -> Result<Scratch> {
-        let mut s = null_mut();
-
-        ffi::hs_alloc_scratch(db.as_ptr(), &mut s).map(|_| Scratch::from_ptr(s))
+        let mut s = MaybeUninit::zeroed();
+        ffi::hs_alloc_scratch(db.as_ptr(), s.as_mut_ptr()).map(|_| Scratch::from_ptr(s.assume_init()))
     }
 
     /// Reallocate a "scratch" space for use by Hyperscan.
@@ -52,9 +52,9 @@ impl Scratch {
 impl ScratchRef {
     /// Provides the size of the given scratch space.
     pub fn size(&self) -> Result<usize> {
-        let mut size = 0;
+        let mut size = MaybeUninit::uninit();
 
-        unsafe { ffi::hs_scratch_size(self.as_ptr(), &mut size).map(|_| size) }
+        unsafe { ffi::hs_scratch_size(self.as_ptr(), size.as_mut_ptr()).map(|_| size.assume_init()) }
     }
 }
 

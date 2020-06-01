@@ -1,7 +1,8 @@
 use std::ffi::CStr;
 use std::fmt;
+use std::mem::MaybeUninit;
 use std::ops::Deref;
-use std::ptr::{null_mut, NonNull};
+use std::ptr::NonNull;
 use std::slice;
 
 use anyhow::{Error, Result};
@@ -55,23 +56,23 @@ impl<T: AsRef<[u8]>> Serialized for T {
 
     fn size(&self) -> Result<usize> {
         let buf = self.as_ref();
-        let mut size = 0;
+        let mut size = MaybeUninit::uninit();
 
-        unsafe { ffi::hs_serialized_database_size(buf.as_ptr() as *const _, buf.len(), &mut size).map(|_| size) }
+        unsafe {
+            ffi::hs_serialized_database_size(buf.as_ptr() as *const _, buf.len(), size.as_mut_ptr())
+                .map(|_| size.assume_init())
+        }
     }
 
     fn info(&self) -> Result<String> {
         let buf = self.as_ref();
-        let mut p = null_mut();
+        let mut p = MaybeUninit::uninit();
 
         unsafe {
-            ffi::hs_serialized_database_info(buf.as_ptr() as *const _, buf.len(), &mut p).and_then(|_| {
+            ffi::hs_serialized_database_info(buf.as_ptr() as *const _, buf.len(), p.as_mut_ptr()).and_then(|_| {
+                let p = p.assume_init();
                 let info = CStr::from_ptr(p).to_str()?.to_owned();
-
-                if !p.is_null() {
-                    libc::free(p as *mut _)
-                }
-
+                libc::free(p as *mut _);
                 Ok(info)
             })
         }
@@ -79,10 +80,11 @@ impl<T: AsRef<[u8]>> Serialized for T {
 
     fn deserialize<M>(&self) -> Result<Database<M>> {
         let buf = self.as_ref();
-        let mut db = null_mut();
+        let mut db = MaybeUninit::uninit();
 
         unsafe {
-            ffi::hs_deserialize_database(buf.as_ptr() as *const i8, buf.len(), &mut db).map(|_| Database::from_ptr(db))
+            ffi::hs_deserialize_database(buf.as_ptr() as *const i8, buf.len(), db.as_mut_ptr())
+                .map(|_| Database::from_ptr(db.assume_init()))
         }
     }
 }
@@ -90,12 +92,12 @@ impl<T: AsRef<[u8]>> Serialized for T {
 impl<T> DatabaseRef<T> {
     /// Serialize a pattern database to a stream of bytes.
     pub fn serialize(&self) -> Result<CBuffer<u8>> {
-        let mut ptr = null_mut();
-        let mut size: usize = 0;
+        let mut ptr = MaybeUninit::uninit();
+        let mut size = MaybeUninit::uninit();
 
         unsafe {
-            ffi::hs_serialize_database(self.as_ptr(), &mut ptr, &mut size)
-                .map(|_| CBuffer(NonNull::new_unchecked(ptr).cast(), size))
+            ffi::hs_serialize_database(self.as_ptr(), ptr.as_mut_ptr(), size.as_mut_ptr())
+                .map(|_| CBuffer(NonNull::new_unchecked(ptr.assume_init()).cast(), size.assume_init()))
         }
     }
 

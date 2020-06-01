@@ -1,5 +1,5 @@
 use std::ffi::CStr;
-use std::ptr;
+use std::mem::MaybeUninit;
 
 use anyhow::Result;
 use foreign_types::{foreign_type, ForeignTypeRef};
@@ -27,21 +27,20 @@ unsafe fn drop_database(db: *mut ffi::ch_database_t) {
 impl DatabaseRef {
     /// Returns the size of the given database.
     pub fn size(&self) -> Result<usize> {
-        let mut size: usize = 0;
+        let mut size = MaybeUninit::uninit();
 
-        unsafe { ffi::ch_database_size(self.as_ptr(), &mut size).map(|_| size) }
+        unsafe { ffi::ch_database_size(self.as_ptr(), size.as_mut_ptr()).map(|_| size.assume_init()) }
     }
 
     /// Utility function providing information about a database.
     pub fn info(&self) -> Result<String> {
-        let mut p = ptr::null_mut();
+        let mut p = MaybeUninit::uninit();
 
         unsafe {
-            ffi::ch_database_info(self.as_ptr(), &mut p).and_then(|_| {
-                let info = CStr::from_ptr(p).to_str()?.to_owned();
-
+            ffi::ch_database_info(self.as_ptr(), p.as_mut_ptr()).and_then(|_| {
+                let p = p.assume_init();
+                let info = CStr::from_ptr(p).to_str()?.into();
                 libc::free(p as *mut _);
-
                 Ok(info)
             })
         }

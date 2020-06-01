@@ -1,5 +1,5 @@
 use std::ffi::CString;
-use std::ptr::null_mut;
+use std::mem::MaybeUninit;
 
 use anyhow::Result;
 
@@ -36,14 +36,20 @@ impl Pattern {
     pub fn info(&self) -> Result<Info> {
         let expr = CString::new(self.expression.as_str())?;
         let ext = self.ext.into();
-        let mut info = null_mut();
-        let mut err = null_mut();
+        let mut info = MaybeUninit::uninit();
+        let mut err = MaybeUninit::uninit();
 
         let info = unsafe {
-            ffi::hs_expression_ext_info(expr.as_ptr() as *const i8, self.flags.bits(), &ext, &mut info, &mut err)
-                .ok_or(err)?;
+            ffi::hs_expression_ext_info(
+                expr.as_ptr() as *const i8,
+                self.flags.bits(),
+                &ext,
+                info.as_mut_ptr(),
+                err.as_mut_ptr(),
+            )
+            .ok_or_else(|| err.assume_init())?;
 
-            info.as_ref().unwrap()
+            info.assume_init().as_ref().unwrap()
         };
 
         let info = Info {

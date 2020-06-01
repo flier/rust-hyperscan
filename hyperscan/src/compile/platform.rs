@@ -1,4 +1,4 @@
-use std::mem;
+use std::mem::{self, MaybeUninit};
 
 use anyhow::Result;
 use bitflags::bitflags;
@@ -60,7 +60,7 @@ foreign_type! {
 }
 
 unsafe fn free_platform_info(p: *mut ffi::hs_platform_info_t) {
-    let _ = Box::from_raw(p);
+    mem::drop(Box::from_raw(p));
 }
 
 impl Platform {
@@ -72,9 +72,10 @@ impl Platform {
     /// Populates the platform information based on the current host.
     pub fn host() -> Result<Platform> {
         unsafe {
-            let mut platform = mem::zeroed();
+            let mut platform = MaybeUninit::zeroed();
 
-            ffi::hs_populate_platform(&mut platform).map(|_| Platform::from_ptr(Box::into_raw(Box::new(platform))))
+            ffi::hs_populate_platform(platform.as_mut_ptr())
+                .map(|_| Platform::from_ptr(Box::into_raw(Box::new(platform.assume_init()))))
         }
     }
 

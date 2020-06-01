@@ -1,6 +1,7 @@
 use std::ffi::CString;
 use std::fmt;
-use std::ptr::{null, null_mut};
+use std::mem::MaybeUninit;
+use std::ptr::null;
 use std::str::FromStr;
 
 use anyhow::{bail, Error};
@@ -151,8 +152,8 @@ impl Builder for Pattern {
         let expr = CString::new(self.expression.as_str())?;
         let ptr = expr.as_bytes_with_nul().as_ptr() as *const i8;
         let flags = self.flags.bits();
-        let mut db = null_mut();
-        let mut err = null_mut();
+        let mut db = MaybeUninit::uninit();
+        let mut err = MaybeUninit::uninit();
 
         unsafe {
             if let Some(MatchLimit {
@@ -160,19 +161,17 @@ impl Builder for Pattern {
                 recursion_depth,
             }) = match_limit
             {
-                let id = 0;
-
                 ffi::ch_compile_ext_multi(
                     &ptr,
                     &flags,
-                    &id,
+                    &0,
                     1,
                     mode as _,
                     max_matches,
                     recursion_depth,
                     platform.map_or_else(null, |platform| platform.as_ptr() as *const _),
-                    &mut db,
-                    &mut err,
+                    db.as_mut_ptr(),
+                    err.as_mut_ptr(),
                 )
             } else {
                 ffi::ch_compile(
@@ -180,12 +179,12 @@ impl Builder for Pattern {
                     flags,
                     mode as u32,
                     platform.map_or_else(null, |platform| platform.as_ptr() as *const _),
-                    &mut db,
-                    &mut err,
+                    db.as_mut_ptr(),
+                    err.as_mut_ptr(),
                 )
             }
-            .ok_or(err)
-            .map(|_| Database::from_ptr(db))
+            .ok_or_else(|| err.assume_init())
+            .map(|_| Database::from_ptr(db.assume_init()))
         }
     }
 }
@@ -222,9 +221,8 @@ impl Builder for Patterns {
             .iter()
             .map(|expr| expr.as_ptr() as *const _)
             .collect::<Vec<_>>();
-
-        let mut db = null_mut();
-        let mut err = null_mut();
+        let mut db = MaybeUninit::uninit();
+        let mut err = MaybeUninit::uninit();
 
         unsafe {
             if let Some(MatchLimit {
@@ -241,8 +239,8 @@ impl Builder for Patterns {
                     max_matches,
                     recursion_depth,
                     platform.map_or_else(null, |platform| platform.as_ptr() as *const _),
-                    &mut db,
-                    &mut err,
+                    db.as_mut_ptr(),
+                    err.as_mut_ptr(),
                 )
             } else {
                 ffi::ch_compile_multi(
@@ -252,12 +250,12 @@ impl Builder for Patterns {
                     self.len() as _,
                     mode as _,
                     platform.map_or_else(null, |platform| platform.as_ptr() as *const _),
-                    &mut db,
-                    &mut err,
+                    db.as_mut_ptr(),
+                    err.as_mut_ptr(),
                 )
             }
-            .ok_or(err)
-            .map(|_| Database::from_ptr(db))
+            .ok_or_else(|| err.assume_init())
+            .map(|_| Database::from_ptr(db.assume_init()))
         }
     }
 }
