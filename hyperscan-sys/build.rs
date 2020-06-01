@@ -151,6 +151,11 @@ fn generate_chimera_binding(_: &Path, out_dir: &Path) -> Result<()> {
         .with_context(|| "copy binding file")
 }
 
+#[cfg(not(feature = "chimera"))]
+fn generate_chimera_binding(_: &Path, _: &Path) -> Result<()> {
+    Ok(())
+}
+
 fn main() -> Result<()> {
     pretty_env_logger::init();
 

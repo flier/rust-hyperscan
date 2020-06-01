@@ -48,6 +48,8 @@ mod common;
 mod errors;
 #[macro_use]
 mod compile;
+#[cfg(feature = "chimera")]
+pub mod chimera;
 pub mod regex;
 mod runtime;
 

@@ -29,7 +29,7 @@ use std::process::exit;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use pnet::packet::{
     ethernet::{EtherTypes, EthernetPacket},
@@ -56,7 +56,7 @@ fn read_databases<P: AsRef<Path>>(path: P) -> Result<(StreamingDatabase, BlockDa
     Ok((build_database(&patterns)?, build_database(&patterns)?))
 }
 
-fn build_database<B: Builder, T: Mode>(builder: &B) -> Result<Database<T>> {
+fn build_database<B: Builder<Err = Error>, T: Mode>(builder: &B) -> Result<Database<T>> {
     let now = Instant::now();
 
     let db = builder.build::<T>()?;

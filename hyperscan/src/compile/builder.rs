@@ -1,7 +1,7 @@
 use std::ffi::CString;
 use std::ptr::null_mut;
 
-use anyhow::Result;
+use anyhow::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
 use libc::c_uint;
 
@@ -13,23 +13,28 @@ use crate::ffi;
 
 /// The regular expression pattern database builder.
 pub trait Builder {
+    /// The associated error which can be returned from compiling.
+    type Err;
+
     /// Build an expression is compiled into a Hyperscan database which can be passed to the runtime functions
-    fn build<T: Mode>(&self) -> Result<Database<T>> {
+    fn build<T: Mode>(&self) -> Result<Database<T>, Self::Err> {
         self.for_platform(None)
     }
 
     /// Build an expression is compiled into a Hyperscan database for a target platform.
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>>;
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err>;
 }
 
 impl Builder for Pattern {
+    type Err = Error;
+
     ///
     /// The basic regular expression compiler.
     ///
-    /// / This is the function call with which an expression is compiled
+    /// This is the function call with which an expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>> {
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err> {
         let expr = CString::new(self.expression.as_bytes())?;
         let mut mode = T::ID;
         let mut db = null_mut();
@@ -55,6 +60,8 @@ impl Builder for Pattern {
 }
 
 impl Builder for Patterns {
+    type Err = Error;
+
     ///
     /// The multiple regular expression compiler.
     ///
@@ -63,7 +70,7 @@ impl Builder for Patterns {
     /// Each expression can be labelled with a unique integer
     // which is passed into the match callback to identify the pattern that has matched.
     ///
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>> {
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err> {
         let mut expressions = Vec::with_capacity(self.len());
         let mut ptrs = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
@@ -111,13 +118,15 @@ impl Builder for Patterns {
 }
 
 impl Builder for Literal {
+    type Err = Error;
+
     ///
     /// The basic regular expression compiler.
     ///
     /// / This is the function call with which an expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>> {
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err> {
         let mut mode = T::ID;
         let mut db = null_mut();
         let mut err = null_mut();
@@ -143,6 +152,8 @@ impl Builder for Literal {
 }
 
 impl Builder for Literals {
+    type Err = Error;
+
     ///
     /// The multiple regular expression compiler.
     ///
@@ -151,7 +162,7 @@ impl Builder for Literals {
     /// Each expression can be labelled with a unique integer
     // which is passed into the match callback to identify the pattern that has matched.
     ///
-    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>> {
+    fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err> {
         let mut ptrs = Vec::with_capacity(self.len());
         let mut lens = Vec::with_capacity(self.len());
         let mut flags = Vec::with_capacity(self.len());
@@ -207,7 +218,7 @@ impl<T: Mode> Database<T> {
         expression: S,
         flags: Flags,
         platform: Option<&PlatformRef>,
-    ) -> Result<Database<T>> {
+    ) -> Result<Database<T>, Error> {
         Pattern::with_flags(expression, flags)?.for_platform(platform)
     }
 
@@ -219,7 +230,7 @@ impl<T: Mode> Database<T> {
         expression: S,
         flags: LiteralFlags,
         platform: Option<&PlatformRef>,
-    ) -> Result<Database<T>> {
+    ) -> Result<Database<T>, Error> {
         Literal::with_flags(expression, flags)?.for_platform(platform)
     }
 }
