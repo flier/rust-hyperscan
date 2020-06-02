@@ -27,6 +27,7 @@ fn find_hyperscan() -> Result<Library> {
             let lib_path = prefix.join("lib");
             let libhs = lib_path.join("libhs.a");
             let libchimera = lib_path.join("libchimera.a");
+            let libpcre = lib_path.join("libpcre.a");
 
             if !prefix.exists() || !prefix.is_dir() {
                 bail!("HYPERSCAN_ROOT should point to a directory that exists.");
@@ -46,8 +47,9 @@ fn find_hyperscan() -> Result<Library> {
             } else {
                 bail!("`$HYPERSCAN_ROOT/lib/libhs.a` library not found.");
             }
-            if libchimera.exists() && libchimera.is_file() {
+            if libchimera.exists() && libchimera.is_file() && libpcre.exists() && libpcre.is_file() {
                 libs.push("chimera".into());
+                libs.push("pcre".into());
             } else if cfg!(feature = "chimera") {
                 bail!("`$HYPERSCAN_ROOT/lib/libchimera.a` library not found.");
             }
