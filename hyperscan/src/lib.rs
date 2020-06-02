@@ -77,7 +77,7 @@ pub use crate::compile::{
     Flags as PatternFlags, Literal, LiteralFlags, Literals, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
 };
 pub use crate::errors::HsError;
-pub use crate::runtime::{Matching, Scannable, Scratch, ScratchRef, Stream, StreamRef};
+pub use crate::runtime::{Matching, Scratch, ScratchRef, Stream, StreamRef};
 
 /// The `hyperscan` Prelude
 pub mod prelude {

@@ -10,11 +10,6 @@ use crate::errors::AsResult;
 use crate::ffi;
 use crate::runtime::{split_closure, ScratchRef, StreamRef};
 
-/// Scannable buffer
-pub trait Scannable: AsRef<[u8]> {}
-
-impl<T> Scannable for T where T: AsRef<[u8]> {}
-
 /// Indicating whether or not matching should continue on the target data.
 #[repr(i32)]
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -35,7 +30,7 @@ impl DatabaseRef<Block> {
     /// pattern matching takes place for block-mode pattern databases.
     pub fn scan<T, F>(&self, data: T, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
-        T: Scannable,
+        T: AsRef<[u8]>,
         F: FnMut(u32, u64, u64, u32) -> Matching,
     {
         let data = data.as_ref();
@@ -61,7 +56,7 @@ impl DatabaseRef<Vectored> {
     pub fn scan<I, T, F>(&self, data: I, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         I: IntoIterator<Item = T>,
-        T: Scannable,
+        T: AsRef<[u8]>,
         F: FnMut(u32, u64, u64, u32) -> Matching,
     {
         let (ptrs, lens): (Vec<_>, Vec<_>) = data
@@ -118,7 +113,7 @@ impl StreamRef {
     /// pattern matching takes place for stream-mode pattern databases.
     pub fn scan<T, F>(&self, data: T, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
-        T: Scannable,
+        T: AsRef<[u8]>,
         F: FnMut(u32, u64, u64, u32) -> Matching,
     {
         let data = data.as_ref();

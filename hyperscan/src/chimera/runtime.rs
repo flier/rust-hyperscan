@@ -7,10 +7,7 @@ use anyhow::Result;
 use derive_more::{Deref, From};
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
-use crate::{
-    chimera::{errors::AsResult, ffi, DatabaseRef},
-    Scannable,
-};
+use crate::chimera::{errors::AsResult, ffi, DatabaseRef};
 
 foreign_type! {
     /// A large enough region of scratch space to support a given database.
@@ -170,7 +167,7 @@ impl DatabaseRef {
         mut on_error_event: E,
     ) -> Result<()>
     where
-        T: Scannable,
+        T: AsRef<[u8]>,
         F: FnMut(u32, u64, u64, u32, Option<&[Capture]>) -> Matching,
         E: FnMut(Error, u32) -> Matching,
     {
