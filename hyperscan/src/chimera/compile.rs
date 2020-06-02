@@ -120,12 +120,75 @@ pub trait Builder {
     /// The associated error which can be returned from compiling.
     type Err;
 
-    /// Build an expression is compiled into a Hyperscan database which can be passed to the runtime functions
+    /// Build an expression is compiled into a Chimera database which can be passed to the runtime functions.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use hyperscan::chimera::prelude::*;
+    /// let pattern = pattern! {"test"; CASELESS};
+    /// let db = pattern.build().unwrap();
+    /// let scratch = db.alloc_scratch().unwrap();
+    /// let mut matches = vec![];
+    /// let mut errors = vec![];
+    ///
+    /// db.scan("some test data", &scratch, |id, from, to, _flags, captured| {
+    ///     println!("found pattern {} : {} @ [{}, {})", id, pattern.expression, from, to);
+    ///
+    ///     matches.push((from, to));
+    ///
+    ///     Matching::Continue
+    /// }, |error_type, id| {
+    ///     errors.push((error_type, id));
+    ///
+    ///     Matching::Skip
+    /// }).unwrap();
+    ///
+    /// assert_eq!(matches, vec![(5, 9)]);
+    /// assert_eq!(errors, vec![]);
+    /// ```
     fn build(&self) -> Result<Database, Self::Err> {
-        self.for_platform(Mode::default(), None, None)
+        self.for_platform(Mode::NoGroups, None, None)
     }
 
-    /// Build an expression is compiled into a Hyperscan database for a target platform.
+    /// Build an expression is compiled into a Chimera database that the database as a whole for capturing groups.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use hyperscan::chimera::prelude::*;
+    /// let pattern = pattern! {r"(?<word>\w+)"; CASELESS};
+    /// let db = pattern.with_groups().unwrap();
+    /// let scratch = db.alloc_scratch().unwrap();
+    /// let mut matches = vec![];
+    /// let mut captures = vec![];
+    /// let mut errors = vec![];
+    ///
+    /// db.scan("some test data", &scratch, |id, from, to, _flags, captured| {
+    ///     println!("found pattern {} : {} @ [{}, {}), captured {:?}", id, pattern.expression, from, to, captured);
+    ///
+    ///     matches.push((from, to));
+    ///
+    ///     if let Some(captured) = captured {
+    ///         captures.push(captured.first().expect("captured").range());
+    ///     }
+    ///
+    ///     Matching::Continue
+    /// }, |error_type, id| {
+    ///     errors.push((error_type, id));
+    ///
+    ///     Matching::Skip
+    /// }).unwrap();
+    ///
+    /// assert_eq!(matches, vec![(0, 4), (5, 9), (10, 14)]);
+    /// assert_eq!(captures, vec![0..4, 5..9, 10..14]);
+    /// assert_eq!(errors, vec![]);
+    /// ```
+    fn with_groups(&self) -> Result<Database, Self::Err> {
+        self.for_platform(Mode::Groups, None, None)
+    }
+
+    /// Build an expression is compiled into a Chimera database for a target platform.
     fn for_platform(
         &self,
         mode: Mode,

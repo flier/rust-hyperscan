@@ -105,8 +105,10 @@ fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
         .whitelist_function("^hs_.*")
         .blacklist_type("^__darwin_.*")
         .size_t_is_usize(true)
-        .derive_copy(false)
+        .derive_copy(true)
+        .derive_debug(true)
         .derive_default(true)
+        .derive_partialeq(true)
         .generate()
         .map_err(|_| Error::msg("generate binding files"))?
         .write_to_file(out_file)
@@ -138,8 +140,10 @@ fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
         .whitelist_function("^ch_.*")
         .blacklist_type("^__darwin_.*")
         .size_t_is_usize(true)
-        .derive_copy(false)
+        .derive_copy(true)
+        .derive_debug(true)
         .derive_default(true)
+        .derive_partialeq(true)
         .generate()
         .map_err(|_| Error::msg("generate binding files"))?
         .write_to_file(out_file)

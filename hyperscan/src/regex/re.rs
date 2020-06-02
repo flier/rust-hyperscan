@@ -150,7 +150,7 @@ impl Regex {
         let _ = self.0.scan(text, &s, |_, _, _, _| {
             matched = true;
 
-            Matching::Break
+            Matching::Terminate
         });
 
         matched
@@ -178,7 +178,7 @@ impl Regex {
         let _ = self.0.scan(text, &s, |_, from, to, _| {
             matched.push((from as usize, to as usize));
 
-            Matching::Break
+            Matching::Terminate
         });
 
         matched

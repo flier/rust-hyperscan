@@ -28,7 +28,7 @@ pub const CH_ERROR_RECURSIONLIMIT: u32 = 2;
 pub const CH_CAPTURE_FLAG_INACTIVE: u32 = 0;
 pub const CH_CAPTURE_FLAG_ACTIVE: u32 = 1;
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct ch_database {
     _unused: [u8; 0],
 }
@@ -225,7 +225,7 @@ extern "C" {
 #[doc = " A hs_platform_info structure may be populated for the current platform by"]
 #[doc = " using the @ref hs_populate_platform() call."]
 #[repr(C)]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct hs_platform_info {
     #[doc = " Information about the target platform which may be used to guide the"]
     #[doc = " optimisation process of the compile."]
@@ -309,7 +309,7 @@ pub type hs_platform_info_t = hs_platform_info;
 #[doc = " ch_compile() and @ref ch_compile_multi() on failure. The caller may inspect"]
 #[doc = " the values returned in this type to determine the cause of failure."]
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ch_compile_error {
     #[doc = " A human-readable error message describing the error."]
     pub message: *mut ::libc::c_char,
@@ -593,7 +593,7 @@ extern "C" {
     pub fn ch_free_compile_error(error: *mut ch_compile_error_t) -> ch_error_t;
 }
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct ch_scratch {
     _unused: [u8; 0],
 }
@@ -610,7 +610,7 @@ pub type ch_error_event_t = ::libc::c_int;
 #[doc = " callback on match, with active structures identified by the"]
 #[doc = " CH_CAPTURE_FLAG_ACTIVE flag."]
 #[repr(C)]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct ch_capture {
     #[doc = " The flags indicating if this structure is active."]
     pub flags: ::libc::c_uint,

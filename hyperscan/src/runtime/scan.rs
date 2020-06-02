@@ -22,7 +22,7 @@ pub enum Matching {
     /// The matching should continue
     Continue = 0,
     /// The matching should cease
-    Break = 1,
+    Terminate = 1,
 }
 
 impl Default for Matching {
@@ -163,7 +163,7 @@ pub mod tests {
             assert_eq!(from, 4);
             assert_eq!(to, 8);
 
-            Matching::Break
+            Matching::Terminate
         };
 
         assert_eq!(
@@ -198,7 +198,7 @@ pub mod tests {
 
                 matches.borrow_mut().push((from, to));
 
-                Matching::Break
+                Matching::Terminate
             })
             .err()
             .unwrap()

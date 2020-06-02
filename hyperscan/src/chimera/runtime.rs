@@ -1,8 +1,10 @@
+use std::fmt;
 use std::mem::{self, MaybeUninit};
+use std::ops::Range;
 use std::slice;
 
 use anyhow::Result;
-use derive_more::From;
+use derive_more::{Deref, From};
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
 use crate::{
@@ -64,10 +66,10 @@ impl DatabaseRef {
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Matching {
-    /// The matching should continue
+    /// Continue matching.
     Continue = ffi::CH_CALLBACK_CONTINUE,
-    /// The matching should cease
-    Break = ffi::CH_CALLBACK_TERMINATE,
+    /// Terminate matching.
+    Terminate = ffi::CH_CALLBACK_TERMINATE,
     /// Skip remaining matches for this ID and continue.
     Skip = ffi::CH_CALLBACK_SKIP_PATTERN,
 }
@@ -87,7 +89,31 @@ pub enum Error {
     RecursionLimit = ffi::CH_ERROR_RECURSIONLIMIT,
 }
 
-pub type Capture = ffi::ch_capture;
+#[repr(transparent)]
+#[derive(Clone, Copy, From, Deref, PartialEq)]
+pub struct Capture(ffi::ch_capture);
+
+impl fmt::Debug for Capture {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Capture")
+            .field("is_active", &self.is_active())
+            .field("from", &self.from)
+            .field("to", &self.to)
+            .finish()
+    }
+}
+
+impl Capture {
+    /// Indicating that a particular capture group is active
+    pub fn is_active(&self) -> bool {
+        self.flags == ffi::CH_CAPTURE_FLAG_ACTIVE
+    }
+
+    /// Returns the range of capture group
+    pub fn range(&self) -> Range<usize> {
+        self.from as usize..self.to as usize
+    }
+}
 
 unsafe extern "C" fn on_match_trampoline<F, E>(
     id: u32,
@@ -112,7 +138,7 @@ where
         if captured.is_null() || size == 0 {
             None
         } else {
-            Some(slice::from_raw_parts(captured, size as usize))
+            Some(slice::from_raw_parts(captured as *const _, size as usize))
         },
     ) as i32
 }
@@ -134,26 +160,6 @@ where
 
 impl DatabaseRef {
     /// The block regular expression scanner.
-    ///
-    /// ```rust
-    /// use hyperscan::chimera::prelude::*;
-    ///
-    /// let pattern = pattern! {"test"; CASELESS};
-    /// let db = pattern.build().unwrap();
-    /// let scratch = db.alloc_scratch().unwrap();
-
-    /// db.scan("some test data", &scratch, |id, from, to, _flags, captured| {
-    ///     assert_eq!(id, 0);
-    ///     assert_eq!(from, 5);
-    ///     assert_eq!(to, 9);
-    ///
-    ///     println!("found pattern {} : {} @ [{}, {})", id, pattern.expression, from, to);
-    ///
-    ///     Matching::Continue
-    /// }, |error_type, id| {
-    ///     Matching::Skip
-    /// }).unwrap();
-    /// ```
     pub fn scan<T, F, E>(
         &self,
         data: T,
