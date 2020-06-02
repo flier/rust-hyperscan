@@ -17,6 +17,7 @@ impl<T> Scannable for T where T: AsRef<[u8]> {}
 
 /// Indicating whether or not matching should continue on the target data.
 #[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Matching {
     /// The matching should continue
     Continue = 0,
