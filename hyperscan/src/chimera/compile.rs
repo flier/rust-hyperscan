@@ -1,33 +1,12 @@
 use std::ffi::CString;
-use std::fmt;
 use std::mem::MaybeUninit;
 use std::ptr::null;
-use std::str::FromStr;
 
-use anyhow::{bail, Error};
-use bitflags::bitflags;
+use anyhow::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
 
-use crate::chimera::{errors::AsCompileResult, ffi, Database};
-use crate::{Pattern, Patterns, PlatformRef};
-
-bitflags! {
-    /// Pattern flags
-    pub struct Flags: u32 {
-        /// Set case-insensitive matching.
-        const CASELESS = ffi::CH_FLAG_CASELESS;
-        /// Matching a `.` will not exclude newlines.
-        const DOTALL = ffi::CH_FLAG_DOTALL;
-        /// Set multi-line anchoring.
-        const MULTILINE = ffi::CH_FLAG_MULTILINE;
-        /// Set single-match only mode.
-        const SINGLEMATCH = ffi::CH_FLAG_SINGLEMATCH;
-        /// Enable UTF-8 mode for this expression.
-        const UTF8 = ffi::CH_FLAG_UTF8;
-        /// Enable Unicode property support for this expression.
-        const UCP = ffi::CH_FLAG_UCP;
-    }
-}
+use crate::chimera::{errors::AsCompileResult, ffi, Database, Pattern, Patterns};
+use crate::PlatformRef;
 
 /// Compile mode flags
 ///
@@ -53,60 +32,6 @@ impl Default for Mode {
     }
 }
 
-impl Default for Flags {
-    fn default() -> Self {
-        Flags::empty()
-    }
-}
-
-impl FromStr for Flags {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut flags = Flags::empty();
-
-        for c in s.chars() {
-            match c {
-                'i' => flags |= Flags::CASELESS,
-                'm' => flags |= Flags::MULTILINE,
-                's' => flags |= Flags::DOTALL,
-                'H' => flags |= Flags::SINGLEMATCH,
-                '8' => flags |= Flags::UTF8,
-                'W' => flags |= Flags::UCP,
-                _ => {
-                    bail!("invalid pattern flag: {}", c);
-                }
-            }
-        }
-
-        Ok(flags)
-    }
-}
-
-impl fmt::Display for Flags {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.contains(Flags::CASELESS) {
-            write!(f, "i")?
-        }
-        if self.contains(Flags::MULTILINE) {
-            write!(f, "m")?
-        }
-        if self.contains(Flags::DOTALL) {
-            write!(f, "s")?
-        }
-        if self.contains(Flags::SINGLEMATCH) {
-            write!(f, "H")?
-        }
-        if self.contains(Flags::UTF8) {
-            write!(f, "8")?
-        }
-        if self.contains(Flags::UCP) {
-            write!(f, "W")?
-        }
-        Ok(())
-    }
-}
-
 /// Define match limits for PCRE runtime.
 pub struct MatchLimit {
     /// A limit from pcre_extra on the amount of match function called in PCRE to limit backtracking that can take place.
@@ -126,7 +51,7 @@ pub trait Builder {
     ///
     /// ```rust
     /// # use hyperscan::chimera::prelude::*;
-    /// let pattern = pattern! {"test"; CASELESS};
+    /// let pattern: Pattern = "/test/i".parse().unwrap();
     /// let db = pattern.build().unwrap();
     /// let scratch = db.alloc_scratch().unwrap();
     /// let mut matches = vec![];
@@ -157,7 +82,7 @@ pub trait Builder {
     ///
     /// ```rust
     /// # use hyperscan::chimera::prelude::*;
-    /// let pattern = pattern! {r"(?<word>\w+)"; CASELESS};
+    /// let pattern: Pattern = r"/(?<word>\w+)/i".parse().unwrap();
     /// let db = pattern.with_groups().unwrap();
     /// let scratch = db.alloc_scratch().unwrap();
     /// let mut matches = vec![];

@@ -33,12 +33,12 @@ fn find_hyperscan() -> Result<Library> {
                 bail!("HYPERSCAN_ROOT should point to a directory that exists.");
             }
             if lib_path.exists() && lib_path.is_dir() {
-                link_paths.push(lib_path.into())
+                link_paths.push(lib_path)
             } else {
                 bail!("`$HYPERSCAN_ROOT/lib` subdirectory not found.");
             }
             if inc_path.exists() && inc_path.is_dir() {
-                include_paths.push(inc_path.into())
+                include_paths.push(inc_path)
             } else {
                 bail!("`$HYPERSCAN_ROOT/include/hs` subdirectory not found.");
             }
