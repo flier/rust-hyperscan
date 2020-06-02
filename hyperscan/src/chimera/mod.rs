@@ -41,9 +41,9 @@ pub use self::common::{version, Database, DatabaseRef};
 pub use self::compile::{Builder, Mode};
 pub use self::errors::{CompileError, Error};
 pub use self::pattern::{Flags, Pattern, Patterns};
-pub use self::runtime::{Matching, Scratch, ScratchRef};
+pub use self::runtime::{Capture, Error as MatchError, Matching, Scratch, ScratchRef};
 
 pub mod prelude {
     //! The `chimera` Prelude
-    pub use crate::chimera::{Builder, Database, DatabaseRef, Matching, Pattern, Scratch, ScratchRef};
+    pub use crate::chimera::{Builder, Database, DatabaseRef, Matching, Pattern, Patterns, Scratch, ScratchRef};
 }

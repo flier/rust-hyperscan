@@ -80,6 +80,7 @@ impl Default for Matching {
     }
 }
 
+/// The type of error event that occurred.
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, From, PartialEq)]
 pub enum Error {
@@ -89,6 +90,7 @@ pub enum Error {
     RecursionLimit = ffi::CH_ERROR_RECURSIONLIMIT,
 }
 
+/// Structure representing a captured subexpression within a match.
 #[repr(transparent)]
 #[derive(Clone, Copy, From, Deref, PartialEq)]
 pub struct Capture(ffi::ch_capture);
