@@ -120,6 +120,20 @@ impl ExprExt {
 
 foreign_type! {
     /// A type containing information related to an expression
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use hyperscan::prelude::*;
+    /// let pattern: Pattern = r"(\d{4})-(\d{2})-(\d{2,4})".parse().unwrap();
+    /// let info = pattern.info().unwrap();
+    ///
+    /// assert_eq!(info.min_width(), 10);
+    /// assert_eq!(info.max_width(), 12);
+    /// assert!(!info.unordered_matches());
+    /// assert!(!info.matches_at_eod());
+    /// assert!(!info.matches_only_at_eod());
+    /// ```
     pub unsafe type ExprInfo: Send + Sync {
         type CType = ffi::hs_expr_info;
 
