@@ -10,6 +10,7 @@ use crate::{compile::SomHorizon, ffi};
 
 bitflags! {
     /// Literal flags
+    #[derive(Default)]
     pub struct Flags: u32 {
         /// Matching will be performed case-insensitively.
         const CASELESS = ffi::HS_FLAG_CASELESS;
@@ -19,12 +20,6 @@ bitflags! {
         const SINGLEMATCH = ffi::HS_FLAG_SINGLEMATCH;
         /// Report the leftmost start of match offset when a match is found.
         const SOM_LEFTMOST = ffi::HS_FLAG_SOM_LEFTMOST;
-    }
-}
-
-impl Default for Flags {
-    fn default() -> Self {
-        Flags::empty()
     }
 }
 

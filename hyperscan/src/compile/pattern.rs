@@ -10,6 +10,7 @@ use crate::{compile::ExprExt, ffi};
 
 bitflags! {
     /// Pattern flags
+    #[derive(Default)]
     pub struct Flags: u32 {
         /// Set case-insensitive matching.
         const CASELESS = ffi::HS_FLAG_CASELESS;
@@ -33,12 +34,6 @@ bitflags! {
         const COMBINATION = ffi::HS_FLAG_COMBINATION;
         /// Don't do any match reporting.
         const QUIET = ffi::HS_FLAG_QUIET;
-    }
-}
-
-impl Default for Flags {
-    fn default() -> Self {
-        Flags::empty()
     }
 }
 

@@ -41,6 +41,7 @@ pub enum Tune {
 
 bitflags! {
     /// CPU feature support flags
+    #[derive(Default)]
     pub struct CpuFeatures: u64 {
         /// Intel(R) Advanced Vector Extensions 2 (Intel(R) AVX2)
         const AVX2 = ffi::HS_CPU_FEATURES_AVX2 as u64;

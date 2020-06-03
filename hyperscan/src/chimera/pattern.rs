@@ -10,6 +10,7 @@ use crate::chimera::ffi;
 
 bitflags! {
     /// Pattern flags
+    #[derive(Default)]
     pub struct Flags: u32 {
         /// Set case-insensitive matching.
         const CASELESS = ffi::CH_FLAG_CASELESS;
@@ -23,12 +24,6 @@ bitflags! {
         const UTF8 = ffi::CH_FLAG_UTF8;
         /// Enable Unicode property support for this expression.
         const UCP = ffi::CH_FLAG_UCP;
-    }
-}
-
-impl Default for Flags {
-    fn default() -> Self {
-        Flags::empty()
     }
 }
 
