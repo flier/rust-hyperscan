@@ -70,11 +70,14 @@ pub use crate::common::{
     Streaming as StreamingMode, StreamingDatabase, Vectored as VectoredMode, VectoredDatabase,
 };
 #[doc(hidden)]
+#[deprecated = "use `ExprInfo` instead"]
+pub use crate::compile::ExprInfo as ExpressionInfo;
+#[doc(hidden)]
 #[deprecated = "use `PatternFlags` instead"]
 pub use crate::compile::Flags as CompileFlags;
 pub use crate::compile::{
-    Builder as DatabaseBuilder, Builder, CpuFeatures, Error as CompileError, ExpressionExt, ExpressionInfo,
-    Flags as PatternFlags, Literal, LiteralFlags, Literals, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
+    Builder as DatabaseBuilder, Builder, CpuFeatures, Error as CompileError, ExprExt, ExprInfo, Flags as PatternFlags,
+    Literal, LiteralFlags, Literals, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
 };
 #[doc(hidden)]
 #[deprecated = "use `Error` instead"]

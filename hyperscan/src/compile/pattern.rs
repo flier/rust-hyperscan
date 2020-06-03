@@ -460,9 +460,9 @@ mod tests {
 
         assert_eq!(info.min_width, 4);
         assert_eq!(info.max_width, 4);
-        assert!(!info.unordered_matches);
-        assert!(!info.matches_at_eod);
-        assert!(!info.matches_only_at_eod);
+        assert!(!info.unordered_matches());
+        assert!(!info.matches_at_eod());
+        assert!(!info.matches_only_at_eod());
 
         let db: BlockDatabase = p.build().unwrap();
 

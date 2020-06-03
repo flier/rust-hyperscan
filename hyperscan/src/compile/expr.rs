@@ -1,29 +1,73 @@
 use std::ffi::CString;
+use std::fmt;
 use std::mem::MaybeUninit;
+use std::ops::Deref;
 
 use anyhow::Result;
+use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
 use crate::compile::{AsCompileResult, Pattern};
 use crate::ffi;
 
-/// A type containing information related to an expression
-#[derive(Debug, Clone)]
-pub struct Info {
+foreign_type! {
+    /// A type containing information related to an expression
+    pub unsafe type ExprInfo: Send + Sync {
+        type CType = ffi::hs_expr_info;
+
+        fn drop = drop_expr_info;
+    }
+}
+
+unsafe fn drop_expr_info(info: *mut ffi::hs_expr_info) {
+    libc::free(info as *mut _);
+}
+
+impl Deref for ExprInfoRef {
+    type Target = ffi::hs_expr_info;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.as_ptr() }
+    }
+}
+
+impl fmt::Debug for ExprInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ExprInfo")
+            .field("min_width", &self.min_width)
+            .field("max_width", &self.max_width)
+            .field("unordered_matches", &self.unordered_matches())
+            .field("matches_at_eod", &self.matches_at_eod())
+            .field("matches_only_at_eod", &self.matches_only_at_eod())
+            .finish()
+    }
+}
+
+impl ExprInfoRef {
     /// The minimum length in bytes of a match for the pattern.
-    pub min_width: usize,
+    pub fn min_width(&self) -> usize {
+        self.min_width as usize
+    }
 
     /// The maximum length in bytes of a match for the pattern.
-    pub max_width: usize,
+    pub fn max_width(&self) -> usize {
+        self.max_width as usize
+    }
 
     /// Whether this expression can produce matches that are not returned in order,
     /// such as those produced by assertions.
-    pub unordered_matches: bool,
+    pub fn unordered_matches(&self) -> bool {
+        self.unordered_matches != 0
+    }
 
     /// Whether this expression can produce matches at end of data (EOD).
-    pub matches_at_eod: bool,
+    pub fn matches_at_eod(&self) -> bool {
+        self.matches_at_eod != 0
+    }
 
     /// Whether this expression can *only* produce matches at end of data (EOD).
-    pub matches_only_at_eod: bool,
+    pub fn matches_only_at_eod(&self) -> bool {
+        self.matches_only_at_eod != 0
+    }
 }
 
 impl Pattern {
@@ -33,7 +77,7 @@ impl Pattern {
     /// The information provided in ExpressionInfo
     /// includes the minimum and maximum width of a pattern match.
     ///
-    pub fn info(&self) -> Result<Info> {
+    pub fn info(&self) -> Result<ExprInfo> {
         let expr = CString::new(self.expression.as_str())?;
         let ext = self.ext.into();
         let mut info = MaybeUninit::uninit();
@@ -49,15 +93,7 @@ impl Pattern {
             )
             .ok_or_else(|| err.assume_init())?;
 
-            info.assume_init().as_ref().unwrap()
-        };
-
-        let info = Info {
-            min_width: info.min_width as usize,
-            max_width: info.max_width as usize,
-            unordered_matches: info.unordered_matches != 0,
-            matches_at_eod: info.matches_at_eod != 0,
-            matches_only_at_eod: info.matches_only_at_eod != 0,
+            ExprInfo::from_ptr(info.assume_init())
         };
 
         debug!("expression `{}` info: {:?}", self, info);
