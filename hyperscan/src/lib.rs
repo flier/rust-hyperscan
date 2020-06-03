@@ -70,6 +70,9 @@ pub use crate::common::{
     Streaming as StreamingMode, StreamingDatabase, Vectored as VectoredMode, VectoredDatabase,
 };
 #[doc(hidden)]
+#[deprecated = "use `ExprExt` instead"]
+pub use crate::compile::ExprExt as ExpressionExt;
+#[doc(hidden)]
 #[deprecated = "use `ExprInfo` instead"]
 pub use crate::compile::ExprInfo as ExpressionInfo;
 #[doc(hidden)]

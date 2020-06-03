@@ -6,7 +6,7 @@ use anyhow::{bail, Error, Result};
 use bitflags::bitflags;
 use derive_more::{Deref, DerefMut, From, Index, IndexMut, Into, IntoIterator};
 
-use crate::ffi;
+use crate::{compile::ExprExt, ffi};
 
 bitflags! {
     /// Pattern flags
@@ -102,56 +102,6 @@ impl fmt::Display for Flags {
     }
 }
 
-/// A structure containing additional parameters related to an expression.
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub struct Ext {
-    /// The minimum end offset in the data stream at which this expression should match successfully.
-    pub min_offset: Option<u64>,
-
-    /// The maximum end offset in the data stream at which this expression should match successfully.
-    pub max_offset: Option<u64>,
-
-    /// The minimum match length (from start to end) required to successfully match this expression.
-    pub min_length: Option<u64>,
-
-    /// Allow patterns to approximately match within this edit distance.
-    pub edit_distance: Option<u32>,
-
-    /// Allow patterns to approximately match within this Hamming distance.
-    pub hamming_distance: Option<u32>,
-}
-
-impl From<Ext> for ffi::hs_expr_ext_t {
-    fn from(ext: Ext) -> Self {
-        let mut flags = 0;
-
-        if ext.min_offset.is_some() {
-            flags |= u64::from(ffi::HS_EXT_FLAG_MIN_OFFSET);
-        }
-        if ext.max_offset.is_some() {
-            flags |= u64::from(ffi::HS_EXT_FLAG_MAX_OFFSET);
-        }
-        if ext.min_length.is_some() {
-            flags |= u64::from(ffi::HS_EXT_FLAG_MIN_LENGTH);
-        }
-        if ext.edit_distance.is_some() {
-            flags |= u64::from(ffi::HS_EXT_FLAG_EDIT_DISTANCE);
-        }
-        if ext.hamming_distance.is_some() {
-            flags |= u64::from(ffi::HS_EXT_FLAG_HAMMING_DISTANCE);
-        }
-
-        ffi::hs_expr_ext_t {
-            flags,
-            min_offset: ext.min_offset.unwrap_or_default(),
-            max_offset: ext.max_offset.unwrap_or_default(),
-            min_length: ext.min_length.unwrap_or_default(),
-            edit_distance: ext.edit_distance.unwrap_or_default(),
-            hamming_distance: ext.hamming_distance.unwrap_or_default(),
-        }
-    }
-}
-
 /// Defines the precision to track start of match offsets in stream state.
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -186,7 +136,7 @@ pub struct Pattern {
     /// ID number to be associated with the corresponding pattern in the expressions array.
     pub id: Option<usize>,
     /// Extended behaviour for this pattern
-    pub ext: Ext,
+    pub ext: ExprExt,
     /// The precision to track start of match offsets in stream state.
     pub som: Option<SomHorizon>,
 }
@@ -198,7 +148,7 @@ impl Pattern {
             expression: expr.into(),
             flags: Flags::empty(),
             id: None,
-            ext: Ext::default(),
+            ext: ExprExt::default(),
             som: None,
         })
     }
@@ -209,7 +159,7 @@ impl Pattern {
             expression: expr.into(),
             flags,
             id: None,
-            ext: Ext::default(),
+            ext: ExprExt::default(),
             som: None,
         })
     }
@@ -227,7 +177,7 @@ impl Pattern {
                 expression: expr[1..end].into(),
                 flags: expr[end + 1..].parse()?,
                 id,
-                ext: Ext::default(),
+                ext: ExprExt::default(),
                 som: None,
             },
 
@@ -235,7 +185,7 @@ impl Pattern {
                 expression: expr.into(),
                 flags: Flags::empty(),
                 id,
-                ext: Ext::default(),
+                ext: ExprExt::default(),
                 som: None,
             },
         };
