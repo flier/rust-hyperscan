@@ -121,7 +121,7 @@ impl ExprExt {
 foreign_type! {
     /// A type containing information related to an expression
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use hyperscan::prelude::*;

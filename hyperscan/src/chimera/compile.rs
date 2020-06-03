@@ -47,7 +47,7 @@ pub trait Builder {
 
     /// Build an expression is compiled into a Chimera database which can be passed to the runtime functions.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use hyperscan::chimera::prelude::*;
@@ -78,7 +78,7 @@ pub trait Builder {
 
     /// Build an expression is compiled into a Chimera database that the database as a whole for capturing groups.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use hyperscan::chimera::prelude::*;

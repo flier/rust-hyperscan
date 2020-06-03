@@ -10,7 +10,7 @@ To use, add the following line to Cargo.toml under [dependencies]:
 hyperscan = "0.1"
 ```
 
-## Example
+## Examples
 
 ```rust
 use hyperscan::prelude::*;

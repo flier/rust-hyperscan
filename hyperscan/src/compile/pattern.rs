@@ -159,6 +159,12 @@ impl Pattern {
         })
     }
 
+    /// Report the leftmost start of match offset when a match is found.
+    pub fn with_left_most(mut self) -> Self {
+        self.flags |= Flags::SOM_LEFTMOST;
+        self
+    }
+
     pub(crate) fn som(&self) -> Option<SomHorizon> {
         if self.flags.contains(Flags::SOM_LEFTMOST) {
             self.som.or(Some(SomHorizon::Medium))

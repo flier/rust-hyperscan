@@ -134,11 +134,11 @@ impl Regex {
     /// It is recommended to use this method if all you need to do is test a match,
     /// since the underlying matching engine may be able to do less work.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// Test if some text contains at least one word with exactly 13 Unicode word characters:
     ///
-    /// ```   
+    /// ```rust
     /// # use hyperscan::regex::Regex;
     /// let text = "I categorically deny having triskaidekaphobia.";
     /// assert!(Regex::new(r"\b\w{13}\b").unwrap().is_match(text));
@@ -160,11 +160,11 @@ impl Regex {
     ///
     /// Note that this should only be used if you want to discover the position of the match. Testing the existence of a match is faster if you use is_match.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// Find the start and end location of the first word with exactly 13 Unicode word characters:
     ///
-    /// ```
+    /// ```rust
     /// # use hyperscan::regex::Regex;
     /// let text = "I categorically deny having triskaidekaphobia.";
     /// let mat = Regex::new(r"\b\w{13}\b").unwrap().find(text).unwrap();
@@ -190,7 +190,7 @@ impl Regex {
     /// `text`, returning the start and end byte indices with respect to
     /// `text`.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// Find the start and end location of every word with exactly 13 Unicode
     /// word characters:
@@ -229,7 +229,7 @@ impl Regex {
     ///
     /// This method will *not* copy the text given.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// To split a string delimited by arbitrary amounts of spaces or tabs:
     ///
@@ -254,7 +254,7 @@ impl Regex {
     ///
     /// This method will *not* copy the text given.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// Get the first two words in some text:
     ///

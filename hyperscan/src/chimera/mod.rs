@@ -3,7 +3,7 @@
 //! The design goals of Chimera are to fully support PCRE syntax as well as to
 //! take advantage of the high performance nature of Hyperscan.
 //!
-//! # Example
+//! # Examples
 //!
 //! ```rust
 //! # use hyperscan::chimera::prelude::*;
