@@ -124,7 +124,7 @@ pub mod tests {
     fn test_database_serialize() {
         let _ = pretty_env_logger::try_init();
 
-        let db: StreamingDatabase = pattern! { "test" }.build().unwrap();
+        let db: StreamingDatabase = "test".parse().unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -137,7 +137,7 @@ pub mod tests {
     fn test_database_deserialize() {
         let _ = pretty_env_logger::try_init();
 
-        let db: VectoredDatabase = pattern! { "test" }.build().unwrap();
+        let db: VectoredDatabase = "test".parse().unwrap();
 
         let data = db.serialize().unwrap();
 
@@ -152,7 +152,7 @@ pub mod tests {
     fn test_database_deserialize_at() {
         let _ = pretty_env_logger::try_init();
 
-        let mut db: BlockDatabase = pattern! { "test" }.build().unwrap();
+        let mut db: BlockDatabase = "test".parse().unwrap();
 
         let data = db.serialize().unwrap();
 

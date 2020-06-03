@@ -1,6 +1,7 @@
 use std::ffi::CString;
 use std::mem::MaybeUninit;
 use std::ptr::null_mut;
+use std::str::FromStr;
 
 use anyhow::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
@@ -207,6 +208,14 @@ impl<T: Mode> Database<T> {
         platform: Option<&PlatformRef>,
     ) -> Result<Database<T>, Error> {
         Literal::with_flags(expression, flags)?.for_platform(platform)
+    }
+}
+
+impl<T: Mode> FromStr for Database<T> {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse::<Pattern>()?.build::<T>()
     }
 }
 

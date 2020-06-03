@@ -92,7 +92,7 @@ pub mod tests {
     fn test_scratch() {
         let _ = pretty_env_logger::try_init();
 
-        let db: BlockDatabase = pattern! {"test"}.build().unwrap();
+        let db: BlockDatabase = "test".parse().unwrap();
 
         let s = db.alloc_scratch().unwrap();
 
@@ -102,7 +102,7 @@ pub mod tests {
 
         assert!(s2.size().unwrap() > SCRATCH_SIZE);
 
-        let db2: VectoredDatabase = pattern! {"foobar"}.build().unwrap();
+        let db2: VectoredDatabase = "foobar".parse().unwrap();
 
         db2.realloc_scratch(&mut s2).unwrap();
 

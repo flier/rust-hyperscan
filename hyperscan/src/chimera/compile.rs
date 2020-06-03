@@ -1,6 +1,7 @@
 use std::ffi::CString;
 use std::mem::MaybeUninit;
 use std::ptr::null;
+use std::str::FromStr;
 
 use anyhow::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
@@ -248,5 +249,13 @@ impl Builder for Patterns {
             .ok_or_else(|| err.assume_init())
             .map(|_| Database::from_ptr(db.assume_init()))
         }
+    }
+}
+
+impl FromStr for Database {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse::<Pattern>()?.build()
     }
 }
