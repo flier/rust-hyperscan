@@ -66,8 +66,9 @@ pub use crate::common::Streaming;
 #[deprecated = "use `VectoredMode` instead"]
 pub use crate::common::Vectored;
 pub use crate::common::{
-    Block as BlockMode, BlockDatabase, Database, DatabaseRef, Mode, Serialized as SerializedDatabase,
-    Streaming as StreamingMode, StreamingDatabase, Vectored as VectoredMode, VectoredDatabase,
+    version, version_str, Block as BlockMode, BlockDatabase, Database, DatabaseRef, Mode,
+    Serialized as SerializedDatabase, Streaming as StreamingMode, StreamingDatabase, Vectored as VectoredMode,
+    VectoredDatabase,
 };
 #[doc(hidden)]
 #[deprecated = "use `ExprExt` instead"]

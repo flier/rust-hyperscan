@@ -39,6 +39,12 @@ pub enum Tune {
     Goldmont = ffi::HS_TUNE_FAMILY_GLM,
 }
 
+impl Default for Tune {
+    fn default() -> Self {
+        Self::Generic
+    }
+}
+
 bitflags! {
     /// CPU feature support flags
     #[derive(Default)]
@@ -65,7 +71,15 @@ unsafe fn free_platform_info(p: *mut ffi::hs_platform_info_t) {
 }
 
 impl Platform {
-    /// Test the current system architecture.
+    /// Utility function to test the current system architecture.
+    ///
+    /// Hyperscan requires the Supplemental Streaming SIMD Extensions 3 instruction set.
+    /// This function can be called on any x86 platform to determine
+    /// if the system provides the required instruction set.
+    ///
+    /// This function does not test for more advanced features
+    /// if Hyperscan has been built for a more specific architecture,
+    /// for example the AVX2 instruction set.
     pub fn is_valid() -> Result<()> {
         unsafe { ffi::hs_valid_platform().ok() }
     }

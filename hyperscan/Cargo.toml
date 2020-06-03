@@ -18,15 +18,16 @@ chimera = ["hyperscan-sys/chimera"]
 unstable = ["pattern"]
 
 [dependencies]
-thiserror = "1.0"
 anyhow = "1.0"
-log = "0.4"
 bitflags = "1.0"
-either = "1.5"
 derive_more = "0.99"
-libc = "0.2"
-regex-syntax = "0.6"
+either = "1.5"
 foreign-types = "0.5"
+libc = "0.2"
+log = "0.4"
+regex-syntax = "0.6"
+semver = "0.10"
+thiserror = "1.0"
 
 hyperscan-sys = { version = "0.2.0", path = "../hyperscan-sys" }
 

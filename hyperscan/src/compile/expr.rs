@@ -82,35 +82,35 @@ impl ExprExt {
         }
     }
 
-    /// The minimum end offset in the data stream at which this expression should match successfully.
+    /// Sets the value for the minimum end offset in the data stream at which this expression should match successfully.
     pub fn set_min_offset(&mut self, min_offset: u64) -> &mut Self {
         self.set_flags(Flags::MIN_OFFSET);
         self.0.min_offset = min_offset;
         self
     }
 
-    /// The maximum end offset in the data stream at which this expression should match successfully.
+    /// Sets the value for the maximum end offset in the data stream at which this expression should match successfully.
     pub fn set_max_offset(&mut self, max_offset: u64) -> &mut Self {
         self.set_flags(Flags::MAX_OFFSET);
         self.0.max_offset = max_offset;
         self
     }
 
-    /// The minimum match length (from start to end) required to successfully match this expression.
+    /// Sets the value for the minimum match length (from start to end) required to successfully match this expression.
     pub fn set_min_length(&mut self, min_length: u64) -> &mut Self {
         self.set_flags(Flags::MIN_LENGTH);
         self.0.min_length = min_length;
         self
     }
 
-    /// Allow patterns to approximately match within this edit distance.
+    /// Sets the value that allow patterns to approximately match within this edit distance.
     pub fn set_edit_distance(&mut self, edit_distance: u32) -> &mut Self {
         self.set_flags(Flags::EDIT_DISTANCE);
         self.0.edit_distance = edit_distance;
         self
     }
 
-    /// Allow patterns to approximately match within this Hamming distance.
+    /// Sets the value that allow patterns to approximately match within this Hamming distance.
     pub fn set_hamming_distance(&mut self, hamming_distance: u32) -> &mut Self {
         self.set_flags(Flags::HAMMING_DISTANCE);
         self.0.hamming_distance = hamming_distance;
