@@ -164,37 +164,6 @@ impl Pattern {
         })
     }
 
-    /// Parse a basic regular expression to a pattern.
-    pub fn parse<S: AsRef<str>>(s: S) -> Result<Pattern> {
-        let s = s.as_ref();
-        let (id, expr) = match s.find(":/") {
-            Some(off) => (Some(s[..off].parse()?), &s[off + 1..]),
-            None => (None, s),
-        };
-
-        let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
-            (true, Some(end)) if end > 0 => Pattern {
-                expression: expr[1..end].into(),
-                flags: expr[end + 1..].parse()?,
-                id,
-                ext: ExprExt::default(),
-                som: None,
-            },
-
-            _ => Pattern {
-                expression: expr.into(),
-                flags: Flags::empty(),
-                id,
-                ext: ExprExt::default(),
-                som: None,
-            },
-        };
-
-        debug!("pattern `{}` parsed to `{}`", s, pattern);
-
-        Ok(pattern)
-    }
-
     pub(crate) fn som(&self) -> Option<SomHorizon> {
         if self.flags.contains(Flags::SOM_LEFTMOST) {
             self.som.or(Some(SomHorizon::Medium))
@@ -230,7 +199,32 @@ impl FromStr for Pattern {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Pattern::parse(s)
+        let (id, expr) = match s.find(":/") {
+            Some(off) => (Some(s[..off].parse()?), &s[off + 1..]),
+            None => (None, s),
+        };
+
+        let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
+            (true, Some(end)) if end > 0 => Pattern {
+                expression: expr[1..end].into(),
+                flags: expr[end + 1..].parse()?,
+                id,
+                ext: ExprExt::default(),
+                som: None,
+            },
+
+            _ => Pattern {
+                expression: expr.into(),
+                flags: Flags::empty(),
+                id,
+                ext: ExprExt::default(),
+                som: None,
+            },
+        };
+
+        debug!("pattern `{}` parsed to `{}`", s, pattern);
+
+        Ok(pattern)
     }
 }
 
@@ -353,42 +347,42 @@ mod tests {
     fn test_pattern() {
         let _ = pretty_env_logger::try_init();
 
-        let p = Pattern::parse("test").unwrap();
+        let p: Pattern = "test".parse().unwrap();
 
         assert_eq!(p, pattern! { "test" });
         assert_eq!(p.expression, "test");
         assert!(p.flags.is_empty());
         assert_eq!(p.id, None);
 
-        let p = Pattern::parse("/test/").unwrap();
+        let p: Pattern = "/test/".parse().unwrap();
 
         assert_eq!(p, pattern! { "test" });
         assert_eq!(p.expression, "test");
         assert!(p.flags.is_empty());
         assert_eq!(p.id, None);
 
-        let p = Pattern::parse("/test/i").unwrap();
+        let p: Pattern = "/test/i".parse().unwrap();
 
         assert_eq!(p, pattern! { "test"; CASELESS });
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, Flags::CASELESS);
         assert_eq!(p.id, None);
 
-        let p = Pattern::parse("3:/test/i").unwrap();
+        let p: Pattern = "3:/test/i".parse().unwrap();
 
         assert_eq!(p, pattern! { 3 => "test"; CASELESS });
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, Flags::CASELESS);
         assert_eq!(p.id, Some(3));
 
-        let p = Pattern::parse("test/i").unwrap();
+        let p: Pattern = "test/i".parse().unwrap();
 
         assert_eq!(p, pattern! { "test/i" });
         assert_eq!(p.expression, "test/i");
         assert!(p.flags.is_empty());
         assert_eq!(p.id, None);
 
-        let p = Pattern::parse("/t/e/s/t/i").unwrap();
+        let p: Pattern = "/t/e/s/t/i".parse().unwrap();
 
         assert_eq!(p, pattern! { "t/e/s/t"; CASELESS });
         assert_eq!(p.expression, "t/e/s/t");

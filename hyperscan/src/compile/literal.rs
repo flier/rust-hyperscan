@@ -98,35 +98,6 @@ impl Literal {
         })
     }
 
-    /// Parse a pure literal expression to a literal
-    pub fn parse<S: AsRef<str>>(s: S) -> Result<Literal> {
-        let s = s.as_ref();
-        let (id, expr) = match s.find(':') {
-            Some(off) => (Some(s[..off].parse()?), &s[off + 1..]),
-            None => (None, s),
-        };
-
-        let literal = match (expr.starts_with('/'), expr.rfind('/')) {
-            (true, Some(end)) if end > 0 => Literal {
-                expression: expr[1..end].into(),
-                flags: expr[end + 1..].parse()?,
-                id,
-                som: None,
-            },
-
-            _ => Literal {
-                expression: expr.into(),
-                flags: Flags::empty(),
-                id,
-                som: None,
-            },
-        };
-
-        debug!("literal `{}` parsed to `{}`", s, literal);
-
-        Ok(literal)
-    }
-
     pub(crate) fn som(&self) -> Option<SomHorizon> {
         if self.flags.contains(Flags::SOM_LEFTMOST) {
             self.som.or(Some(SomHorizon::Medium))
@@ -162,7 +133,30 @@ impl FromStr for Literal {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Literal::parse(s)
+        let (id, expr) = match s.find(':') {
+            Some(off) => (Some(s[..off].parse()?), &s[off + 1..]),
+            None => (None, s),
+        };
+
+        let literal = match (expr.starts_with('/'), expr.rfind('/')) {
+            (true, Some(end)) if end > 0 => Literal {
+                expression: expr[1..end].into(),
+                flags: expr[end + 1..].parse()?,
+                id,
+                som: None,
+            },
+
+            _ => Literal {
+                expression: expr.into(),
+                flags: Flags::empty(),
+                id,
+                som: None,
+            },
+        };
+
+        debug!("literal `{}` parsed to `{}`", s, literal);
+
+        Ok(literal)
     }
 }
 
@@ -176,6 +170,25 @@ pub struct Literals(Vec<Literal>);
 impl FromIterator<Literal> for Literals {
     fn from_iter<T: IntoIterator<Item = Literal>>(iter: T) -> Self {
         Self(Vec::from_iter(iter))
+    }
+}
+
+impl FromStr for Literals {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.lines()
+            .flat_map(|line| {
+                let line = line.trim();
+
+                if line.is_empty() || line.starts_with('#') {
+                    None
+                } else {
+                    Some(line.parse())
+                }
+            })
+            .collect::<Result<Vec<_>>>()
+            .map(Self)
     }
 }
 
@@ -264,42 +277,42 @@ mod tests {
     fn test_literal() {
         let _ = pretty_env_logger::try_init();
 
-        let p = Literal::parse("test").unwrap();
+        let p: Literal = "test".parse().unwrap();
 
         assert_eq!(p, literal! { "test" });
         assert_eq!(p.expression, "test");
         assert!(p.flags.is_empty());
         assert_eq!(p.id, None);
 
-        let p = Literal::parse("/test/").unwrap();
+        let p: Literal = "/test/".parse().unwrap();
 
         assert_eq!(p, literal! { "test" });
         assert_eq!(p.expression, "test");
         assert!(p.flags.is_empty());
         assert_eq!(p.id, None);
 
-        let p = Literal::parse("/test/i").unwrap();
+        let p: Literal = "/test/i".parse().unwrap();
 
         assert_eq!(p, literal! { "test"; CASELESS });
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, Flags::CASELESS);
         assert_eq!(p.id, None);
 
-        let p = Literal::parse("3:/test/i").unwrap();
+        let p: Literal = "3:/test/i".parse().unwrap();
 
         assert_eq!(p, literal! { 3 => "test"; CASELESS });
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, Flags::CASELESS);
         assert_eq!(p.id, Some(3));
 
-        let p = Literal::parse("test/i").unwrap();
+        let p: Literal = "test/i".parse().unwrap();
 
         assert_eq!(p, literal! { "test/i" });
         assert_eq!(p.expression, "test/i");
         assert!(p.flags.is_empty());
         assert_eq!(p.id, None);
 
-        let p = Literal::parse("/t/e/s/t/i").unwrap();
+        let p: Literal = "/t/e/s/t/i".parse().unwrap();
 
         assert_eq!(p, literal! { "t/e/s/t"; CASELESS });
         assert_eq!(p.expression, "t/e/s/t");
