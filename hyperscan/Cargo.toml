@@ -25,6 +25,7 @@ either = "1.5"
 foreign-types = "0.5"
 libc = "0.2"
 log = "0.4"
+malloc_buf = "1.0"
 regex-syntax = "0.6"
 semver = "0.10"
 thiserror = "1.0"
@@ -32,14 +33,14 @@ thiserror = "1.0"
 hyperscan-sys = { version = "0.2.0", path = "../hyperscan-sys" }
 
 [dev-dependencies]
-pretty_env_logger = "0.4"
-structopt = "0.3"
-regex = "1.1"
-pcap = "0.7"
-pnet = "0.26"
 byteorder = "1.2"
 doc-comment = "0.3"
+pcap = "0.7"
+pnet = "0.26"
+pretty_env_logger = "0.4"
 rand = "0.7"
+regex = "1.1"
+structopt = "0.3"
 
 [build-dependencies]
 rustc_version = "0.2"

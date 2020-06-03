@@ -1,40 +1,14 @@
 use std::ffi::CStr;
 use std::fmt;
 use std::mem::MaybeUninit;
-use std::ops::Deref;
-use std::ptr::NonNull;
-use std::slice;
 
 use anyhow::{Error, Result};
 use foreign_types::{ForeignType, ForeignTypeRef};
+use malloc_buf::Malloc;
 
 use crate::common::{Database, DatabaseRef};
 use crate::errors::AsResult;
 use crate::ffi;
-
-/// A type representing an owned, C-compatible buffer.
-#[derive(Debug)]
-pub struct CBuffer<T>(NonNull<T>, usize);
-
-impl<T> Drop for CBuffer<T> {
-    fn drop(&mut self) {
-        unsafe { libc::free(self.0.as_ptr() as *mut _) }
-    }
-}
-
-impl<T> Deref for CBuffer<T> {
-    type Target = [T];
-
-    fn deref(&self) -> &Self::Target {
-        self.as_ref()
-    }
-}
-
-impl<T> AsRef<[T]> for CBuffer<T> {
-    fn as_ref(&self) -> &[T] {
-        unsafe { slice::from_raw_parts(self.0.as_ptr(), self.1) }
-    }
-}
 
 /// A serialized database
 pub trait Serialized {
@@ -91,13 +65,13 @@ impl<T: AsRef<[u8]>> Serialized for T {
 
 impl<T> DatabaseRef<T> {
     /// Serialize a pattern database to a stream of bytes.
-    pub fn serialize(&self) -> Result<CBuffer<u8>> {
+    pub fn serialize(&self) -> Result<Malloc<[u8]>> {
         let mut ptr = MaybeUninit::uninit();
         let mut size = MaybeUninit::uninit();
 
         unsafe {
             ffi::hs_serialize_database(self.as_ptr(), ptr.as_mut_ptr(), size.as_mut_ptr())
-                .map(|_| CBuffer(NonNull::new_unchecked(ptr.assume_init()).cast(), size.assume_init()))
+                .map(|_| Malloc::from_array(ptr.assume_init() as *mut u8, size.assume_init()))
         }
     }
 
