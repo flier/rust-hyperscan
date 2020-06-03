@@ -7,7 +7,7 @@ use crate::ffi;
 
 /// Error Codes
 #[derive(Debug, Error, PartialEq)]
-pub enum HsError {
+pub enum Error {
     /// A parameter passed to this function was invalid.
     #[error("A parameter passed to this function was invalid.")]
     Invalid,
@@ -65,9 +65,9 @@ pub enum HsError {
     Code(ffi::hs_error_t),
 }
 
-impl From<ffi::hs_error_t> for HsError {
-    fn from(err: ffi::hs_error_t) -> HsError {
-        use HsError::*;
+impl From<ffi::hs_error_t> for Error {
+    fn from(err: ffi::hs_error_t) -> Self {
+        use Error::*;
 
         match err {
             ffi::HS_INVALID => Invalid,
@@ -118,7 +118,7 @@ impl AsResult for ffi::hs_error_t {
         if self == ffi::HS_SUCCESS as ffi::hs_error_t {
             Ok(())
         } else {
-            Err(HsError::from(self).into())
+            Err(Error::from(self).into())
         }
     }
 }

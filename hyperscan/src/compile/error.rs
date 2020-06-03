@@ -3,7 +3,7 @@ use std::fmt;
 
 use foreign_types::{foreign_type, ForeignType};
 
-use crate::errors::{AsResult, HsError};
+use crate::errors::{AsResult, Error as HsError};
 use crate::ffi;
 
 pub trait AsCompileResult: Sized {

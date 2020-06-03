@@ -139,7 +139,7 @@ pub mod tests {
     use std::cell::RefCell;
     use std::io::Cursor;
 
-    use crate::errors::HsError;
+    use crate::errors::Error;
     use crate::prelude::*;
 
     use super::*;
@@ -165,8 +165,8 @@ pub mod tests {
             db.scan("foo test bar".as_bytes(), &s, callback)
                 .err()
                 .unwrap()
-                .downcast_ref::<HsError>(),
-            Some(&HsError::ScanTerminated)
+                .downcast_ref::<Error>(),
+            Some(&Error::ScanTerminated)
         );
     }
 
@@ -197,8 +197,8 @@ pub mod tests {
             })
             .err()
             .unwrap()
-            .downcast_ref::<HsError>(),
-            Some(&HsError::ScanTerminated)
+            .downcast_ref::<Error>(),
+            Some(&Error::ScanTerminated)
         );
 
         assert_eq!(matches.into_inner(), vec![(3, 7)]);
