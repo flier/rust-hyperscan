@@ -76,6 +76,9 @@ pub use crate::compile::{
     Builder as DatabaseBuilder, Builder, CpuFeatures, Error as CompileError, ExpressionExt, ExpressionInfo,
     Flags as PatternFlags, Literal, LiteralFlags, Literals, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
 };
+#[doc(hidden)]
+#[deprecated = "use `Error` instead"]
+pub use crate::errors::Error as HsError;
 pub use crate::errors::Error;
 pub use crate::runtime::{Matching, Scratch, ScratchRef, Stream, StreamRef};
 
