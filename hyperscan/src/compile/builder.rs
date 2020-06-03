@@ -4,12 +4,9 @@ use std::ptr::null_mut;
 
 use anyhow::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
-use libc::c_uint;
 
 use crate::common::{Database, Mode};
-use crate::compile::{
-    AsCompileResult, Flags, Literal, LiteralFlags, Literals, Pattern, Patterns, PlatformRef, SomHorizon,
-};
+use crate::compile::{AsCompileResult, Flags, Literal, LiteralFlags, Literals, Pattern, Patterns, PlatformRef};
 use crate::ffi;
 
 /// The regular expression pattern database builder.
@@ -37,13 +34,9 @@ impl Builder for Pattern {
     ///
     fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err> {
         let expr = CString::new(self.expression.as_bytes())?;
-        let mut mode = T::ID;
+        let mode = T::ID | if T::is_streaming() { self.som() } else { None }.map_or(0, |som| som as _);
         let mut db = MaybeUninit::uninit();
         let mut err = MaybeUninit::uninit();
-
-        if T::ID == ffi::HS_MODE_STREAM && self.flags.contains(Flags::SOM_LEFTMOST) {
-            mode |= self.som.unwrap_or(SomHorizon::Medium) as u32;
-        }
 
         unsafe {
             ffi::hs_compile(
@@ -72,32 +65,24 @@ impl Builder for Patterns {
     // which is passed into the match callback to identify the pattern that has matched.
     ///
     fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err> {
-        let mut expressions = Vec::with_capacity(self.len());
-        let mut ptrs = Vec::with_capacity(self.len());
-        let mut flags = Vec::with_capacity(self.len());
-        let mut ids = Vec::with_capacity(self.len());
-        let mut mode = T::ID;
-
-        if T::ID == ffi::HS_MODE_STREAM && self.iter().any(|pattern| pattern.flags.contains(Flags::SOM_LEFTMOST)) {
-            mode |= self
-                .iter()
-                .flat_map(|pattern| pattern.som)
-                .max()
-                .unwrap_or(SomHorizon::Medium) as u32;
-        }
-
-        for (i, pattern) in self.iter().enumerate() {
-            let expr = CString::new(pattern.expression.as_str())?;
-
-            expressions.push(expr);
-            flags.push(pattern.flags.bits() as c_uint);
-            ids.push(pattern.id.unwrap_or(i) as u32);
-        }
-
-        for expr in &expressions {
-            ptrs.push(expr.as_ptr() as *const i8);
-        }
-
+        let expressions = self
+            .iter()
+            .map(|Pattern { expression, .. }| CString::new(expression.as_str()))
+            .collect::<Result<Vec<_>, _>>()?;
+        let ptrs = expressions
+            .iter()
+            .map(|expr| expr.as_ptr() as *const _)
+            .collect::<Vec<_>>();
+        let flags = self
+            .iter()
+            .map(|Pattern { flags, .. }| flags.bits() as _)
+            .collect::<Vec<_>>();
+        let ids = self
+            .iter()
+            .enumerate()
+            .map(|(i, Pattern { id, .. })| id.unwrap_or(i) as _)
+            .collect::<Vec<_>>();
+        let mode = T::ID | if T::is_streaming() { self.som() } else { None }.map_or(0, |som| som as _);
         let mut db = MaybeUninit::uninit();
         let mut err = MaybeUninit::uninit();
 
@@ -128,13 +113,9 @@ impl Builder for Literal {
     /// into a Hyperscan database which can be passed to the runtime functions
     ///
     fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err> {
-        let mut mode = T::ID;
+        let mode = T::ID | if T::is_streaming() { self.som() } else { None }.map_or(0, |som| som as _);
         let mut db = MaybeUninit::uninit();
         let mut err = MaybeUninit::uninit();
-
-        if T::ID == ffi::HS_MODE_STREAM && self.flags.contains(LiteralFlags::SOM_LEFTMOST) {
-            mode |= self.som.unwrap_or(SomHorizon::Medium) as u32;
-        }
 
         unsafe {
             ffi::hs_compile_lit(
@@ -164,31 +145,24 @@ impl Builder for Literals {
     // which is passed into the match callback to identify the pattern that has matched.
     ///
     fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err> {
-        let mut ptrs = Vec::with_capacity(self.len());
-        let mut lens = Vec::with_capacity(self.len());
-        let mut flags = Vec::with_capacity(self.len());
-        let mut ids = Vec::with_capacity(self.len());
-        let mut mode = T::ID;
-
-        if T::ID == ffi::HS_MODE_STREAM
-            && self
-                .iter()
-                .any(|pattern| pattern.flags.contains(LiteralFlags::SOM_LEFTMOST))
-        {
-            mode |= self
-                .iter()
-                .flat_map(|pattern| pattern.som)
-                .max()
-                .unwrap_or(SomHorizon::Medium) as u32;
-        }
-
-        for (i, pattern) in self.iter().enumerate() {
-            ptrs.push(pattern.expression.as_ptr() as *const _);
-            lens.push(pattern.expression.len());
-            flags.push(pattern.flags.bits() as c_uint);
-            ids.push(pattern.id.unwrap_or(i) as u32);
-        }
-
+        let ptrs = self
+            .iter()
+            .map(|Literal { expression, .. }| expression.as_ptr() as *const _)
+            .collect::<Vec<_>>();
+        let lens = self
+            .iter()
+            .map(|Literal { expression, .. }| expression.len())
+            .collect::<Vec<_>>();
+        let flags = self
+            .iter()
+            .map(|Literal { flags, .. }| flags.bits() as _)
+            .collect::<Vec<_>>();
+        let ids = self
+            .iter()
+            .enumerate()
+            .map(|(i, Literal { id, .. })| id.unwrap_or(i) as _)
+            .collect::<Vec<_>>();
+        let mode = T::ID | if T::is_streaming() { self.som() } else { None }.map_or(0, |som| som as _);
         let mut db = MaybeUninit::uninit();
         let mut err = MaybeUninit::uninit();
 

@@ -4,7 +4,7 @@ use std::ptr::NonNull;
 use anyhow::Result;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
-use crate::common::{Database, DatabaseRef};
+use crate::common::DatabaseRef;
 use crate::errors::AsResult;
 use crate::ffi;
 
@@ -58,7 +58,7 @@ impl ScratchRef {
     }
 }
 
-impl<T> Database<T> {
+impl<T> DatabaseRef<T> {
     /// Allocate a "scratch" space for use by Hyperscan.
     pub fn alloc_scratch(&self) -> Result<Scratch> {
         unsafe { Scratch::alloc(self) }

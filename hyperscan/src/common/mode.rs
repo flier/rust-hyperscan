@@ -6,6 +6,21 @@ pub trait Mode {
     const ID: u32;
     /// Name of mode
     const NAME: &'static str;
+
+    /// The given database is a block database.
+    fn is_block() -> bool {
+        Self::ID == Block::ID
+    }
+
+    /// The given database is a block database.
+    fn is_vectored() -> bool {
+        Self::ID == Vectored::ID
+    }
+
+    /// The given database is a block database.
+    fn is_streaming() -> bool {
+        Self::ID == Streaming::ID
+    }
 }
 
 /// Block scan (non-streaming) database.

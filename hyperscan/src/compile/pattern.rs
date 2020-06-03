@@ -244,6 +244,14 @@ impl Pattern {
 
         Ok(pattern)
     }
+
+    pub(crate) fn som(&self) -> Option<SomHorizon> {
+        if self.flags.contains(Flags::SOM_LEFTMOST) {
+            self.som.or(Some(SomHorizon::Medium))
+        } else {
+            None
+        }
+    }
 }
 
 impl fmt::Display for Pattern {
@@ -305,6 +313,22 @@ impl FromStr for Patterns {
             })
             .collect::<Result<Vec<_>>>()
             .map(Self)
+    }
+}
+
+impl Patterns {
+    pub(crate) fn som(&self) -> Option<SomHorizon> {
+        if self
+            .iter()
+            .any(|Pattern { flags, .. }| flags.contains(Flags::SOM_LEFTMOST))
+        {
+            self.iter()
+                .flat_map(|&Pattern { som, .. }| som)
+                .max()
+                .or(Some(SomHorizon::Medium))
+        } else {
+            None
+        }
     }
 }
 

@@ -126,6 +126,14 @@ impl Literal {
 
         Ok(literal)
     }
+
+    pub(crate) fn som(&self) -> Option<SomHorizon> {
+        if self.flags.contains(Flags::SOM_LEFTMOST) {
+            self.som.or(Some(SomHorizon::Medium))
+        } else {
+            None
+        }
+    }
 }
 
 impl fmt::Display for Literal {
@@ -168,6 +176,22 @@ pub struct Literals(Vec<Literal>);
 impl FromIterator<Literal> for Literals {
     fn from_iter<T: IntoIterator<Item = Literal>>(iter: T) -> Self {
         Self(Vec::from_iter(iter))
+    }
+}
+
+impl Literals {
+    pub(crate) fn som(&self) -> Option<SomHorizon> {
+        if self
+            .iter()
+            .any(|Literal { flags, .. }| flags.contains(Flags::SOM_LEFTMOST))
+        {
+            self.iter()
+                .flat_map(|&Literal { som, .. }| som)
+                .max()
+                .or(Some(SomHorizon::Medium))
+        } else {
+            None
+        }
     }
 }
 

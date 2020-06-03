@@ -196,19 +196,22 @@ impl Builder for Patterns {
     ) -> Result<Database, Self::Err> {
         let expressions = self
             .iter()
-            .map(|pattern| CString::new(pattern.expression.as_str()))
+            .map(|Pattern { expression, .. }| CString::new(expression.as_str()))
             .collect::<Result<Vec<_>, _>>()?;
-        let flags = self.iter().map(|pattern| pattern.flags.bits() as _).collect::<Vec<_>>();
-        let ids = self
-            .iter()
-            .enumerate()
-            .map(|(id, pattern)| pattern.id.unwrap_or(id) as _)
-            .collect::<Vec<_>>();
-
         let ptrs = expressions
             .iter()
             .map(|expr| expr.as_ptr() as *const _)
             .collect::<Vec<_>>();
+        let flags = self
+            .iter()
+            .map(|Pattern { flags, .. }| flags.bits() as _)
+            .collect::<Vec<_>>();
+        let ids = self
+            .iter()
+            .enumerate()
+            .map(|(i, Pattern { id, .. })| id.unwrap_or(i) as _)
+            .collect::<Vec<_>>();
+
         let mut db = MaybeUninit::uninit();
         let mut err = MaybeUninit::uninit();
 
