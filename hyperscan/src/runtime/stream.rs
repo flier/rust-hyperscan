@@ -131,7 +131,7 @@ impl StreamRef {
     /// Creates a compressed representation of the provided stream in the buffer provided.
     ///
     /// This compressed representation can be converted back into a stream state by using `expand()`
-    /// or `reset_and_expand()`. The size of the compressed representation will be placed into @p used_space.
+    /// or `reset_and_expand()`.
     pub fn compress(&self, buf: &mut [u8]) -> Result<usize> {
         let mut size = MaybeUninit::uninit();
 
