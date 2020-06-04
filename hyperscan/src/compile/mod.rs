@@ -4,6 +4,7 @@ mod pattern;
 mod builder;
 mod expr;
 #[macro_use]
+#[cfg(feature = "literal")]
 mod literal;
 mod platform;
 
@@ -16,6 +17,7 @@ pub use self::expr::ExprExt as ExpressionExt;
 #[deprecated = "use `ExprInfo` instead"]
 pub use self::expr::ExprInfo as ExpressionInfo;
 pub use self::expr::{ExprExt, ExprInfo};
+#[cfg(feature = "literal")]
 pub use self::literal::{Flags as LiteralFlags, Literal, Literals};
 pub use self::pattern::{Flags, Pattern, Patterns, SomHorizon};
 pub use self::platform::{CpuFeatures, Platform, PlatformRef, Tune};

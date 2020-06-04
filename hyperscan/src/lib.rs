@@ -81,8 +81,10 @@ pub use crate::compile::ExprInfo as ExpressionInfo;
 pub use crate::compile::Flags as CompileFlags;
 pub use crate::compile::{
     compile, Builder as DatabaseBuilder, Builder, CpuFeatures, Error as CompileError, ExprExt, ExprInfo,
-    Flags as PatternFlags, Literal, LiteralFlags, Literals, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
+    Flags as PatternFlags, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
 };
+#[cfg(feature = "literal")]
+pub use crate::compile::{Literal, LiteralFlags, Literals};
 #[doc(hidden)]
 #[deprecated = "use `Error` instead"]
 pub use crate::errors::Error as HsError;

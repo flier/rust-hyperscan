@@ -12,7 +12,9 @@ keywords = ["regex", "hyperscan", "streaming"]
 edition = "2018"
 
 [features]
-default = []
+default = ["v5"]
+v5 = ["literal"]
+literal = []
 pattern = ["regex/pattern"]
 chimera = ["hyperscan-sys/chimera"]
 unstable = ["pattern"]
@@ -20,6 +22,7 @@ unstable = ["pattern"]
 [dependencies]
 anyhow = "1.0"
 bitflags = "1.0"
+cfg-if = "0.1"
 derive_more = "0.99"
 either = "1.5"
 foreign-types = "0.5"

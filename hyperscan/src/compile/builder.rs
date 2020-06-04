@@ -4,11 +4,18 @@ use std::ptr::null_mut;
 use std::str::FromStr;
 
 use anyhow::Error;
+use cfg_if::cfg_if;
 use foreign_types::{ForeignType, ForeignTypeRef};
 
 use crate::common::{Database, Mode};
-use crate::compile::{AsCompileResult, Flags, Literal, LiteralFlags, Literals, Pattern, Patterns, PlatformRef};
+use crate::compile::{AsCompileResult, Flags, Pattern, Patterns, PlatformRef};
 use crate::ffi;
+
+cfg_if! {
+    if #[cfg(feature = "literal")] {
+        use crate::compile::{Literal, LiteralFlags, Literals};
+    }
+}
 
 /// The regular expression pattern database builder.
 pub trait Builder {
@@ -153,6 +160,7 @@ impl Builder for Patterns {
     }
 }
 
+#[cfg(feature = "literal")]
 impl Builder for Literal {
     type Err = Error;
 
@@ -183,6 +191,7 @@ impl Builder for Literal {
     }
 }
 
+#[cfg(feature = "literal")]
 impl Builder for Literals {
     type Err = Error;
 
@@ -251,6 +260,7 @@ impl<T: Mode> Database<T> {
     ///
     /// This is the function call with which an pure literal expression is compiled
     /// into a Hyperscan database which can be passed to the runtime functions.
+    #[cfg(feature = "literal")]
     pub fn compile_literal<S: Into<String>>(
         expression: S,
         flags: LiteralFlags,
