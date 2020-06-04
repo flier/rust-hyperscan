@@ -43,6 +43,6 @@ pub use self::runtime::{Capture, Error as MatchError, Matching, Scratch, Scratch
 pub mod prelude {
     //! The `chimera` Prelude
     pub use crate::chimera::{
-        compile, Builder, Database, DatabaseRef, Matching, Pattern, Patterns, Scratch, ScratchRef,
+        compile, Builder, Capture, Database, DatabaseRef, Error, Matching, Pattern, Patterns, Scratch, ScratchRef,
     };
 }

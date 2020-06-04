@@ -40,22 +40,22 @@ impl ScratchRef {
     }
 }
 
-impl Scratch {
-    /// Allocate a "scratch" space for use by Chimera.
+impl DatabaseRef {
+    /// Allocate a `scratch` space for use by Chimera.
     ///
     /// This is required for runtime use, and one scratch space per thread,
     /// or concurrent caller, is required.
-    ///
-    unsafe fn alloc(db: &DatabaseRef) -> Result<Scratch> {
-        let mut s = MaybeUninit::zeroed();
-        ffi::ch_alloc_scratch(db.as_ptr(), s.as_mut_ptr()).map(|_| Scratch::from_ptr(s.assume_init()))
-    }
-}
-
-impl DatabaseRef {
-    /// Allocate a "scratch" space for use by Hyperscan.
     pub fn alloc_scratch(&self) -> Result<Scratch> {
-        unsafe { Scratch::alloc(self) }
+        let mut s = MaybeUninit::zeroed();
+
+        unsafe { ffi::ch_alloc_scratch(self.as_ptr(), s.as_mut_ptr()).map(|_| Scratch::from_ptr(s.assume_init())) }
+    }
+
+    /// Reallocate a `scratch` space for use by Chimera.
+    pub fn realloc_scratch(&mut self, s: Scratch) -> Result<Scratch> {
+        let mut s = s.into_ptr();
+
+        unsafe { ffi::ch_alloc_scratch(self.as_ptr(), &mut s).map(|_| Scratch::from_ptr(s)) }
     }
 }
 
@@ -159,6 +159,51 @@ where
 
 impl DatabaseRef {
     /// The block regular expression scanner.
+    ///
+    /// ## Handling Matches
+    ///
+    /// `scan` will call a user-supplied callback when a match is found.
+    ///
+    /// This closure has the following signature:
+    ///
+    /// ```rust,no_run
+    /// # use hyperscan::chimera::{Capture, Matching};
+    /// fn on_match_event(id: u32, from: u64, to: u64, flags: u32, captured: Option<&[Capture]>) -> Matching {
+    ///     Matching::Continue
+    /// }
+    /// ```
+    ///
+    /// ### Parameters
+    ///
+    /// * `id`: The ID number of the expression that matched.
+    /// * `from`: The offset of the first byte that matches the expression.
+    /// * `to`: The offset after the last byte that matches the expression.
+    /// * `flags`: This is provided for future use and is unused at present.
+    /// * `captured`: An array of `Capture` structures that contain the start and end offsets of entire pattern match and each captured subexpression.
+    ///
+    /// ### Return
+    ///
+    /// The callback can return `Matching::Terminate` to stop matching.
+    /// Otherwise, a return value of `Matching::Continue` will continue,
+    /// with the current pattern if configured to produce multiple matches per pattern,
+    /// while a return value of `Matching::Skip` will cease matching this pattern but continue matching the next pattern.
+    ///
+    /// ## Handling Runtime Errors
+    ///
+    /// `scan` will call a user-supplied callback when a runtime error occurs in libpcre.
+    ///
+    /// This closure has the following signature:
+    ///
+    /// ```rust,no_run
+    /// # use hyperscan::chimera::{Error, Matching};
+    /// fn on_error_event(error_type: Error, id: u32) -> Matching {
+    ///     Matching::Continue
+    /// }
+    /// ```
+    ///
+    /// The `id` argument will be set to the identifier for the matching expression provided at compile time.
+    ///
+    /// The match callback has the capability to either halt scanning or continue scanning for the next pattern.
     pub fn scan<T, F, E>(
         &self,
         data: T,
