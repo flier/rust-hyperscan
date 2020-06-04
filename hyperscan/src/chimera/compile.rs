@@ -41,6 +41,66 @@ pub struct MatchLimit {
     pub recursion_depth: u64,
 }
 
+/// Compile an expression into a Chimera database.
+///
+/// # Examples
+///
+/// ```rust
+/// # use hyperscan::chimera::prelude::*;
+/// let db: Database = compile(r"/foo(bar)?/i").unwrap();
+/// let mut s = db.alloc_scratch().unwrap();
+///
+/// let mut matches = vec![];
+/// db.scan("hello foobar!", &mut s, |_, from, to, _, _| {
+///     matches.push(from..to);
+///     Matching::Continue
+/// }, |_, _|{
+///     Matching::Skip
+/// }).unwrap();
+///
+/// assert_eq!(matches, vec![6..12]);
+/// ```
+pub fn compile<S: Builder>(expression: S) -> Result<Database, S::Err> {
+    expression.build()
+}
+
+impl<S> Builder for S
+where
+    S: AsRef<str>,
+{
+    type Err = Error;
+
+    /// Build an expression is compiled into a Hyperscan database for a target platform.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use hyperscan::chimera::prelude::*;
+    /// let db: Database = r"/foo(bar)?/i".build().unwrap();
+    /// let mut s = db.alloc_scratch().unwrap();
+    ///
+    /// let mut matches = vec![];
+    /// db.scan("hello foobar!", &mut s, |_, from, to, _, _| {
+    ///     matches.push(from..to);
+    ///     Matching::Continue
+    /// }, |_, _|{
+    ///     Matching::Skip
+    /// }).unwrap();
+    ///
+    /// assert_eq!(matches, vec![6..12]);
+    /// ```
+    fn for_platform(
+        &self,
+        mode: Mode,
+        match_limit: Option<MatchLimit>,
+        platform: Option<&PlatformRef>,
+    ) -> Result<Database, Self::Err> {
+        self.as_ref()
+            .parse::<Pattern>()?
+            .for_platform(mode, match_limit, platform)
+    }
+}
+
 /// The regular expression pattern database builder.
 pub trait Builder {
     /// The associated error which can be returned from compiling.

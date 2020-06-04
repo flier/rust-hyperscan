@@ -24,6 +24,27 @@ pub trait Builder {
     fn for_platform<T: Mode>(&self, platform: Option<&PlatformRef>) -> Result<Database<T>, Self::Err>;
 }
 
+/// Compile an expression into a Hyperscan database.
+///
+/// # Examples
+///
+/// ```rust
+/// # use hyperscan::prelude::*;
+/// let db: BlockDatabase = compile(r"/foo(bar)?/i").unwrap();
+/// let mut s = db.alloc_scratch().unwrap();
+///
+/// let mut matches = vec![];
+/// db.scan("hello foobar!", &mut s, |_, from, to, _| {
+///     matches.push(from..to);
+///     Matching::Continue
+/// }).unwrap();
+///
+/// assert_eq!(matches, vec![0..9, 0..12]);
+/// ```
+pub fn compile<S: Builder, T: Mode>(expression: S) -> Result<Database<T>, S::Err> {
+    expression.build()
+}
+
 impl<S> Builder for S
 where
     S: AsRef<str>,

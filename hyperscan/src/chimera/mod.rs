@@ -7,15 +7,12 @@
 //!
 //! ```rust
 //! # use hyperscan::chimera::prelude::*;
-//! let pattern: Pattern = "/test/i".parse().unwrap();
-//! let db = pattern.build().unwrap();
+//! let db: Database = "/test/i".parse().unwrap();
 //! let scratch = db.alloc_scratch().unwrap();
 //! let mut matches = vec![];
 //! let mut errors = vec![];
 //!
 //! db.scan("some test data", &scratch, |id, from, to, _flags, captured| {
-//!     println!("found pattern {} : {} @ [{}, {})", id, pattern.expression, from, to);
-//!
 //!     matches.push((from, to));
 //!
 //!     Matching::Continue
@@ -38,12 +35,14 @@ mod runtime;
 pub use crate::ffi::chimera as ffi;
 
 pub use self::common::{version, Database, DatabaseRef};
-pub use self::compile::{Builder, Mode};
+pub use self::compile::{compile, Builder, Mode};
 pub use self::errors::{CompileError, Error};
 pub use self::pattern::{Flags, Pattern, Patterns};
 pub use self::runtime::{Capture, Error as MatchError, Matching, Scratch, ScratchRef};
 
 pub mod prelude {
     //! The `chimera` Prelude
-    pub use crate::chimera::{Builder, Database, DatabaseRef, Matching, Pattern, Patterns, Scratch, ScratchRef};
+    pub use crate::chimera::{
+        compile, Builder, Database, DatabaseRef, Matching, Pattern, Patterns, Scratch, ScratchRef,
+    };
 }

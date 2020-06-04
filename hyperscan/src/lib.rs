@@ -80,8 +80,8 @@ pub use crate::compile::ExprInfo as ExpressionInfo;
 #[deprecated = "use `PatternFlags` instead"]
 pub use crate::compile::Flags as CompileFlags;
 pub use crate::compile::{
-    Builder as DatabaseBuilder, Builder, CpuFeatures, Error as CompileError, ExprExt, ExprInfo, Flags as PatternFlags,
-    Literal, LiteralFlags, Literals, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
+    compile, Builder as DatabaseBuilder, Builder, CpuFeatures, Error as CompileError, ExprExt, ExprInfo,
+    Flags as PatternFlags, Literal, LiteralFlags, Literals, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
 };
 #[doc(hidden)]
 #[deprecated = "use `Error` instead"]
@@ -92,8 +92,8 @@ pub use crate::runtime::{Matching, Scratch, ScratchRef, Stream, StreamRef};
 /// The `hyperscan` Prelude
 pub mod prelude {
     pub use crate::{
-        pattern, BlockDatabase, Builder, CompileFlags, Database, Matching, Mode, Pattern, Patterns, Scratch, Stream,
-        StreamingDatabase, VectoredDatabase,
+        compile, pattern, BlockDatabase, Builder, CompileFlags, Database, Matching, Mode, Pattern, Patterns, Scratch,
+        Stream, StreamingDatabase, VectoredDatabase,
     };
 }
 

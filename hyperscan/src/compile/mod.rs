@@ -7,7 +7,7 @@ mod expr;
 mod literal;
 mod platform;
 
-pub use self::builder::Builder;
+pub use self::builder::{compile, Builder};
 pub use self::error::{AsCompileResult, Error};
 #[doc(hidden)]
 #[deprecated = "use `ExprExt` instead"]
