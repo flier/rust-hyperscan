@@ -105,12 +105,15 @@ impl DatabaseRef<Streaming> {
             stream.scan(&buf[..len], scratch, &mut on_match_event)?;
         }
 
-        stream.close(scratch, &mut on_match_event)
+        stream.close(scratch, Some(&mut on_match_event))
     }
 }
 
 impl StreamRef {
-    /// pattern matching takes place for stream-mode pattern databases.
+    /// Write data to be scanned to the opened stream.
+    ///
+    /// This is the function call in which the actual pattern matching takes place as data is written to the stream.
+    /// Matches will be returned via the `on_match_event` callback supplied.
     pub fn scan<T, F>(&self, data: T, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         T: AsRef<[u8]>,
@@ -226,7 +229,7 @@ pub mod tests {
             st.scan(d, &s, &mut callback).unwrap();
         }
 
-        st.close(&s, &mut callback).unwrap();
+        st.close(&s, Some(&mut callback)).unwrap();
 
         assert_eq!(matches, vec![(4, 8)]);
     }

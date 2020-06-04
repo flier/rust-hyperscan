@@ -228,11 +228,14 @@ impl Benchmark {
         for stream in self.streams.drain(..) {
             let match_count = &self.match_count;
             stream
-                .close(&self.scratch, |_, _, _, _| {
-                    match_count.fetch_add(1, Ordering::Relaxed);
+                .close(
+                    &self.scratch,
+                    Some(|_, _, _, _| {
+                        match_count.fetch_add(1, Ordering::Relaxed);
 
-                    Matching::Continue
-                })
+                        Matching::Continue
+                    }),
+                )
                 .with_context(|| "close stream")?;
         }
 
@@ -242,11 +245,14 @@ impl Benchmark {
     fn reset_streams(&mut self) -> Result<()> {
         for ref stream in &self.streams {
             stream
-                .reset(&self.scratch, |_, _, _, _| {
-                    self.match_count.fetch_add(1, Ordering::Relaxed);
+                .reset(
+                    &self.scratch,
+                    Some(|_, _, _, _| {
+                        self.match_count.fetch_add(1, Ordering::Relaxed);
 
-                    Matching::Continue
-                })
+                        Matching::Continue
+                    }),
+                )
                 .with_context(|| "reset stream")?;
         }
 

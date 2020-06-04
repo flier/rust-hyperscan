@@ -323,10 +323,13 @@ impl Benchmark {
         let matches = &mut self.matches;
 
         for stream in self.streams.drain(..) {
-            stream.close(&scratch, |_, _, _, _| {
-                *matches += 1;
-                Matching::Continue
-            })?;
+            stream.close(
+                &scratch,
+                Some(|_, _, _, _| {
+                    *matches += 1;
+                    Matching::Continue
+                }),
+            )?;
         }
 
         Ok(())
