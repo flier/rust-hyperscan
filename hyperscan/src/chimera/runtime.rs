@@ -4,7 +4,7 @@ use std::ops::Range;
 use std::slice;
 
 use anyhow::Result;
-use derive_more::{Deref, From};
+use derive_more::{Deref, From, Into};
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
 use crate::chimera::{errors::AsResult, ffi, DatabaseRef};
@@ -89,7 +89,7 @@ pub enum Error {
 
 /// Structure representing a captured subexpression within a match.
 #[repr(transparent)]
-#[derive(Clone, Copy, From, Deref, PartialEq)]
+#[derive(Clone, Copy, From, Into, Deref, PartialEq)]
 pub struct Capture(ffi::ch_capture);
 
 impl fmt::Debug for Capture {
@@ -99,6 +99,12 @@ impl fmt::Debug for Capture {
             .field("from", &self.from)
             .field("to", &self.to)
             .finish()
+    }
+}
+
+impl From<Capture> for Range<usize> {
+    fn from(capture: Capture) -> Self {
+        capture.range()
     }
 }
 
@@ -204,6 +210,11 @@ impl DatabaseRef {
     /// The `id` argument will be set to the identifier for the matching expression provided at compile time.
     ///
     /// The match callback has the capability to either halt scanning or continue scanning for the next pattern.
+    ///
+    /// ### Return
+    ///
+    /// The callback can return `Matching::Skip` to cease matching this pattern but continue matching the next pattern.
+    /// Otherwise, we stop matching for all patterns with `Matching::Terminate`.
     pub fn scan<T, F, E>(
         &self,
         data: T,
