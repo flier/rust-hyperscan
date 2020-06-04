@@ -159,9 +159,69 @@ impl Pattern {
         })
     }
 
+    /// Set case-insensitive matching.
+    pub fn caseless(mut self) -> Self {
+        self.flags |= Flags::CASELESS;
+        self
+    }
+
+    /// Matching a `.` will not exclude newlines.
+    pub fn dot_all(mut self) -> Self {
+        self.flags |= Flags::DOTALL;
+        self
+    }
+
+    /// Set multi-line anchoring.
+    pub fn multi_line(mut self) -> Self {
+        self.flags |= Flags::MULTILINE;
+        self
+    }
+
+    /// Set single-match only mode.
+    pub fn single_match(mut self) -> Self {
+        self.flags |= Flags::SINGLEMATCH;
+        self
+    }
+
+    /// Allow expressions that can match against empty buffers.
+    pub fn allow_empty(mut self) -> Self {
+        self.flags |= Flags::ALLOWEMPTY;
+        self
+    }
+
+    /// Enable UTF-8 mode for this expression.
+    pub fn utf8(mut self) -> Self {
+        self.flags |= Flags::UTF8;
+        self
+    }
+
+    /// Enable Unicode property support for this expression.
+    pub fn ucp(mut self) -> Self {
+        self.flags |= Flags::UCP;
+        self
+    }
+
+    /// Enable prefiltering mode for this expression.
+    pub fn prefilter(mut self) -> Self {
+        self.flags |= Flags::PREFILTER;
+        self
+    }
+
     /// Report the leftmost start of match offset when a match is found.
-    pub fn with_left_most(mut self) -> Self {
+    pub fn left_most(mut self) -> Self {
         self.flags |= Flags::SOM_LEFTMOST;
+        self
+    }
+
+    /// Logical combination.
+    pub fn combination(mut self) -> Self {
+        self.flags |= Flags::COMBINATION;
+        self
+    }
+
+    /// Don't do any match reporting.
+    pub fn quiet(mut self) -> Self {
+        self.flags |= Flags::QUIET;
         self
     }
 

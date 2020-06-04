@@ -93,6 +93,30 @@ impl Literal {
         })
     }
 
+    /// Set case-insensitive matching.
+    pub fn caseless(mut self) -> Self {
+        self.flags |= Flags::CASELESS;
+        self
+    }
+
+    /// Set multi-line anchoring.
+    pub fn multi_line(mut self) -> Self {
+        self.flags |= Flags::MULTILINE;
+        self
+    }
+
+    /// Set single-match only mode.
+    pub fn single_match(mut self) -> Self {
+        self.flags |= Flags::SINGLEMATCH;
+        self
+    }
+
+    /// Report the leftmost start of match offset when a match is found.
+    pub fn left_most(mut self) -> Self {
+        self.flags |= Flags::SOM_LEFTMOST;
+        self
+    }
+
     pub(crate) fn som(&self) -> Option<SomHorizon> {
         if self.flags.contains(Flags::SOM_LEFTMOST) {
             self.som.or(Some(SomHorizon::Medium))

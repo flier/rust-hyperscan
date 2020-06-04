@@ -71,7 +71,7 @@ impl<T> DatabaseRef<T> {
     /// ```rust
     /// # use hyperscan::{prelude::*, Serialized};
     /// let pattern: Pattern = r"/foo(bar)+/i".parse().unwrap();
-    /// let db: BlockDatabase = pattern.with_left_most().build().unwrap();
+    /// let db: BlockDatabase = pattern.left_most().build().unwrap();
     /// let buf = db.serialize().unwrap();
     /// assert!(buf.len() > 0);
     /// assert!(buf.size().unwrap() > 0);

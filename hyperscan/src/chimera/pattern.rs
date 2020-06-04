@@ -105,30 +105,40 @@ impl Pattern {
         }
     }
 
-    /// Parse a basic regular expression to a pattern.
-    pub fn parse<S: AsRef<str>>(s: S) -> Result<Pattern, Error> {
-        let expr = s.as_ref();
-        let (id, expr) = match expr.find(":/") {
-            Some(off) => (Some(expr[..off].parse()?), &expr[off + 1..]),
-            None => (None, expr),
-        };
-        let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
-            (true, Some(end)) if end > 0 => Pattern {
-                expression: expr[1..end].into(),
-                flags: expr[end + 1..].parse()?,
-                id,
-            },
+    /// Set case-insensitive matching.
+    pub fn caseless(mut self) -> Self {
+        self.flags |= Flags::CASELESS;
+        self
+    }
 
-            _ => Pattern {
-                expression: expr.into(),
-                flags: Flags::empty(),
-                id,
-            },
-        };
+    /// Matching a `.` will not exclude newlines.
+    pub fn dot_all(mut self) -> Self {
+        self.flags |= Flags::DOTALL;
+        self
+    }
 
-        debug!("pattern `{}` parsed to `{}`", expr, pattern);
+    /// Set multi-line anchoring.
+    pub fn multi_line(mut self) -> Self {
+        self.flags |= Flags::MULTILINE;
+        self
+    }
 
-        Ok(pattern)
+    /// Set single-match only mode.
+    pub fn single_match(mut self) -> Self {
+        self.flags |= Flags::SINGLEMATCH;
+        self
+    }
+
+    /// Enable UTF-8 mode for this expression.
+    pub fn utf8(mut self) -> Self {
+        self.flags |= Flags::UTF8;
+        self
+    }
+
+    /// Enable Unicode property support for this expression.
+    pub fn ucp(mut self) -> Self {
+        self.flags |= Flags::UCP;
+        self
     }
 }
 
@@ -151,8 +161,28 @@ impl fmt::Display for Pattern {
 impl FromStr for Pattern {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Pattern::parse(s)
+    fn from_str(expr: &str) -> Result<Self, Self::Err> {
+        let (id, expr) = match expr.find(":/") {
+            Some(off) => (Some(expr[..off].parse()?), &expr[off + 1..]),
+            None => (None, expr),
+        };
+        let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
+            (true, Some(end)) if end > 0 => Pattern {
+                expression: expr[1..end].into(),
+                flags: expr[end + 1..].parse()?,
+                id,
+            },
+
+            _ => Pattern {
+                expression: expr.into(),
+                flags: Flags::empty(),
+                id,
+            },
+        };
+
+        debug!("pattern `{}` parsed to `{}`", expr, pattern);
+
+        Ok(pattern)
     }
 }
 
