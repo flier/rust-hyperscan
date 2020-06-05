@@ -31,8 +31,10 @@ bitflags! {
         /// Enable leftmost start of match reporting.
         const SOM_LEFTMOST = ffi::HS_FLAG_SOM_LEFTMOST;
         /// Logical combination.
+        #[cfg(feature = "v5")]
         const COMBINATION = ffi::HS_FLAG_COMBINATION;
         /// Don't do any match reporting.
+        #[cfg(feature = "v5")]
         const QUIET = ffi::HS_FLAG_QUIET;
     }
 }
@@ -52,7 +54,9 @@ impl FromStr for Flags {
                 'V' => flags |= Flags::ALLOWEMPTY,
                 '8' => flags |= Flags::UTF8,
                 'W' => flags |= Flags::UCP,
+                #[cfg(feature = "v5")]
                 'C' => flags |= Flags::COMBINATION,
+                #[cfg(feature = "v5")]
                 'Q' => flags |= Flags::QUIET,
                 _ => {
                     bail!("invalid pattern flag: {}", c);
@@ -87,9 +91,11 @@ impl fmt::Display for Flags {
         if self.contains(Flags::UCP) {
             write!(f, "W")?
         }
+        #[cfg(feature = "v5")]
         if self.contains(Flags::COMBINATION) {
             write!(f, "C")?
         }
+        #[cfg(feature = "v5")]
         if self.contains(Flags::QUIET) {
             write!(f, "Q")?
         }
@@ -214,12 +220,14 @@ impl Pattern {
     }
 
     /// Logical combination.
+    #[cfg(feature = "v5")]
     pub fn combination(mut self) -> Self {
         self.flags |= Flags::COMBINATION;
         self
     }
 
     /// Don't do any match reporting.
+    #[cfg(feature = "v5")]
     pub fn quiet(mut self) -> Self {
         self.flags |= Flags::QUIET;
         self

@@ -57,6 +57,7 @@ pub enum Error {
     InsufficientSpace,
 
     /// Unexpected internal error.
+    #[cfg(feature = "v5")]
     #[error("Unexpected internal error.")]
     UnknownError,
 
@@ -82,6 +83,7 @@ impl From<ffi::hs_error_t> for Error {
             ffi::HS_SCRATCH_IN_USE => ScratchInUse,
             ffi::HS_ARCH_ERROR => ArchError,
             ffi::HS_INSUFFICIENT_SPACE => InsufficientSpace,
+            #[cfg(feature = "v5")]
             ffi::HS_UNKNOWN_ERROR => UnknownError,
             _ => Code(err),
         }
