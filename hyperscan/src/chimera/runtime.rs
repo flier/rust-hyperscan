@@ -1,6 +1,7 @@
 use std::fmt;
 use std::mem::{self, MaybeUninit};
 use std::ops::Range;
+use std::ptr;
 use std::slice;
 
 use anyhow::Result;
@@ -120,7 +121,38 @@ impl Capture {
     }
 }
 
-unsafe extern "C" fn on_match_trampoline<F, E>(
+/// Definition of the match event callback function type.
+///
+/// A callback function matching the defined type must be provided by the
+/// application calling the `DatabaseRef::scan`
+///
+/// This callback function will be invoked whenever a match is located in the
+/// target data during the execution of a scan. The details of the match are
+/// passed in as parameters to the callback function, and the callback function
+/// should return a value indicating whether or not matching should continue on
+/// the target data. If no callbacks are desired from a scan call, NULL may be
+/// provided in order to suppress match production.
+pub trait MatchEventHandler<'a> {
+    /// Split the match event handler to callback and userdata.
+    unsafe fn split(&mut self) -> (ffi::ch_match_event_handler, *mut libc::c_void);
+}
+
+impl MatchEventHandler<'_> for () {
+    unsafe fn split(&mut self) -> (ffi::ch_match_event_handler, *mut libc::c_void) {
+        (None, ptr::null_mut())
+    }
+}
+
+impl<'a, F> MatchEventHandler<'a> for F
+where
+    F: FnMut(u32, u64, u64, u32, Option<&'a [Capture]>) -> Matching,
+{
+    unsafe fn split(&mut self) -> (ffi::ch_match_event_handler, *mut libc::c_void) {
+        (Some(on_match_trampoline::<'a, F>), self as *mut _ as *mut _)
+    }
+}
+
+unsafe extern "C" fn on_match_trampoline<'a, F>(
     id: u32,
     from: u64,
     to: u64,
@@ -130,10 +162,9 @@ unsafe extern "C" fn on_match_trampoline<F, E>(
     ctx: *mut ::libc::c_void,
 ) -> ffi::ch_callback_t
 where
-    F: FnMut(u32, u64, u64, u32, Option<&[Capture]>) -> Matching,
-    E: FnMut(Error, u32) -> Matching,
+    F: FnMut(u32, u64, u64, u32, Option<&'a [Capture]>) -> Matching,
 {
-    let &mut (ref mut callback, _) = &mut *(ctx as *mut (&mut F, &mut E));
+    let &mut (ref mut callback, _) = &mut *(ctx as *mut (&mut F, *mut ()));
 
     callback(
         id,
@@ -148,17 +179,42 @@ where
     ) as i32
 }
 
-unsafe extern "C" fn on_error_trampoline<F, E>(
+/// Definition of the Chimera error event callback function type.
+///
+/// A callback function matching the defined type may be provided by the
+/// application calling the @ref ch_scan function. This callback function
+/// will be invoked when an error event occurs during matching; this indicates
+/// that some matches for a given expression may not be reported.
+pub trait ErrorEventHandler {
+    /// Split the match event handler to callback and userdata.
+    unsafe fn split(&mut self) -> (ffi::ch_error_event_handler, *mut libc::c_void);
+}
+
+impl ErrorEventHandler for () {
+    unsafe fn split(&mut self) -> (ffi::ch_error_event_handler, *mut libc::c_void) {
+        (None, ptr::null_mut())
+    }
+}
+
+impl<F> ErrorEventHandler for F
+where
+    F: FnMut(Error, u32) -> Matching,
+{
+    unsafe fn split(&mut self) -> (ffi::ch_error_event_handler, *mut libc::c_void) {
+        (Some(on_error_trampoline::<F>), self as *mut _ as *mut _)
+    }
+}
+
+unsafe extern "C" fn on_error_trampoline<F>(
     error_type: ffi::ch_error_event_t,
     id: u32,
     _info: *mut ::libc::c_void,
     ctx: *mut ::libc::c_void,
 ) -> ffi::ch_callback_t
 where
-    F: FnMut(u32, u64, u64, u32, Option<&[Capture]>) -> Matching,
-    E: FnMut(Error, u32) -> Matching,
+    F: FnMut(Error, u32) -> Matching,
 {
-    let &mut (_, ref mut callback) = &mut *(ctx as *mut (&mut F, &mut E));
+    let &mut (_, ref mut callback) = &mut *(ctx as *mut (*mut (), &mut F));
 
     callback(mem::transmute(error_type), id) as i32
 }
@@ -181,11 +237,11 @@ impl DatabaseRef {
     ///
     /// ### Parameters
     ///
-    /// * `id`: The ID number of the expression that matched.
-    /// * `from`: The offset of the first byte that matches the expression.
-    /// * `to`: The offset after the last byte that matches the expression.
-    /// * `flags`: This is provided for future use and is unused at present.
-    /// * `captured`: An array of `Capture` structures that contain the start and end offsets of entire pattern match and each captured subexpression.
+    /// - `id`: The ID number of the expression that matched.
+    /// - `from`: The offset of the first byte that matches the expression.
+    /// - `to`: The offset after the last byte that matches the expression.
+    /// - `flags`: This is provided for future use and is unused at present.
+    /// - `captured`: An array of `Capture` structures that contain the start and end offsets of entire pattern match and each captured subexpression.
     ///
     /// ### Return
     ///
@@ -215,31 +271,33 @@ impl DatabaseRef {
     ///
     /// The callback can return `Matching::Skip` to cease matching this pattern but continue matching the next pattern.
     /// Otherwise, we stop matching for all patterns with `Matching::Terminate`.
-    pub fn scan<T, F, E>(
+    pub fn scan<'a, T, F, E>(
         &self,
         data: T,
-        scratch: &ScratchRef,
+        scratch: &'a ScratchRef,
         mut on_match_event: F,
         mut on_error_event: E,
     ) -> Result<()>
     where
         T: AsRef<[u8]>,
-        F: FnMut(u32, u64, u64, u32, Option<&[Capture]>) -> Matching,
-        E: FnMut(Error, u32) -> Matching,
+        F: MatchEventHandler<'a>,
+        E: ErrorEventHandler,
     {
         let data = data.as_ref();
-
-        let mut userdata = (&mut on_match_event, &mut on_error_event);
-
         unsafe {
+            let (on_match_callback, on_match_data) = on_match_event.split();
+            let (on_error_callback, on_error_data) = on_error_event.split();
+
+            let mut userdata = (on_match_data, on_error_data);
+
             ffi::ch_scan(
                 self.as_ptr(),
                 data.as_ptr() as *const _,
                 data.len() as _,
                 0,
                 scratch.as_ptr(),
-                Some(on_match_trampoline::<F, E>),
-                Some(on_error_trampoline::<F, E>),
+                on_match_callback,
+                on_error_callback,
                 &mut userdata as *mut _ as *mut _,
             )
             .ok()

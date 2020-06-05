@@ -150,7 +150,7 @@ pub trait Builder {
     /// let mut captures = vec![];
     /// let mut errors = vec![];
     ///
-    /// db.scan("some test data", &scratch, |id, from, to, _flags, captured| {
+    /// db.scan("some test data", &scratch, |id, from, to, _flags, captured: Option<&[Capture]>| {
     ///     println!("found pattern {} : {} @ [{}, {}), captured {:?}", id, pattern.expression, from, to, captured);
     ///
     ///     matches.push((from, to));

@@ -89,7 +89,7 @@ pub use crate::compile::{Literal, LiteralFlags, Literals};
 #[deprecated = "use `Error` instead"]
 pub use crate::errors::Error as HsError;
 pub use crate::errors::Error;
-pub use crate::runtime::{Matching, Scratch, ScratchRef, Stream, StreamRef};
+pub use crate::runtime::{MatchEventHandler, Matching, Scratch, ScratchRef, Stream, StreamRef};
 
 /// The `hyperscan` Prelude
 pub mod prelude {

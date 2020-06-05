@@ -1,4 +1,4 @@
-use std::mem::{self, MaybeUninit};
+use std::mem::MaybeUninit;
 
 use anyhow::Result;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
@@ -6,7 +6,7 @@ use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 use crate::common::{DatabaseRef, Streaming};
 use crate::errors::AsResult;
 use crate::ffi;
-use crate::runtime::{split_closure, Matching, ScratchRef};
+use crate::runtime::{MatchEventHandler, ScratchRef};
 
 impl DatabaseRef<Streaming> {
     /// Provides the size of the stream state allocated by a single stream opened against the given database.
@@ -60,19 +60,12 @@ impl StreamRef {
     /// (for example, via the use of the `$` meta-character).
     pub fn reset<F>(&self, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
-        F: FnMut(u32, u64, u64, u32) -> Matching,
+        F: MatchEventHandler,
     {
         unsafe {
-            let (callback, userdata) = split_closure(&mut on_match_event);
+            let (callback, userdata) = on_match_event.split();
 
-            ffi::hs_reset_stream(
-                self.as_ptr(),
-                0,
-                scratch.as_ptr(),
-                Some(mem::transmute(callback)),
-                userdata,
-            )
-            .ok()
+            ffi::hs_reset_stream(self.as_ptr(), 0, scratch.as_ptr(), callback, userdata).ok()
         }
     }
 
@@ -83,19 +76,12 @@ impl StreamRef {
     /// Note: the stream and the `from` stream must be open against the same database.
     pub fn reset_and_copy_stream<F>(&self, from: &StreamRef, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
-        F: FnMut(u32, u64, u64, u32) -> Matching,
+        F: MatchEventHandler,
     {
         unsafe {
-            let (callback, userdata) = split_closure(&mut on_match_event);
+            let (callback, userdata) = on_match_event.split();
 
-            ffi::hs_reset_and_copy_stream(
-                self.as_ptr(),
-                from.as_ptr(),
-                scratch.as_ptr(),
-                Some(mem::transmute(callback)),
-                userdata,
-            )
-            .ok()
+            ffi::hs_reset_and_copy_stream(self.as_ptr(), from.as_ptr(), scratch.as_ptr(), callback, userdata).ok()
         }
     }
 }
@@ -111,18 +97,12 @@ impl Stream {
     /// even if scanning has been terminated by a non-zero return from the match callback function.
     pub fn close<F>(self, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
-        F: FnMut(u32, u64, u64, u32) -> Matching,
+        F: MatchEventHandler,
     {
         unsafe {
-            let (callback, userdata) = split_closure(&mut on_match_event);
+            let (callback, userdata) = on_match_event.split();
 
-            ffi::hs_close_stream(
-                self.as_ptr(),
-                scratch.as_ptr(),
-                Some(mem::transmute(callback)),
-                userdata,
-            )
-            .ok()
+            ffi::hs_close_stream(self.as_ptr(), scratch.as_ptr(), callback, userdata).ok()
         }
     }
 }
@@ -152,17 +132,17 @@ impl StreamRef {
     /// if these properties are not satisfied.
     pub fn reset_and_expand<F>(&self, buf: &[u8], scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
-        F: FnMut(u32, u64, u64, u32) -> Matching,
+        F: MatchEventHandler,
     {
         unsafe {
-            let (callback, userdata) = split_closure(&mut on_match_event);
+            let (callback, userdata) = on_match_event.split();
 
             ffi::hs_reset_and_expand_stream(
                 self.as_ptr(),
                 buf.as_ptr() as *const _,
                 buf.len(),
                 scratch.as_ptr(),
-                Some(mem::transmute(callback)),
+                callback,
                 userdata,
             )
             .ok()

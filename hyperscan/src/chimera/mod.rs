@@ -38,7 +38,9 @@ pub use self::common::{version, Database, DatabaseRef};
 pub use self::compile::{compile, Builder, Mode};
 pub use self::errors::{CompileError, Error};
 pub use self::pattern::{Flags, Pattern, Patterns};
-pub use self::runtime::{Capture, Error as MatchError, Matching, Scratch, ScratchRef};
+pub use self::runtime::{
+    Capture, Error as MatchError, ErrorEventHandler, MatchEventHandler, Matching, Scratch, ScratchRef,
+};
 
 pub mod prelude {
     //! The `chimera` Prelude

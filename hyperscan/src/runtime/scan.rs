@@ -1,5 +1,6 @@
 use std::io::Read;
 use std::mem;
+use std::ptr;
 
 use anyhow::Result;
 use foreign_types::ForeignTypeRef;
@@ -26,6 +27,54 @@ impl Default for Matching {
     }
 }
 
+/// Definition of the match event callback function type.
+///
+/// A callback function matching the defined type must be provided by the
+/// application calling the `DatabaseRef::scan` or `StreamRef::scan` functions
+/// (or other streaming calls which can produce matches).
+///
+/// This callback function will be invoked whenever a match is located in the
+/// target data during the execution of a scan. The details of the match are
+/// passed in as parameters to the callback function, and the callback function
+/// should return a value indicating whether or not matching should continue on
+/// the target data. If no callbacks are desired from a scan call, NULL may be
+/// provided in order to suppress match production.
+///
+/// This callback function should not attempt to call Hyperscan API functions on
+/// the same stream nor should it attempt to reuse the scratch space allocated
+/// for the API calls that caused it to be triggered. Making another call to the
+/// Hyperscan library with completely independent parameters should work (for
+/// example, scanning a different database in a new stream and with new scratch
+/// space), but reusing data structures like stream state and/or scratch space
+/// will produce undefined behavior.
+pub trait MatchEventHandler {
+    /// Split the match event handler to callback and userdata.
+    unsafe fn split(&mut self) -> (ffi::match_event_handler, *mut libc::c_void);
+}
+
+impl MatchEventHandler for () {
+    unsafe fn split(&mut self) -> (ffi::match_event_handler, *mut libc::c_void) {
+        (None, ptr::null_mut())
+    }
+}
+
+impl MatchEventHandler for (ffi::match_event_handler, *mut libc::c_void) {
+    unsafe fn split(&mut self) -> (ffi::match_event_handler, *mut libc::c_void) {
+        *self
+    }
+}
+
+impl<F> MatchEventHandler for F
+where
+    F: FnMut(u32, u64, u64, u32) -> Matching,
+{
+    unsafe fn split(&mut self) -> (ffi::match_event_handler, *mut libc::c_void) {
+        let (callback, userdata) = split_closure(self);
+
+        (Some(mem::transmute(callback)), userdata)
+    }
+}
+
 impl DatabaseRef<Block> {
     /// The block (non-streaming) regular expression scanner.
     ///
@@ -49,12 +98,12 @@ impl DatabaseRef<Block> {
     pub fn scan<T, F>(&self, data: T, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         T: AsRef<[u8]>,
-        F: FnMut(u32, u64, u64, u32) -> Matching,
+        F: MatchEventHandler,
     {
         let data = data.as_ref();
 
         unsafe {
-            let (callback, userdata) = split_closure(&mut on_match_event);
+            let (callback, userdata) = on_match_event.split();
 
             ffi::hs_scan(
                 self.as_ptr(),
@@ -62,7 +111,7 @@ impl DatabaseRef<Block> {
                 data.len() as u32,
                 0,
                 scratch.as_ptr(),
-                Some(mem::transmute(callback)),
+                callback,
                 userdata,
             )
             .ok()
@@ -95,7 +144,7 @@ impl DatabaseRef<Vectored> {
     where
         I: IntoIterator<Item = T>,
         T: AsRef<[u8]>,
-        F: FnMut(u32, u64, u64, u32) -> Matching,
+        F: MatchEventHandler,
     {
         let (ptrs, lens): (Vec<_>, Vec<_>) = data
             .into_iter()
@@ -107,7 +156,7 @@ impl DatabaseRef<Vectored> {
             .unzip();
 
         unsafe {
-            let (callback, userdata) = split_closure(&mut on_match_event);
+            let (callback, userdata) = on_match_event.split();
 
             ffi::hs_scan_vector(
                 self.as_ptr(),
@@ -116,7 +165,7 @@ impl DatabaseRef<Vectored> {
                 ptrs.len() as u32,
                 0,
                 scratch.as_ptr(),
-                Some(mem::transmute(callback)),
+                callback,
                 userdata,
             )
             .ok()
@@ -156,20 +205,22 @@ impl DatabaseRef<Streaming> {
     pub fn scan<R, F>(&self, reader: &mut R, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         R: Read,
-        F: FnMut(u32, u64, u64, u32) -> Matching,
+        F: MatchEventHandler,
     {
         let stream = self.open_stream()?;
         let mut buf = [0; SCAN_BUF_SIZE];
+
+        let (callback, userdata) = unsafe { on_match_event.split() };
 
         while let Ok(len) = reader.read(&mut buf[..]) {
             if len == 0 {
                 break;
             }
 
-            stream.scan(&buf[..len], scratch, &mut on_match_event)?;
+            stream.scan(&buf[..len], scratch, (callback, userdata))?;
         }
 
-        stream.close(scratch, on_match_event)
+        stream.close(scratch, (callback, userdata))
     }
 }
 
@@ -208,12 +259,12 @@ impl StreamRef {
     pub fn scan<T, F>(&self, data: T, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         T: AsRef<[u8]>,
-        F: FnMut(u32, u64, u64, u32) -> Matching,
+        F: MatchEventHandler,
     {
         let data = data.as_ref();
 
         unsafe {
-            let (callback, userdata) = split_closure(&mut on_match_event);
+            let (callback, userdata) = on_match_event.split();
 
             ffi::hs_scan_stream(
                 self.as_ptr(),
@@ -221,7 +272,7 @@ impl StreamRef {
                 data.len() as u32,
                 0,
                 scratch.as_ptr(),
-                Some(mem::transmute(callback)),
+                callback,
                 userdata,
             )
             .ok()
