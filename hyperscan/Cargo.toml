@@ -22,9 +22,7 @@ unstable = ["pattern"]
 [dependencies]
 anyhow = "1.0"
 bitflags = "1.0"
-cfg-if = "0.1"
 derive_more = "0.99"
-either = "1.5"
 foreign-types = "0.5"
 libc = "0.2"
 log = "0.4"
@@ -33,11 +31,12 @@ regex-syntax = "0.6"
 semver = "0.10"
 thiserror = "1.0"
 
-hyperscan-sys = { version = "0.2.0", path = "../hyperscan-sys" }
+hyperscan-sys = { version = "0.2", path = "../hyperscan-sys" }
 
 [dev-dependencies]
 byteorder = "1.2"
 doc-comment = "0.3"
+either = "1.5"
 pcap = "0.7"
 pnet = "0.26"
 pretty_env_logger = "0.4"

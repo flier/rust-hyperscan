@@ -4,18 +4,14 @@ use std::ptr::null_mut;
 use std::str::FromStr;
 
 use anyhow::Error;
-use cfg_if::cfg_if;
 use foreign_types::{ForeignType, ForeignTypeRef};
 
 use crate::common::{Database, Mode};
 use crate::compile::{AsCompileResult, Flags, Pattern, Patterns, PlatformRef};
 use crate::ffi;
 
-cfg_if! {
-    if #[cfg(feature = "literal")] {
-        use crate::compile::{Literal, LiteralFlags, Literals};
-    }
-}
+#[cfg(feature = "literal")]
+use crate::compile::{Literal, LiteralFlags, Literals};
 
 /// The regular expression pattern database builder.
 pub trait Builder {
