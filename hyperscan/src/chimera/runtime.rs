@@ -143,6 +143,24 @@ impl MatchEventHandler<'_> for () {
     }
 }
 
+impl MatchEventHandler<'_> for Matching {
+    unsafe fn split(&mut self) -> (ffi::ch_match_event_handler, *mut libc::c_void) {
+        unsafe extern "C" fn trampoline(
+            _id: u32,
+            _from: u64,
+            _to: u64,
+            _flags: u32,
+            _size: u32,
+            _captured: *const ffi::ch_capture_t,
+            ctx: *mut ::libc::c_void,
+        ) -> ::libc::c_int {
+            *(*(ctx as *mut (&mut Matching, *mut ()))).0 as _
+        }
+
+        (Some(trampoline), self as *mut _ as *mut _)
+    }
+}
+
 impl<'a, F> MatchEventHandler<'a> for F
 where
     F: FnMut(u32, u64, u64, u32, Option<&'a [Capture]>) -> Matching,
@@ -193,6 +211,20 @@ pub trait ErrorEventHandler {
 impl ErrorEventHandler for () {
     unsafe fn split(&mut self) -> (ffi::ch_error_event_handler, *mut libc::c_void) {
         (None, ptr::null_mut())
+    }
+}
+impl ErrorEventHandler for Matching {
+    unsafe fn split(&mut self) -> (ffi::ch_error_event_handler, *mut libc::c_void) {
+        unsafe extern "C" fn trampoline(
+            _error_type: ffi::ch_error_event_t,
+            _id: u32,
+            _info: *mut ::libc::c_void,
+            ctx: *mut ::libc::c_void,
+        ) -> ffi::ch_callback_t {
+            *(*(ctx as *mut (*mut (), &mut Matching))).1 as _
+        }
+
+        (Some(trampoline), self as *mut _ as *mut _)
     }
 }
 

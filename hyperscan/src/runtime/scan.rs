@@ -58,6 +58,16 @@ impl MatchEventHandler for () {
     }
 }
 
+impl MatchEventHandler for Matching {
+    unsafe fn split(&mut self) -> (ffi::match_event_handler, *mut libc::c_void) {
+        unsafe extern "C" fn trampoline(_: u32, _: u64, _: u64, _: u32, ctx: *mut ::libc::c_void) -> ::libc::c_int {
+            ctx.cast::<Matching>().read() as _
+        }
+
+        (Some(trampoline), self as *mut _ as *mut _)
+    }
+}
+
 impl MatchEventHandler for (ffi::match_event_handler, *mut libc::c_void) {
     unsafe fn split(&mut self) -> (ffi::match_event_handler, *mut libc::c_void) {
         *self

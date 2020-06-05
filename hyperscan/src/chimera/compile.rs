@@ -83,9 +83,7 @@ where
     /// db.scan("hello foobar!", &mut s, |_, from, to, _, _| {
     ///     matches.push(from..to);
     ///     Matching::Continue
-    /// }, |_, _|{
-    ///     Matching::Skip
-    /// }).unwrap();
+    /// }, Matching::Skip).unwrap();
     ///
     /// assert_eq!(matches, vec![6..12]);
     /// ```

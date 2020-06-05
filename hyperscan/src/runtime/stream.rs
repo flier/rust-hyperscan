@@ -58,6 +58,39 @@ impl StreamRef {
     /// Note: This operation may result in matches being returned (via calls to the match event callback)
     /// for expressions anchored to the end of the original data stream
     /// (for example, via the use of the `$` meta-character).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use hyperscan::prelude::*;
+    /// let db: StreamingDatabase = pattern! {"test"; SOM_LEFTMOST}.build().unwrap();
+    ///
+    /// let s = db.alloc_scratch().unwrap();
+    /// let st = db.open_stream().unwrap();
+    ///
+    /// let data = vec!["foo t", "es", "t bar"];
+    /// let mut matches = vec![];
+    ///
+    /// let mut callback = |_, from, to, _| {
+    ///     matches.push((from, to));
+    ///
+    ///     Matching::Continue
+    /// };
+    ///
+    /// for d in &data {
+    ///     st.scan(d, &s, &mut callback).unwrap();
+    /// }
+    ///
+    /// st.reset(&s, &mut callback).unwrap();
+    ///
+    /// for d in &data {
+    ///     st.scan(d, &s, &mut callback).unwrap();
+    /// }
+    ///
+    /// st.close(&s, callback).unwrap();
+    ///
+    /// assert_eq!(matches, vec![(4, 8), (4, 8)]);
+    /// ```
     pub fn reset<F>(&self, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         F: MatchEventHandler,
@@ -74,6 +107,38 @@ impl StreamRef {
     /// The stream will first be reset (reporting any EOD matches if a `on_match_event` callback handler is provided).
     ///
     /// Note: the stream and the `from` stream must be open against the same database.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use hyperscan::prelude::*;
+    /// let db: StreamingDatabase = pattern! {"test"; SOM_LEFTMOST}.build().unwrap();
+    ///
+    /// let s = db.alloc_scratch().unwrap();
+    /// let st = db.open_stream().unwrap();
+    ///
+    /// let mut matches = vec![];
+    ///
+    /// let mut callback = |_, from, to, _| {
+    ///     matches.push((from, to));
+    ///
+    ///     Matching::Continue
+    /// };
+    ///
+    /// st.scan("foo t", &s, &mut callback).unwrap();
+    /// st.scan("es", &s, &mut callback).unwrap();
+    ///
+    /// let st2 = db.open_stream().unwrap();
+    ///
+    /// st2.scan("test", &s, &mut callback).unwrap();
+    /// st2.reset_and_copy_stream(&st, &s, &mut callback).unwrap();
+    /// st2.scan("t bar", &s, &mut callback).unwrap();
+    /// st2.close(&s, &mut callback).unwrap();
+    ///
+    /// st.close(&s, Matching::Terminate).unwrap();
+    ///
+    /// assert_eq!(matches, vec![(0, 4), (4, 8)]);
+    /// ```
     pub fn reset_and_copy_stream<F>(&self, from: &StreamRef, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         F: MatchEventHandler,
@@ -112,6 +177,37 @@ impl StreamRef {
     ///
     /// This compressed representation can be converted back into a stream state by using `expand()`
     /// or `reset_and_expand()`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use hyperscan::prelude::*;
+    /// let db: StreamingDatabase = pattern! {"test"; SOM_LEFTMOST}.build().unwrap();
+    ///
+    /// let s = db.alloc_scratch().unwrap();
+    /// let st = db.open_stream().unwrap();
+    ///
+    /// let mut matches = vec![];
+    ///
+    /// let mut callback = |_, from, to, _| {
+    ///     matches.push((from, to));
+    ///
+    ///     Matching::Continue
+    /// };
+    ///
+    /// st.scan("foo t", &s, &mut callback).unwrap();
+    /// st.scan("es", &s, &mut callback).unwrap();
+    ///
+    /// let mut buf = [0; 8192];
+    /// let len = st.compress(&mut buf).unwrap();
+    /// st.close(&s, Matching::Terminate).unwrap();
+    ///
+    /// let st2 = db.expand_stream(&buf[..len]).unwrap();
+    /// st2.scan("t bar", &s, &mut callback).unwrap();
+    /// st2.close(&s, &mut callback).unwrap();
+    ///
+    /// assert_eq!(matches, vec![(4, 8)]);
+    /// ```
     pub fn compress(&self, buf: &mut [u8]) -> Result<usize> {
         let mut size = MaybeUninit::uninit();
 
@@ -130,6 +226,37 @@ impl StreamRef {
     /// Note: `buf` must correspond to a complete compressed representation created by `StreamRef::compress` of a stream
     /// that was opened against `db`. It is not always possible to detect misuse of this API and behaviour is undefined
     /// if these properties are not satisfied.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use hyperscan::prelude::*;
+    /// let db: StreamingDatabase = pattern! {"test"; SOM_LEFTMOST}.build().unwrap();
+    ///
+    /// let s = db.alloc_scratch().unwrap();
+    /// let st = db.open_stream().unwrap();
+    ///
+    /// let mut matches = vec![];
+    ///
+    /// let mut callback = |_, from, to, _| {
+    ///     matches.push((from, to));
+    ///
+    ///     Matching::Continue
+    /// };
+    ///
+    /// st.scan("foo t", &s, &mut callback).unwrap();
+    /// st.scan("es", &s, &mut callback).unwrap();
+    ///
+    /// let mut buf = [0; 8192];
+    /// let len = st.compress(&mut buf).unwrap();
+    /// st.scan("t bar", &s, &mut callback).unwrap();
+    ///
+    /// st.reset_and_expand(&buf[..len], &s, &mut callback).unwrap();
+    /// st.scan("t bar", &s, &mut callback).unwrap();
+    /// st.close(&s, &mut callback).unwrap();
+    ///
+    /// assert_eq!(matches, vec![(4, 8), (4, 8)]);
+    /// ```
     pub fn reset_and_expand<F>(&self, buf: &[u8], scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         F: MatchEventHandler,
@@ -156,6 +283,37 @@ impl DatabaseRef<Streaming> {
     /// Note: `buf` must correspond to a complete compressed representation created by `StreamRef::compress()` of a stream
     /// that was opened against `db`. It is not always possible to detect misuse of this API and behaviour is undefined
     /// if these properties are not satisfied.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use hyperscan::prelude::*;
+    /// let db: StreamingDatabase = pattern! {"test"; SOM_LEFTMOST}.build().unwrap();
+    ///
+    /// let s = db.alloc_scratch().unwrap();
+    /// let st = db.open_stream().unwrap();
+    ///
+    /// let mut matches = vec![];
+    ///
+    /// let mut callback = |_, from, to, _| {
+    ///     matches.push((from, to));
+    ///
+    ///     Matching::Continue
+    /// };
+    ///
+    /// st.scan("foo t", &s, &mut callback).unwrap();
+    /// st.scan("es", &s, &mut callback).unwrap();
+    ///
+    /// let mut buf = [0; 8192];
+    /// let len = st.compress(&mut buf).unwrap();
+    /// st.close(&s, Matching::Terminate).unwrap();
+    ///
+    /// let st2 = db.expand_stream(&buf[..len]).unwrap();
+    /// st2.scan("t bar", &s, &mut callback).unwrap();
+    /// st2.close(&s, &mut callback).unwrap();
+    ///
+    /// assert_eq!(matches, vec![(4, 8)]);
+    /// ```
     pub fn expand_stream(&self, buf: &[u8]) -> Result<Stream> {
         let mut stream = MaybeUninit::uninit();
 
