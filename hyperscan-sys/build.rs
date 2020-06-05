@@ -170,6 +170,8 @@ fn main() -> Result<()> {
     let out_dir = Path::new(&out_dir);
     let inc_dir = libhs.include_paths.first().expect("include path");
 
+    println!("cargo:rerun-if-env-changed=HYPERSCAN_ROOT");
+
     generate_binding(inc_dir, &out_dir)?;
 
     for lib in libhs.libs {
