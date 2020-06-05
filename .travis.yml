@@ -15,6 +15,7 @@ addons:
     packages:
       - hyperscan
       - libpcap
+      - pkg-config
       - llvm
       - tree
 
@@ -34,8 +35,8 @@ env:
     - RUST_BACKTRACE=1
 
 script:
-  - cargo build --verbose
-  - cargo test --verbose
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cargo test -v ; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then cargo test --no-default-features -v ; fi
 
 after_failure:
   - echo `pwd`
