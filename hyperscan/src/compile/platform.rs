@@ -86,9 +86,9 @@ impl Platform {
 
     /// Populates the platform information based on the current host.
     pub fn host() -> Result<Platform> {
-        unsafe {
-            let mut platform = MaybeUninit::zeroed();
+        let mut platform = MaybeUninit::zeroed();
 
+        unsafe {
             ffi::hs_populate_platform(platform.as_mut_ptr())
                 .map(|_| Platform::from_ptr(Box::into_raw(Box::new(platform.assume_init()))))
         }

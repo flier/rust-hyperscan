@@ -1,5 +1,4 @@
 use std::mem::{self, MaybeUninit};
-use std::ptr::null_mut;
 
 use anyhow::Result;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
@@ -59,19 +58,22 @@ impl StreamRef {
     /// Note: This operation may result in matches being returned (via calls to the match event callback)
     /// for expressions anchored to the end of the original data stream
     /// (for example, via the use of the `$` meta-character).
-    pub fn reset<F>(&self, scratch: &ScratchRef, mut on_match_event: Option<F>) -> Result<()>
+    pub fn reset<F>(&self, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         F: FnMut(u32, u64, u64, u32) -> Matching,
     {
-        let (callback, userdata) = on_match_event
-            .as_mut()
-            .map_or((None, null_mut()), |on_match_event| unsafe {
-                let (callback, userdata) = split_closure(on_match_event);
+        unsafe {
+            let (callback, userdata) = split_closure(&mut on_match_event);
 
-                (Some(mem::transmute(callback)), userdata)
-            });
-
-        unsafe { ffi::hs_reset_stream(self.as_ptr(), 0, scratch.as_ptr(), callback, userdata).ok() }
+            ffi::hs_reset_stream(
+                self.as_ptr(),
+                0,
+                scratch.as_ptr(),
+                Some(mem::transmute(callback)),
+                userdata,
+            )
+            .ok()
+        }
     }
 
     /// Duplicate the given `from` stream state onto the stream.
@@ -79,25 +81,21 @@ impl StreamRef {
     /// The stream will first be reset (reporting any EOD matches if a `on_match_event` callback handler is provided).
     ///
     /// Note: the stream and the `from` stream must be open against the same database.
-    pub fn reset_and_copy_stream<F>(
-        &self,
-        from: &StreamRef,
-        scratch: &ScratchRef,
-        mut on_match_event: Option<F>,
-    ) -> Result<()>
+    pub fn reset_and_copy_stream<F>(&self, from: &StreamRef, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         F: FnMut(u32, u64, u64, u32) -> Matching,
     {
-        let (callback, userdata) = on_match_event
-            .as_mut()
-            .map_or((None, null_mut()), |on_match_event| unsafe {
-                let (callback, userdata) = split_closure(on_match_event);
-
-                (Some(mem::transmute(callback)), userdata)
-            });
-
         unsafe {
-            ffi::hs_reset_and_copy_stream(self.as_ptr(), from.as_ptr(), scratch.as_ptr(), callback, userdata).ok()
+            let (callback, userdata) = split_closure(&mut on_match_event);
+
+            ffi::hs_reset_and_copy_stream(
+                self.as_ptr(),
+                from.as_ptr(),
+                scratch.as_ptr(),
+                Some(mem::transmute(callback)),
+                userdata,
+            )
+            .ok()
         }
     }
 }
@@ -111,19 +109,21 @@ impl Stream {
     ///
     /// This function must be called for any stream created with `StreamingDatabase::open_stream`,
     /// even if scanning has been terminated by a non-zero return from the match callback function.
-    pub fn close<F>(self, scratch: &ScratchRef, mut on_match_event: Option<F>) -> Result<()>
+    pub fn close<F>(self, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
     where
         F: FnMut(u32, u64, u64, u32) -> Matching,
     {
-        let (callback, userdata) = on_match_event
-            .as_mut()
-            .map_or((None, null_mut()), |on_match_event| unsafe {
-                let (callback, userdata) = split_closure(on_match_event);
+        unsafe {
+            let (callback, userdata) = split_closure(&mut on_match_event);
 
-                (Some(mem::transmute(callback)), userdata)
-            });
-
-        unsafe { ffi::hs_close_stream(self.as_ptr(), scratch.as_ptr(), callback, userdata).ok() }
+            ffi::hs_close_stream(
+                self.as_ptr(),
+                scratch.as_ptr(),
+                Some(mem::transmute(callback)),
+                userdata,
+            )
+            .ok()
+        }
     }
 }
 
@@ -154,9 +154,9 @@ impl StreamRef {
     where
         F: FnMut(u32, u64, u64, u32) -> Matching,
     {
-        let (callback, userdata) = unsafe { split_closure(&mut on_match_event) };
-
         unsafe {
+            let (callback, userdata) = split_closure(&mut on_match_event);
+
             ffi::hs_reset_and_expand_stream(
                 self.as_ptr(),
                 buf.as_ptr() as *const _,

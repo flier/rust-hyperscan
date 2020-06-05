@@ -52,9 +52,10 @@ impl DatabaseRef<Block> {
         F: FnMut(u32, u64, u64, u32) -> Matching,
     {
         let data = data.as_ref();
-        let (callback, userdata) = unsafe { split_closure(&mut on_match_event) };
 
         unsafe {
+            let (callback, userdata) = split_closure(&mut on_match_event);
+
             ffi::hs_scan(
                 self.as_ptr(),
                 data.as_ptr() as *const i8,
@@ -104,9 +105,10 @@ impl DatabaseRef<Vectored> {
                 (buf.as_ptr() as *const i8, buf.len() as c_uint)
             })
             .unzip();
-        let (callback, userdata) = unsafe { split_closure(&mut on_match_event) };
 
         unsafe {
+            let (callback, userdata) = split_closure(&mut on_match_event);
+
             ffi::hs_scan_vector(
                 self.as_ptr(),
                 ptrs.as_slice().as_ptr() as *const *const i8,
@@ -167,7 +169,7 @@ impl DatabaseRef<Streaming> {
             stream.scan(&buf[..len], scratch, &mut on_match_event)?;
         }
 
-        stream.close(scratch, Some(&mut on_match_event))
+        stream.close(scratch, on_match_event)
     }
 }
 
@@ -199,7 +201,7 @@ impl StreamRef {
     ///     st.scan(d, &s, &mut callback).unwrap();
     /// }
     ///
-    /// st.close(&s, Some(&mut callback)).unwrap();
+    /// st.close(&s, callback).unwrap();
     ///
     /// assert_eq!(matches, vec![(4, 8)]);
     /// ```
@@ -209,9 +211,10 @@ impl StreamRef {
         F: FnMut(u32, u64, u64, u32) -> Matching,
     {
         let data = data.as_ref();
-        let (callback, userdata) = unsafe { split_closure(&mut on_match_event) };
 
         unsafe {
+            let (callback, userdata) = split_closure(&mut on_match_event);
+
             ffi::hs_scan_stream(
                 self.as_ptr(),
                 data.as_ptr() as *const i8,
