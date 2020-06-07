@@ -37,20 +37,20 @@
 #![cfg_attr(test, deny(warnings))]
 #![cfg_attr(feature = "pattern", feature(pattern))]
 
-#[macro_use]
-extern crate log;
-
 mod ffi {
     pub use hyperscan_sys::*;
 }
 
 mod common;
 mod errors;
+#[cfg(feature = "compile")]
 #[macro_use]
 mod compile;
 #[cfg(feature = "chimera")]
 pub mod chimera;
+#[cfg(all(feature = "compile", feature = "runtime"))]
 pub mod regex;
+#[cfg(feature = "runtime")]
 mod runtime;
 
 #[doc(hidden)]
@@ -71,32 +71,42 @@ pub use crate::common::{
     VectoredDatabase,
 };
 #[doc(hidden)]
-#[deprecated = "use `ExprExt` instead"]
-pub use crate::compile::ExprExt as ExpressionExt;
-#[doc(hidden)]
-#[deprecated = "use `ExprInfo` instead"]
-pub use crate::compile::ExprInfo as ExpressionInfo;
-#[doc(hidden)]
-#[deprecated = "use `PatternFlags` instead"]
-pub use crate::compile::Flags as CompileFlags;
-pub use crate::compile::{
-    compile, Builder as DatabaseBuilder, Builder, CpuFeatures, Error as CompileError, ExprExt, ExprInfo,
-    Flags as PatternFlags, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
-};
-#[cfg(feature = "literal")]
-pub use crate::compile::{Literal, LiteralFlags, Literals};
-#[doc(hidden)]
 #[deprecated = "use `Error` instead"]
 pub use crate::errors::Error as HsError;
 pub use crate::errors::Error;
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "compile")] {
+        #[doc(hidden)]
+        #[deprecated = "use `ExprExt` instead"]
+        pub use crate::compile::ExprExt as ExpressionExt;
+        #[doc(hidden)]
+        #[deprecated = "use `ExprInfo` instead"]
+        pub use crate::compile::ExprInfo as ExpressionInfo;
+        #[doc(hidden)]
+        #[deprecated = "use `PatternFlags` instead"]
+        pub use crate::compile::Flags as CompileFlags;
+        pub use crate::compile::{
+            compile, Builder as DatabaseBuilder, Builder, CpuFeatures, Error as CompileError, ExprExt, ExprInfo,
+            Flags as PatternFlags, Pattern, Patterns, Platform, PlatformRef, SomHorizon, Tune,
+        };
+        #[cfg(feature = "literal")]
+        pub use crate::compile::{Literal, LiteralFlags, Literals};
+    }
+}
+
+#[cfg(feature = "runtime")]
 pub use crate::runtime::{MatchEventHandler, Matching, Scratch, ScratchRef, Stream, StreamRef};
 
 /// The `hyperscan` Prelude
 pub mod prelude {
-    pub use crate::{
-        compile, pattern, BlockDatabase, Builder, CompileFlags, Database, Matching, Mode, Pattern, Patterns, Scratch,
-        Stream, StreamingDatabase, VectoredDatabase,
-    };
+    #[cfg(feature = "compile")]
+    pub use crate::{compile, pattern, Builder, CompileFlags, Pattern, Patterns};
+
+    #[cfg(feature = "runtime")]
+    pub use crate::{Matching, Scratch, Stream};
+
+    pub use crate::{BlockDatabase, Database, Mode, StreamingDatabase, VectoredDatabase};
 }
 
 #[cfg(doctest)]

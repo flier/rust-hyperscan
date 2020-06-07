@@ -2,6 +2,7 @@ use std::fmt;
 
 use thiserror::Error;
 
+#[cfg(feature = "compile")]
 use crate::compile::Error as CompileError;
 use crate::ffi;
 
@@ -21,6 +22,7 @@ pub enum Error {
     ScanTerminated,
 
     /// The pattern compiler failed with more detail.
+    #[cfg(feature = "compile")]
     #[error("The pattern compiler failed with more detail, {0}.")]
     CompileError(CompileError),
 

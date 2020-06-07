@@ -13,7 +13,9 @@ edition = "2018"
 links = "hs"
 
 [features]
-default = []
+default = ["compile", "runtime"]
+compile = []
+runtime = []
 chimera = []
 gen = ["bindgen"]
 

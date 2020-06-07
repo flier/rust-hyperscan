@@ -12,20 +12,23 @@ keywords = ["regex", "hyperscan", "streaming"]
 edition = "2018"
 
 [features]
-default = ["v5"]
+default = ["full", "v5"]
+full = ["compile", "runtime"]
+compile = ["hyperscan-sys/compile", "bitflags", "derive_more"]
+runtime = ["hyperscan-sys/runtime"]
+chimera = ["hyperscan-sys/chimera", "bitflags", "derive_more"]
 v5 = ["literal"]
 literal = []
-pattern = ["regex/pattern"]
-chimera = ["hyperscan-sys/chimera"]
 unstable = ["pattern"]
+pattern = ["regex/pattern"]
 
 [dependencies]
 anyhow = "1.0"
-bitflags = "1.0"
-derive_more = "0.99"
+bitflags = { version = "1.0", optional = true }
+cfg-if = "0.1"
+derive_more = { version = "0.99", optional = true }
 foreign-types = "0.5"
 libc = "0.2"
-log = "0.4"
 malloc_buf = "1.0"
 regex-syntax = "0.6"
 semver = "0.10"
@@ -49,3 +52,18 @@ rustc_version = "0.2"
 
 [package.metadata.docs.rs]
 all-features = true
+
+[[example]]
+name = "patbench"
+test = false
+required-features = ["full"]
+
+[[example]]
+name = "pcapscan"
+test = false
+required-features = ["full"]
+
+[[example]]
+name = "simplegrep"
+test = false
+required-features = ["full"]

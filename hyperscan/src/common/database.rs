@@ -115,10 +115,13 @@ pub mod tests {
     fn test_database() {
         let _ = pretty_env_logger::try_init();
 
-        let db: BlockDatabase = pattern! { "test" }.build().unwrap();
+        let db: BlockDatabase = "test".parse().unwrap();
 
-        validate_database(&db);
-
+        assert!(db.size().unwrap() > 0);
         assert_eq!(db.name(), "Block");
+
+        let db_info = db.info().unwrap();
+
+        validate_database_info(&db_info);
     }
 }

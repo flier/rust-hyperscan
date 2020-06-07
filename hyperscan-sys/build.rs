@@ -26,6 +26,7 @@ fn find_hyperscan() -> Result<Library> {
             let inc_path = prefix.join("include/hs");
             let lib_path = prefix.join("lib");
             let libhs = lib_path.join("libhs.a");
+            let libhs_runtime = lib_path.join("libhs_runtime.a");
             let libchimera = lib_path.join("libchimera.a");
             let libpcre = lib_path.join("libpcre.a");
 
@@ -42,10 +43,20 @@ fn find_hyperscan() -> Result<Library> {
             } else {
                 bail!("`$HYPERSCAN_ROOT/include/hs` subdirectory not found.");
             }
-            if libhs.exists() && libhs.is_file() {
-                libs.push("hs".into());
-            } else {
-                bail!("`$HYPERSCAN_ROOT/lib/libhs.a` library not found.");
+            if cfg!(feature = "runtime") {
+                if cfg!(feature = "compile") {
+                    if libhs.exists() && libhs.is_file() {
+                        libs.push("hs".into());
+                    } else {
+                        bail!("`$HYPERSCAN_ROOT/lib/libhs.a` library not found.");
+                    }
+                } else {
+                    if libhs_runtime.exists() && libhs_runtime.is_file() {
+                        libs.push("hs_runtime".into());
+                    } else {
+                        bail!("`$HYPERSCAN_ROOT/lib/libhs_runtime.a` library not found.");
+                    }
+                }
             }
             if libchimera.exists() && libchimera.is_file() && libpcre.exists() && libpcre.is_file() {
                 libs.push("chimera".into());
@@ -59,6 +70,10 @@ fn find_hyperscan() -> Result<Library> {
                 link_paths,
                 include_paths,
             })
+        })
+        .map_err(|err| {
+            println!("cargo:cargo:warning={}", err);
+            err
         })
         .or_else(|_| {
             pkg_config::Config::new().statik(true).probe("libhs").map(
