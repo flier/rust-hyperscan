@@ -218,8 +218,6 @@ impl Pattern {
             ExprInfo::from_ptr(info.assume_init())
         };
 
-        debug!("expression `{}` info: {:?}", self, info);
-
         Ok(info)
     }
 }

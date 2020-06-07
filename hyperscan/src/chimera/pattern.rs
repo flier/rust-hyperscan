@@ -180,8 +180,6 @@ impl FromStr for Pattern {
             },
         };
 
-        debug!("pattern `{}` parsed to `{}`", expr, pattern);
-
         Ok(pattern)
     }
 }

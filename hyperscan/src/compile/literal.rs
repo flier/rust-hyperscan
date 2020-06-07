@@ -173,8 +173,6 @@ impl FromStr for Literal {
             },
         };
 
-        debug!("literal `{}` parsed to `{}`", s, literal);
-
         Ok(literal)
     }
 }

@@ -291,8 +291,6 @@ impl FromStr for Pattern {
             },
         };
 
-        debug!("pattern `{}` parsed to `{}`", s, pattern);
-
         Ok(pattern)
     }
 }
