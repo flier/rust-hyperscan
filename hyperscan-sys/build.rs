@@ -4,109 +4,101 @@ extern crate log;
 use std::env;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Error, Result};
+use anyhow::{anyhow, bail, Context, Result};
 
-struct Library {
-    pub libs: Vec<String>,
-    pub link_paths: Vec<PathBuf>,
-    pub include_paths: Vec<PathBuf>,
-}
+fn find_hyperscan() -> Result<PathBuf> {
+    println!("cargo:rerun-if-env-changed=HYPERSCAN_ROOT");
 
-fn find_hyperscan() -> Result<Library> {
-    env::var("HYPERSCAN_ROOT")
-        .with_context(|| "HYPERSCAN_ROOT")
-        .and_then(|prefix| {
-            debug!("building with Hyperscan @ HYPERSCAN_ROOT={}", prefix);
+    let link_kind = if cfg!(feature = "static") { "static" } else { "dylib" };
 
-            let mut libs = vec!["c++".into()];
-            let mut link_paths = vec![];
-            let mut include_paths = vec![];
+    if let Ok(prefix) = env::var("HYPERSCAN_ROOT") {
+        let prefix = Path::new(&prefix);
+        if !prefix.exists() || !prefix.is_dir() {
+            bail!("HYPERSCAN_ROOT should point to a directory that exists.");
+        }
 
-            let prefix = Path::new(&prefix);
-            let inc_path = prefix.join("include/hs");
-            let lib_path = prefix.join("lib");
-            let libhs = lib_path.join("libhs.a");
-            let libhs_runtime = lib_path.join("libhs_runtime.a");
-            let libchimera = lib_path.join("libchimera.a");
-            let libpcre = lib_path.join("libpcre.a");
+        let inc_path = prefix.join("include");
+        let link_path = prefix.join("lib");
+        if link_path.exists() && link_path.is_dir() {
+            println!("cargo:rustc-link-search=native={}", link_path.to_string_lossy());
+        } else {
+            bail!("`$HYPERSCAN_ROOT/lib` subdirectory not found.");
+        }
 
-            if !prefix.exists() || !prefix.is_dir() {
-                bail!("HYPERSCAN_ROOT should point to a directory that exists.");
-            }
-            if lib_path.exists() && lib_path.is_dir() {
-                link_paths.push(lib_path)
+        let mut link_libs = vec![];
+
+        if cfg!(feature = "runtime") {
+            if cfg!(feature = "compile") {
+                link_libs.push(format!("{}=hs", link_kind));
             } else {
-                bail!("`$HYPERSCAN_ROOT/lib` subdirectory not found.");
+                link_libs.push(format!("{}=hs_runtime", link_kind));
             }
-            if inc_path.exists() && inc_path.is_dir() {
-                include_paths.push(inc_path)
-            } else {
-                bail!("`$HYPERSCAN_ROOT/include/hs` subdirectory not found.");
-            }
-            if cfg!(feature = "runtime") {
-                if cfg!(feature = "compile") {
-                    if libhs.exists() && libhs.is_file() {
-                        libs.push("hs".into());
-                    } else {
-                        bail!("`$HYPERSCAN_ROOT/lib/libhs.a` library not found.");
-                    }
-                } else {
-                    if libhs_runtime.exists() && libhs_runtime.is_file() {
-                        libs.push("hs_runtime".into());
-                    } else {
-                        bail!("`$HYPERSCAN_ROOT/lib/libhs_runtime.a` library not found.");
-                    }
-                }
-            }
-            if libchimera.exists() && libchimera.is_file() && libpcre.exists() && libpcre.is_file() {
-                libs.push("chimera".into());
-                libs.push("pcre".into());
-            } else if cfg!(feature = "chimera") {
-                bail!("`$HYPERSCAN_ROOT/lib/libchimera.a` library not found.");
-            }
+        }
+        if cfg!(feature = "chimera") {
+            link_libs.push("chimera".into());
+            link_libs.push("pcre".into());
+        }
+        if cfg!(feature = "static") {
+            link_libs.push("c++".into());
+        }
 
-            Ok(Library {
-                libs,
-                link_paths,
-                include_paths,
-            })
-        })
-        .map_err(|err| {
-            println!("cargo:cargo:warning={}", err);
-            err
-        })
-        .or_else(|_| {
-            pkg_config::Config::new().statik(true).probe("libhs").map(
-                |pkg_config::Library {
-                     libs,
-                     link_paths,
-                     include_paths,
-                     ..
-                 }| {
-                    debug!(
-                        "building with Hyperscan @ libs={:?}, link_paths={:?}, include_paths={:?}",
-                        libs, link_paths, include_paths
-                    );
+        println!(
+            "cargo:warning=building with Hyperscan with {} library @ {:?}, libs={:?}, link_paths=[{:?}], include_paths=[{:?}]",
+            link_kind,
+            prefix,
+            link_libs,
+            link_path,
+            inc_path
+        );
 
-                    Library {
-                        libs,
-                        link_paths,
-                        include_paths,
-                    }
-                },
-            )
-        })
-        .map_err(|_| Error::msg("please download and install hyperscan from https://www.hyperscan.io/"))
+        for lib in link_libs {
+            println!("cargo:rustc-link-lib={}", lib);
+        }
+
+        Ok(inc_path)
+    } else {
+        let libhs = pkg_config::Config::new()
+            .statik(cfg!(feature = "static"))
+            .cargo_metadata(true)
+            .env_metadata(true)
+            .probe("libhs")?;
+
+        println!(
+            "cargo:warning=building with Hyperscan {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
+            libhs.version, link_kind, libhs.libs, libhs.link_paths, libhs.include_paths
+        );
+
+        if cfg!(feature = "chimera") {
+            let libch = pkg_config::Config::new()
+                .statik(cfg!(feature = "static"))
+                .cargo_metadata(true)
+                .env_metadata(true)
+                .probe("libch")?;
+
+            println!(
+                "cargo:warning=building with Chimera {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
+                libch.version, link_kind, libch.libs, libch.link_paths, libch.include_paths
+            );
+        }
+
+        libhs
+            .include_paths
+            .first()
+            .cloned()
+            .ok_or_else(|| anyhow!("missing include path"))
+    }
 }
 
 #[cfg(feature = "gen")]
 fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let out_file = out_dir.join("hyperscan.rs");
-
-    info!("generating raw Hyperscan wrapper @ {}", out_file.display());
-
     let inc_file = inc_dir.join("hs.h");
     let inc_file = inc_file.to_str().expect("header file");
+
+    println!(
+        "cargo:warning=generating raw Hyperscan binding file @ {}",
+        out_file.display()
+    );
 
     println!("cargo:rerun-if-changed={}", inc_file);
 
@@ -143,6 +135,11 @@ fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let inc_file = inc_dir.join("ch.h");
     let inc_file = inc_file.to_str().expect("header file");
 
+    println!(
+        "cargo:warning=generating raw Chimera binding file @ {}",
+        out_file.display()
+    );
+
     println!("cargo:rerun-if-changed={}", inc_file);
 
     bindgen::builder()
@@ -178,30 +175,15 @@ fn generate_chimera_binding(_: &Path, _: &Path) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    pretty_env_logger::init();
-
-    let libhs = find_hyperscan()?;
+    let inc_dir = find_hyperscan()
+        .with_context(|| anyhow!("please download and install hyperscan from https://www.hyperscan.io/"))?;
     let out_dir = env::var("OUT_DIR")?;
     let out_dir = Path::new(&out_dir);
-    let inc_dir = libhs.include_paths.first().expect("include path");
 
-    println!("cargo:rerun-if-env-changed=HYPERSCAN_ROOT");
-
-    generate_binding(inc_dir, &out_dir)?;
-
-    for lib in libhs.libs {
-        println!("cargo:rustc-link-lib=dylib={}", lib);
-    }
-
-    for link_path in libhs.link_paths {
-        println!(
-            "cargo:rustc-link-search=native={}",
-            link_path.to_str().expect("link path")
-        );
-    }
+    generate_binding(&inc_dir, &out_dir)?;
 
     if cfg!(feature = "chimera") {
-        generate_chimera_binding(inc_dir, &out_dir)?;
+        generate_chimera_binding(&inc_dir, &out_dir)?;
     }
 
     Ok(())

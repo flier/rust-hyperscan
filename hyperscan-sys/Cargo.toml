@@ -13,10 +13,12 @@ edition = "2018"
 links = "hs"
 
 [features]
-default = ["compile", "runtime"]
+default = ["full"]
+static = []
+full = ["compile", "runtime"]
 compile = []
 runtime = []
-chimera = []
+chimera = ["static"]
 gen = ["bindgen"]
 
 [dependencies]
