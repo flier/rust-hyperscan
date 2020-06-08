@@ -36,7 +36,7 @@ env:
 
 script:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install hyperscan libpcap llvm tree && cargo test -v ; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then cd hyperscan && cargo test --no-default-features -v ; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then cd hyperscan && cargo test --no-default-features full -v ; fi
 
 after_failure:
   - echo `pwd`
