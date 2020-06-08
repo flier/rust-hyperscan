@@ -101,7 +101,7 @@ fn find_hyperscan() -> Result<Library> {
 
 #[cfg(feature = "gen")]
 fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
-    let out_file = out_dir.join("raw.rs");
+    let out_file = out_dir.join("hyperscan.rs");
 
     info!("generating raw Hyperscan wrapper @ {}", out_file.display());
 
@@ -132,7 +132,7 @@ fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
 
 #[cfg(not(feature = "gen"))]
 fn generate_binding(_: &Path, out_dir: &Path) -> Result<()> {
-    std::fs::copy("src/raw.rs", out_dir.join("raw.rs"))
+    std::fs::copy("src/hyperscan.rs", out_dir.join("hyperscan.rs"))
         .map(|_| ())
         .with_context(|| "copy binding file")
 }
