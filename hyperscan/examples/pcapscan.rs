@@ -341,8 +341,6 @@ struct Opt {
 
 // Main entry point.
 fn main() -> Result<()> {
-    pretty_env_logger::init();
-
     let Opt {
         repeats,
         pattern_file,

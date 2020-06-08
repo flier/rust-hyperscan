@@ -469,8 +469,6 @@ fn eval_set(
 }
 
 fn main() -> Result<()> {
-    pretty_env_logger::init();
-
     let Opt {
         pattern_file,
         pcap_file,
@@ -485,6 +483,7 @@ fn main() -> Result<()> {
     let mut bench = Benchmark::new();
 
     if criterion == Criterion::Throughput {
+        // Read our input PCAP file in
         bench
             .read_streams(pcap_file.as_ref().ok_or(anyhow!("pcap file"))?)
             .with_context(|| "read packets from PCAP file")?;
@@ -500,19 +499,20 @@ fn main() -> Result<()> {
     let sigs = SigData::new(pattern_file)?;
     let mut work_sigs = (0..sigs.len()).collect::<HashSet<_>>();
     let mut excludes = HashSet::new();
+
+    let score_base = eval_set(&mut bench, &sigs, !non_streaming, repeats, criterion, true)?;
     let maximize = criterion.higher_is_better();
 
-    let generations = gen_max.min((sigs.len() - 1) / factor_max);
-    let score_base = eval_set(&mut bench, &sigs, !non_streaming, repeats, criterion, true)?;
-
-    let format_criterion = |score: f64| match criterion {
+    let print_criterion = |score: f64| match criterion {
         Criterion::Throughput => format!("{:.3} Mbps", score),
         Criterion::CompileTime => format!("{:.3} sec", score),
         _ => format!("{} bytes", score as usize),
     };
 
     println!("Number of signatures: {}", sigs.len());
-    println!("Base performance: {}", format_criterion(score_base));
+    println!("Base performance: {}", print_criterion(score_base));
+
+    let generations = gen_max.min((sigs.len() - 1) / factor_max);
 
     println!("Cutting signatures cumulatively for {} generations", generations);
 
@@ -545,16 +545,20 @@ fn main() -> Result<()> {
                 let sigs_tmp = sigs.clone_exclude(&excludes);
                 let score = eval_set(&mut bench, &sigs_tmp, !non_streaming, repeats, criterion, false)?;
 
-                if current_group == 0 || (if maximize { score < best } else { score > best }) {
+                if current_group == 0 || (if !maximize { score < best } else { score > best }) {
                     s = s_tmp;
                     best = score;
                 }
             }
         }
 
+        for _ in count..16 {
+            print!(" ");
+        }
+
         println!(
             "\tPerformance: {} ({:.3}x) after cutting",
-            format_criterion(best),
+            print_criterion(best),
             best / score_base
         );
 

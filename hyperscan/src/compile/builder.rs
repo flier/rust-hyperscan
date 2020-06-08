@@ -282,7 +282,6 @@ pub mod tests {
 
     #[test]
     fn test_database_compile() {
-        let _ = pretty_env_logger::try_init();
         let info = Platform::host().unwrap();
 
         let db = BlockDatabase::compile("test", Flags::empty(), Some(&info)).unwrap();

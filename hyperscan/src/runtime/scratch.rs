@@ -90,8 +90,6 @@ pub mod tests {
 
     #[test]
     fn test_scratch() {
-        let _ = pretty_env_logger::try_init();
-
         let db: BlockDatabase = "test".parse().unwrap();
 
         let s = db.alloc_scratch().unwrap();

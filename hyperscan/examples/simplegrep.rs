@@ -43,8 +43,6 @@ struct Opt {
 }
 
 fn main() -> Result<()> {
-    pretty_env_logger::init();
-
     let opt = Opt::from_args();
 
     // First, we attempt to compile the pattern provided on the command line.

@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate log;
-
 use std::env;
 use std::path::{Path, PathBuf};
 

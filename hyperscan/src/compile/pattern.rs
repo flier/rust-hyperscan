@@ -400,8 +400,6 @@ mod tests {
 
     #[test]
     fn test_compile_flags() {
-        let _ = pretty_env_logger::try_init();
-
         let flags = Flags::CASELESS | Flags::DOTALL;
 
         assert_eq!(flags.to_string(), "is");
@@ -412,8 +410,6 @@ mod tests {
 
     #[test]
     fn test_pattern() {
-        let _ = pretty_env_logger::try_init();
-
         let p: Pattern = "test".parse().unwrap();
 
         assert_eq!(p, pattern! { "test" });
@@ -459,8 +455,6 @@ mod tests {
 
     #[test]
     fn test_pattern_build() {
-        let _ = pretty_env_logger::try_init();
-
         let p = &pattern! {"test"};
 
         assert_eq!(p.expression, "test");
@@ -482,8 +476,6 @@ mod tests {
 
     #[test]
     fn test_pattern_build_with_flags() {
-        let _ = pretty_env_logger::try_init();
-
         let p = &pattern! {"test"; CASELESS};
 
         assert_eq!(p.expression, "test");
@@ -497,8 +489,6 @@ mod tests {
 
     #[test]
     fn test_patterns_build() {
-        let _ = pretty_env_logger::try_init();
-
         let db: BlockDatabase = patterns!("test", "foo", "bar").build().unwrap();
 
         validate_database_with_size(&db, DATABASE_SIZE);
@@ -506,8 +496,6 @@ mod tests {
 
     #[test]
     fn test_patterns_build_with_flags() {
-        let _ = pretty_env_logger::try_init();
-
         let db: BlockDatabase = patterns!("test", "foo", "bar"; CASELESS | DOTALL).build().unwrap();
 
         validate_database_with_size(&db, DATABASE_SIZE);

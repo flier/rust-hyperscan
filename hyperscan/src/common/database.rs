@@ -113,8 +113,6 @@ pub mod tests {
 
     #[test]
     fn test_database() {
-        let _ = pretty_env_logger::try_init();
-
         let db: BlockDatabase = "test".parse().unwrap();
 
         assert!(db.size().unwrap() > 0);
