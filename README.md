@@ -47,6 +47,7 @@ If you want to work with Hyperscan v4.x, you can disable `v5` feature at compile
 [dependencies.hyperscan]
 version = "0.2"
 default-features = false
+features = ["full"]
 ```
 
 ### Chimera API
@@ -67,5 +68,34 @@ $ cmake .. -DCMAKE_INSTALL_PREFIX=`pwd`
 Then point to the hyperscan installation directory with the `HYPERSCAN_ROOT` environment variable to enable `chimera` feature.
 
 ```bash
-$ HYPERSCAN_ROOT=<CMAKE_INSTALL_PREFIX> cargo test --features chimera
+$ HYPERSCAN_ROOT=<CMAKE_INSTALL_PREFIX> cargo build
+```
+
+The `chimera` feature should be enabled.
+
+```toml
+[dependencies]
+hyperscan = { version = "0.2", features = ["chimera"] }
+```
+
+Note: The `Chimera` library does not support dynamic library linking mode, `static` feature is automatically enabled when `chimera` is enabled.
+
+### Static Linking Mode
+
+As of version 0.2, `rust-hyperscan` uses dynamic library linking mode by default. If you need link a static library, you can use the `static` feature.
+
+```toml
+[dependencies]
+hyperscan = { version = "0.2", features = ["static"] }
+```
+
+### Hyperscan Runtime
+
+Hyperscan provides a standalone `runtime` library, which can be enabled separately. If you don't need to compile regular expressions at runtime, you can reduce the size of the executable using `runtime` mode.
+
+```toml
+[dependencies.hyperscan]
+version = "0.2"
+default-features = false
+features = ["runtime"]
 ```
