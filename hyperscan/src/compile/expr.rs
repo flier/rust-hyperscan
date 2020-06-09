@@ -1,9 +1,10 @@
 use std::ffi::CString;
-use std::fmt;
+use std::fmt::{self, Write};
 use std::mem::MaybeUninit;
 use std::ops::Deref;
+use std::str::FromStr;
 
-use anyhow::Result;
+use anyhow::{anyhow, bail, Error, Result};
 use bitflags::bitflags;
 use derive_more::{From, Into};
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
@@ -25,8 +26,98 @@ bitflags! {
 
 /// A structure containing additional parameters related to an expression.
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, Default, PartialEq, From, Into)]
+#[derive(Clone, Copy, Default, PartialEq, From, Into)]
 pub struct ExprExt(ffi::hs_expr_ext_t);
+
+impl fmt::Debug for ExprExt {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = f.debug_struct("ExprExt");
+        let flags = self.flags();
+        if flags.contains(Flags::MIN_OFFSET) {
+            s.field("min_offset", &self.0.min_offset);
+        }
+        if flags.contains(Flags::MAX_OFFSET) {
+            s.field("max_offset", &self.0.max_offset);
+        }
+        if flags.contains(Flags::MIN_LENGTH) {
+            s.field("min_length", &self.0.min_length);
+        }
+        if flags.contains(Flags::EDIT_DISTANCE) {
+            s.field("edit_distance", &self.0.edit_distance);
+        }
+        if flags.contains(Flags::HAMMING_DISTANCE) {
+            s.field("hamming_distance", &self.0.hamming_distance);
+        }
+        s.finish()
+    }
+}
+
+impl fmt::Display for ExprExt {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let flags = self.flags();
+        let mut fields = vec![];
+
+        if flags.contains(Flags::MIN_OFFSET) {
+            fields.push(format!("min_offset={}", self.0.min_offset));
+        }
+        if flags.contains(Flags::MAX_OFFSET) {
+            fields.push(format!("max_offset={}", self.0.max_offset));
+        }
+        if flags.contains(Flags::MIN_LENGTH) {
+            fields.push(format!("min_length={}", self.0.min_length));
+        }
+        if flags.contains(Flags::EDIT_DISTANCE) {
+            fields.push(format!("edit_distance={}", self.0.edit_distance));
+        }
+        if flags.contains(Flags::HAMMING_DISTANCE) {
+            fields.push(format!("hamming_distance={}", self.0.hamming_distance));
+        }
+
+        f.write_char('{')?;
+        f.write_str(&fields.join(","))?;
+        f.write_char('}')
+    }
+}
+
+impl FromStr for ExprExt {
+    type Err = Error;
+
+    fn from_str(mut s: &str) -> Result<Self, Self::Err> {
+        if s.starts_with('{') && s.ends_with('}') {
+            s = &s[1..s.len() - 1];
+        }
+
+        s.split(',')
+            .map(|kv| kv.splitn(2, '='))
+            .fold(Ok(ExprExt::default()), |ext, mut kv| {
+                ext.and_then(|mut ext| {
+                    let key = kv.next().ok_or_else(|| anyhow!("missing parameter"))?;
+                    let value = kv.next().ok_or_else(|| anyhow!("missing value"))?;
+
+                    match key {
+                        "min_offset" => {
+                            ext.set_min_offset(value.parse()?);
+                        }
+                        "max_offset" => {
+                            ext.set_max_offset(value.parse()?);
+                        }
+                        "min_length" => {
+                            ext.set_min_length(value.parse()?);
+                        }
+                        "edit_distance" => {
+                            ext.set_edit_distance(value.parse()?);
+                        }
+                        "hamming_distance" => {
+                            ext.set_hamming_distance(value.parse()?);
+                        }
+                        _ => bail!("unexpected parameter: {}", key),
+                    }
+
+                    Ok(ext)
+                })
+            })
+    }
+}
 
 impl ExprExt {
     fn flags(&self) -> Flags {
@@ -35,6 +126,11 @@ impl ExprExt {
 
     fn set_flags(&mut self, flags: Flags) {
         self.0.flags |= flags.bits();
+    }
+
+    /// Returns true if the expression contains no additional parameters.
+    pub fn is_empty(&self) -> bool {
+        self.flags().is_empty()
     }
 
     /// The minimum end offset in the data stream at which this expression should match successfully.

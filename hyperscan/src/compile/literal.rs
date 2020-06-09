@@ -132,12 +132,10 @@ impl fmt::Display for Literal {
             write!(f, "{}:", id)?;
         }
 
-        let expr = regex_syntax::escape(self.expression.as_str());
-
         if self.id.is_some() || !self.flags.is_empty() {
-            write!(f, "/{}/", expr)?;
+            write!(f, "/{}/", self.expression)?;
         } else {
-            write!(f, "{}", expr)?;
+            write!(f, "{}", self.expression)?;
         }
 
         if !self.flags.is_empty() {

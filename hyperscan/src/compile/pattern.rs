@@ -54,6 +54,8 @@ impl FromStr for Flags {
                 'V' => flags |= Flags::ALLOWEMPTY,
                 '8' => flags |= Flags::UTF8,
                 'W' => flags |= Flags::UCP,
+                'P' => flags |= Flags::PREFILTER,
+                'L' => flags |= Flags::SOM_LEFTMOST,
                 #[cfg(feature = "v5")]
                 'C' => flags |= Flags::COMBINATION,
                 #[cfg(feature = "v5")]
@@ -90,6 +92,12 @@ impl fmt::Display for Flags {
         }
         if self.contains(Flags::UCP) {
             write!(f, "W")?
+        }
+        if self.contains(Flags::PREFILTER) {
+            write!(f, "P")?
+        }
+        if self.contains(Flags::SOM_LEFTMOST) {
+            write!(f, "L")?
         }
         #[cfg(feature = "v5")]
         if self.contains(Flags::COMBINATION) {
@@ -248,16 +256,17 @@ impl fmt::Display for Pattern {
             write!(f, "{}:", id)?;
         }
 
-        let expr = regex_syntax::escape(self.expression.as_str());
-
-        if self.id.is_some() || !self.flags.is_empty() {
-            write!(f, "/{}/", expr)?;
+        if self.id.is_some() || !self.flags.is_empty() || !self.ext.is_empty() {
+            write!(f, "/{}/", self.expression)?;
         } else {
-            write!(f, "{}", expr)?;
+            write!(f, "{}", self.expression)?;
         }
 
         if !self.flags.is_empty() {
             write!(f, "{}", self.flags)?;
+        }
+        if !self.ext.is_empty() {
+            write!(f, "{}", self.ext)?;
         }
 
         Ok(())
@@ -273,25 +282,35 @@ impl FromStr for Pattern {
             None => (None, s),
         };
 
-        let pattern = match (expr.starts_with('/'), expr.rfind('/')) {
-            (true, Some(end)) if end > 0 => Pattern {
-                expression: expr[1..end].into(),
-                flags: expr[end + 1..].parse()?,
-                id,
-                ext: ExprExt::default(),
-                som: None,
-            },
+        match (expr.starts_with('/'), expr.rfind('/')) {
+            (true, Some(end)) if end > 0 => {
+                let (expr, remaining) = (&expr[1..end], &expr[end + 1..]);
+                let (flags, ext) = match (remaining.ends_with('}'), remaining.rfind('{')) {
+                    (true, Some(start)) => {
+                        let (flags, ext) = remaining.split_at(start);
 
-            _ => Pattern {
+                        (flags.parse()?, ext.parse()?)
+                    }
+                    _ => (remaining.parse()?, ExprExt::default()),
+                };
+
+                Ok(Pattern {
+                    expression: expr.into(),
+                    flags,
+                    id,
+                    ext,
+                    som: None,
+                })
+            }
+
+            _ => Ok(Pattern {
                 expression: expr.into(),
                 flags: Flags::empty(),
                 id,
                 ext: ExprExt::default(),
                 som: None,
-            },
-        };
-
-        Ok(pattern)
+            }),
+        }
     }
 }
 
@@ -437,6 +456,22 @@ mod tests {
         assert_eq!(p.expression, "test");
         assert_eq!(p.flags, Flags::CASELESS);
         assert_eq!(p.id, Some(3));
+
+        let s = r#"1:/hatstand.*teakettle/s{min_offset=50,max_offset=100}"#;
+        let p: Pattern = s.parse().unwrap();
+
+        assert_eq!(p, {
+            let mut p = pattern! { 1 => "hatstand.*teakettle"; DOTALL };
+            p.ext.set_min_offset(50);
+            p.ext.set_max_offset(100);
+            p
+        });
+        assert_eq!(p.expression, "hatstand.*teakettle");
+        assert_eq!(p.flags, Flags::DOTALL);
+        assert_eq!(p.id, Some(1));
+        assert_eq!(p.ext.min_offset().unwrap(), 50);
+        assert_eq!(p.ext.max_offset().unwrap(), 100);
+        assert_eq!(p.to_string(), s);
 
         let p: Pattern = "test/i".parse().unwrap();
 

@@ -31,7 +31,6 @@ derive_more = { version = "0.99", optional = true }
 foreign-types = "0.5"
 libc = "0.2"
 malloc_buf = "1.0"
-regex-syntax = "0.6"
 semver = "0.10"
 thiserror = "1.0"
 

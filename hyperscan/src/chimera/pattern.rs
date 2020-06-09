@@ -148,12 +148,10 @@ impl fmt::Display for Pattern {
             write!(f, "{}:", id)?;
         }
 
-        let expr = regex_syntax::escape(self.expression.as_str());
-
         if self.id.is_some() || !self.flags.is_empty() {
-            write!(f, "/{}/{}", expr, self.flags)
+            write!(f, "/{}/{}", self.expression, self.flags)
         } else {
-            write!(f, "{}", expr)
+            write!(f, "{}", self.expression)
         }
     }
 }
