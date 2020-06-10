@@ -24,19 +24,19 @@ fn find_hyperscan() -> Result<PathBuf> {
 
         let mut link_libs = vec![];
 
-        if cfg!(feature = "runtime") {
-            if cfg!(feature = "compile") {
-                link_libs.push(format!("{}=hs", link_kind));
-            } else {
-                link_libs.push(format!("{}=hs_runtime", link_kind));
+        if !cfg!(feature = "compile") && cfg!(feature = "runtime") {
+            link_libs.push("static=hs_runtime".into());
+        } else {
+            link_libs.push(format!("{}=hs", link_kind));
+
+            if cfg!(feature = "static") {
+                link_libs.push("c++".into());
             }
         }
+
         if cfg!(feature = "chimera") {
             link_libs.push("chimera".into());
             link_libs.push("pcre".into());
-        }
-        if cfg!(feature = "static") {
-            link_libs.push("c++".into());
         }
 
         println!(

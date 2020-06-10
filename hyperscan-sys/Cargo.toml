@@ -13,7 +13,7 @@ edition = "2018"
 links = "hs"
 
 [features]
-default = ["full"]
+default = ["runtime"]
 static = []
 full = ["compile", "runtime"]
 compile = []
