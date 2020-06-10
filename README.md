@@ -91,7 +91,7 @@ hyperscan = { version = "0.2", features = ["static"] }
 
 ### Hyperscan Runtime
 
-Hyperscan provides a standalone `runtime` library, which can be enabled separately. If you don't need to compile regular expressions at runtime, you can reduce the size of the executable using `runtime` mode.
+Hyperscan provides [a standalone runtime library](http://intel.github.io/hyperscan/dev-reference/serialization.html#the-runtime-library), which can be used separately. If you don't need to compile regular expressions at runtime, you can reduce the size of the executable using `runtime` mode and get rid of C++ dependencies.
 
 ```toml
 [dependencies.hyperscan]
