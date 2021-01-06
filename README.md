@@ -62,8 +62,9 @@ $ wget https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz
 $ tar xvf -C pcre pcre-8.44.tar.gz
 
 $ mkdir build && cd build
-$ cmake .. -DCMAKE_INSTALL_PREFIX=`pwd`
-$ make
+$ cmake .. -DCMAKE_INSTALL_PREFIX=`pwd` -G Ninja
+$ ninja
+$ ninja install
 ```
 
 Then point to the hyperscan installation directory with the `HYPERSCAN_ROOT` environment variable to enable `chimera` feature.
