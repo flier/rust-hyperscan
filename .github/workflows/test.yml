@@ -12,6 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Setup Ninja
+      uses: ashutoshvarma/setup-ninja@master
+      with:
+        version: 1.10.2
+
     - name: Download Hyperscan
       run: wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
 
