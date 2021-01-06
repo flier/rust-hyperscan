@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Install Boost
+    - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -yq libboost-dev
+        sudo apt-get install -yq libboost-dev libpcap-dev ragel
 
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@master
