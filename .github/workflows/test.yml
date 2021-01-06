@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 env:
   HYPERSCAN_VERSION: 5.3.0
+  HYPERSCAN_ROOT: ./build
   PCRE_VERSION: 8.44
   CARGO_TERM_COLOR: always
 
@@ -22,7 +23,7 @@ jobs:
       id: cache-hyperscan-source
       with:
         path: ${{ github.workspace }}/hyperscan
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/hs*.h') }}
+        key: ${{ runner.os }}-hyperscan-source-$HYPERSCAN_VERSION-$PCRE_VERSION
 
     - name: Download Hyperscan
       if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
@@ -43,7 +44,7 @@ jobs:
       id: cache-hyperscan-build
       with:
         path: ./build
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/libhs.a') }}
+        key: ${{ runner.os }}-hyperscan-build-$HYPERSCAN_VERSION-$PCRE_VERSION
 
     - name: Build Hyperscan
       if: steps.cache-hyperscan-build.outputs.cache-hit != 'true'
@@ -55,6 +56,16 @@ jobs:
         source-dir: ${{ github.workspace }}/hyperscan
         install-build: true
 
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Install stable Rust with clippy and rustfmt
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: rustfmt, clippy
+        override: true
+
     - name: Cache Cargo
       uses: actions/cache@v2
       with:
@@ -62,17 +73,27 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-rust-${{ rustc_hash }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Checkout
-      uses: actions/checkout@v2
+    - name: Run cargo check
+      uses: actions-rs/cargo@v1
+      with:
+        command: check
+        args: --verbose
 
-    - name: Build
-      env:
-        HYPERSCAN_ROOT: ./build
-      run: cargo build --verbose
+    - name: Run cargo clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
 
-    - name: Run tests
-      env:
-        HYPERSCAN_ROOT: ./build
-      run: cargo test --verbose
+    - name: Run cargo build
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --verbose --release --all-features
+
+    - name: Run cargo test
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --verbose --release --all-features
