@@ -25,7 +25,7 @@ jobs:
         configure-options: -G Ninja -DBUILD_STATIC_AND_SHARED=on
         build-dir: ${{ runner.workspace }}/build
         build-type: RelWithDebInfo
-        source-dir: ${{github.workspace}}/hyperscan-${{HYPERSCAN_VERSION}}
+        source-dir: ${{ github.workspace }}/hyperscan-$HYPERSCAN_VERSION
         install-build: true
 
     - name: Cache Cargo
