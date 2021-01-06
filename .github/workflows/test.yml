@@ -49,7 +49,7 @@ jobs:
       if: steps.cache-hyperscan-build.outputs.cache-hit != 'true'
       uses: ashutoshvarma/action-cmake-build@master
       with:
-        configure-options: -G Ninja -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=./build
+        configure-options: -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=./build
         build-dir: ./build
         build-type: RelWithDebInfo
         source-dir: ${{ github.workspace }}/hyperscan
