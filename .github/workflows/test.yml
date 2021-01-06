@@ -3,16 +3,49 @@ name: Run tests
 on: [push, pull_request]
 
 env:
+  BUILD_TYPE: Release
+  HYPERSCAN_VERSION: 5.3.0
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Download Hyperscan
+      run: wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
+
+    - name: Extract Package
+      run: tar xvf v$HYPERSCAN_VERSION.tar.gz
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{github.workspace}}/build
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE/hyperscan-$HYPERSCAN_VERSION -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja
+
+    - name: Build Hyperscan
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: ninja install
+
+    - name: Cache Cargo
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
     - name: Build
       run: cargo build --verbose
+
     - name: Run tests
       run: cargo test --verbose
