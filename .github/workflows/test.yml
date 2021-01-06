@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Install Boost
+      run: |
+        sudo apt-get update
+        sudo apt-get install -yq libboost-dev
+
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@master
 
