@@ -13,28 +13,20 @@ jobs:
 
     steps:
     - name: Setup Ninja
-      uses: ashutoshvarma/setup-ninja@master
-      with:
-        version: 1.10.2
+      uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Download Hyperscan
-      run: wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
-
-    - name: Extract Package
-      run: tar xvf v$HYPERSCAN_VERSION.tar.gz
-
-    - name: Create Build Environment
-      run: cmake -E make_directory ${{github.workspace}}/build
-
-    - name: Configure CMake
-      shell: bash
-      working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE/hyperscan-$HYPERSCAN_VERSION -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja
+      run: |
+        wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
+        tar xvf v$HYPERSCAN_VERSION.tar.gz
 
     - name: Build Hyperscan
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: ninja install
+      run: |
+        mkdir ${{github.workspace}}/build
+        cmake $GITHUB_WORKSPACE/hyperscan-$HYPERSCAN_VERSION -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja
+        ninja install
 
     - name: Cache Cargo
       uses: actions/cache@v2
