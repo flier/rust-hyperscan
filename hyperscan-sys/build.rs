@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, bail, Context, Result};
 
 fn find_hyperscan() -> Result<PathBuf> {
-    println!("cargo:rerun-if-env-changed=HYPERSCAN_ROOT");
+    cargo_emit::rerun_if_env_changed!("HYPERSCAN_ROOT");
 
     let link_kind = if cfg!(feature = "static") { "static" } else { "dylib" };
 
@@ -17,7 +17,7 @@ fn find_hyperscan() -> Result<PathBuf> {
         let inc_path = prefix.join("include");
         let link_path = prefix.join("lib");
         if link_path.exists() && link_path.is_dir() {
-            println!("cargo:rustc-link-search=native={}", link_path.to_string_lossy());
+            cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
         } else {
             bail!("`$HYPERSCAN_ROOT/lib` subdirectory not found.");
         }
@@ -39,17 +39,19 @@ fn find_hyperscan() -> Result<PathBuf> {
             link_libs.push("pcre".into());
         }
 
-        println!(
-            "cargo:warning=building with Hyperscan with {} library @ {:?}, libs={:?}, link_paths=[{:?}], include_paths=[{:?}]",
-            link_kind,
-            prefix,
-            link_libs,
-            link_path,
-            inc_path
-        );
+        if cfg!(feature = "tracing") {
+            cargo_emit::warning!(
+                "building with Hyperscan with {} library @ {:?}, libs={:?}, link_paths=[{:?}], include_paths=[{:?}]",
+                link_kind,
+                prefix,
+                link_libs,
+                link_path,
+                inc_path
+            );
+        }
 
         for lib in link_libs {
-            println!("cargo:rustc-link-lib={}", lib);
+            cargo_emit::rustc_link_lib!(lib);
         }
 
         Ok(inc_path)
@@ -60,10 +62,16 @@ fn find_hyperscan() -> Result<PathBuf> {
             .env_metadata(true)
             .probe("libhs")?;
 
-        println!(
-            "cargo:warning=building with Hyperscan {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
-            libhs.version, link_kind, libhs.libs, libhs.link_paths, libhs.include_paths
-        );
+        if cfg!(feature = "tracing") {
+            cargo_emit::warning!(
+                "building with Hyperscan {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
+                libhs.version,
+                link_kind,
+                libhs.libs,
+                libhs.link_paths,
+                libhs.include_paths
+            );
+        }
 
         if cfg!(feature = "chimera") {
             let libch = pkg_config::Config::new()
@@ -72,10 +80,16 @@ fn find_hyperscan() -> Result<PathBuf> {
                 .env_metadata(true)
                 .probe("libch")?;
 
-            println!(
-                "cargo:warning=building with Chimera {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
-                libch.version, link_kind, libch.libs, libch.link_paths, libch.include_paths
-            );
+            if cfg!(feature = "tracing") {
+                cargo_emit::warning!(
+                    "building with Chimera {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
+                    libch.version,
+                    link_kind,
+                    libch.libs,
+                    libch.link_paths,
+                    libch.include_paths
+                );
+            }
         }
 
         libhs
@@ -92,12 +106,11 @@ fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let inc_file = inc_dir.join("hs.h");
     let inc_file = inc_file.to_str().expect("header file");
 
-    println!(
-        "cargo:warning=generating raw Hyperscan binding file @ {}",
-        out_file.display()
-    );
+    if cfg!(feature = "tracing") {
+        cargo_emit::warning!("generating raw Hyperscan binding file @ {}", out_file.display());
+    }
 
-    println!("cargo:rerun-if-changed={}", inc_file);
+    cargo_emit::rerun_if_changed!(inc_file);
 
     bindgen::builder()
         .header(inc_file)
@@ -114,7 +127,7 @@ fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
         .derive_default(true)
         .derive_partialeq(true)
         .generate()
-        .map_err(|_| Error::msg("generate binding files"))?
+        .map_err(|_| anyhow!("generate binding files"))?
         .write_to_file(out_file)
         .with_context(|| "write wrapper")
 }
@@ -132,12 +145,11 @@ fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let inc_file = inc_dir.join("ch.h");
     let inc_file = inc_file.to_str().expect("header file");
 
-    println!(
-        "cargo:warning=generating raw Chimera binding file @ {}",
-        out_file.display()
-    );
+    if cfg!(feature = "tracing") {
+        cargo_emit::warning!("generating raw Chimera binding file @ {}", out_file.display());
+    }
 
-    println!("cargo:rerun-if-changed={}", inc_file);
+    cargo_emit::rerun_if_changed!(inc_file);
 
     bindgen::builder()
         .header(inc_file)
@@ -154,7 +166,7 @@ fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
         .derive_default(true)
         .derive_partialeq(true)
         .generate()
-        .map_err(|_| Error::msg("generate binding files"))?
+        .map_err(|_| anyhow!("generate binding files"))?
         .write_to_file(out_file)
         .with_context(|| "write wrapper")
 }

@@ -19,7 +19,8 @@ full = ["compile", "runtime"]
 compile = []
 runtime = []
 chimera = ["static"]
-gen = ["bindgen"]
+gen = ["bindgen", "tracing"]
+tracing = []
 
 [dependencies]
 libc = "0.2"
@@ -27,6 +28,7 @@ libc = "0.2"
 [build-dependencies]
 anyhow = "1.0"
 pkg-config = "0.3"
+cargo-emit = "0.1"
 
 bindgen = { version = "0.56", optional = true }
 
