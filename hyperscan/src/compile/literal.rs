@@ -2,11 +2,10 @@ use std::fmt;
 use std::iter::FromIterator;
 use std::str::FromStr;
 
-use anyhow::{bail, Error, Result};
 use bitflags::bitflags;
 use derive_more::{Deref, DerefMut, From, Index, IndexMut, Into, IntoIterator};
 
-use crate::{compile::SomHorizon, ffi};
+use crate::{compile::SomHorizon, ffi, Error, Result};
 
 bitflags! {
     /// Literal flags
@@ -26,7 +25,7 @@ bitflags! {
 impl FromStr for Flags {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         let mut flags = Flags::empty();
 
         for c in s.chars() {
@@ -34,9 +33,7 @@ impl FromStr for Flags {
                 'i' => flags |= Flags::CASELESS,
                 'm' => flags |= Flags::MULTILINE,
                 'H' => flags |= Flags::SINGLEMATCH,
-                _ => {
-                    bail!("invalid literal flag: {}", c);
-                }
+                _ => return Err(Error::InvalidFlag(c)),
             }
         }
 
@@ -149,7 +146,7 @@ impl fmt::Display for Literal {
 impl FromStr for Literal {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         let (id, expr) = match s.find(':') {
             Some(off) => (Some(s[..off].parse()?), &s[off + 1..]),
             None => (None, s),
@@ -191,7 +188,7 @@ impl FromIterator<Literal> for Literals {
 impl FromStr for Literals {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         s.lines()
             .flat_map(|line| {
                 let line = line.trim();

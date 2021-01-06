@@ -2,11 +2,10 @@ use std::fmt;
 use std::iter::FromIterator;
 use std::str::FromStr;
 
-use anyhow::{bail, Error};
 use bitflags::bitflags;
 use derive_more::{Deref, DerefMut, From, Index, IndexMut, Into, IntoIterator};
 
-use crate::chimera::ffi;
+use crate::{chimera::ffi, Error};
 
 bitflags! {
     /// Pattern flags
@@ -42,7 +41,7 @@ impl FromStr for Flags {
                 '8' => flags |= Flags::UTF8,
                 'W' => flags |= Flags::UCP,
                 _ => {
-                    bail!("invalid pattern flag: {}", c);
+                    return Err(Error::InvalidFlag(c));
                 }
             }
         }

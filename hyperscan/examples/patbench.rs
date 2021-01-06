@@ -313,7 +313,7 @@ impl Benchmark {
     fn open_streams(&mut self, db: &StreamingDatabase) -> Result<()> {
         self.streams = (0..self.sessions.len())
             .map(|_| db.open_stream())
-            .collect::<Result<Vec<_>>>()?;
+            .collect::<hyperscan::Result<Vec<_>>>()?;
 
         Ok(())
     }
@@ -425,7 +425,7 @@ fn eval_set(
         StreamStateSize => db
             .as_ref()
             .either(
-                |db| db.stream_size().map(|size| size as f64),
+                |db| db.stream_size().map(|size| size as f64).with_context(|| "stream size"),
                 |_| bail!("Cannot evaluate stream state for block mode compile."),
             )
             .with_context(|| "retrieve stream state size"),

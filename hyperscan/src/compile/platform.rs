@@ -1,11 +1,9 @@
 use std::mem::{self, MaybeUninit};
 
-use anyhow::Result;
 use bitflags::bitflags;
 use foreign_types::{foreign_type, ForeignType};
 
-use crate::errors::AsResult;
-use crate::ffi;
+use crate::{error::AsResult, ffi, Result};
 
 /// Tuning Parameter
 #[repr(u32)]

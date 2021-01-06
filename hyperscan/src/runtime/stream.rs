@@ -1,12 +1,14 @@
 use std::mem::MaybeUninit;
 
-use anyhow::Result;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
-use crate::common::{DatabaseRef, Streaming};
-use crate::errors::AsResult;
-use crate::ffi;
-use crate::runtime::{MatchEventHandler, ScratchRef};
+use crate::{
+    common::{DatabaseRef, Streaming},
+    error::AsResult,
+    ffi,
+    runtime::{MatchEventHandler, ScratchRef},
+    Result,
+};
 
 impl DatabaseRef<Streaming> {
     /// Provides the size of the stream state allocated by a single stream opened against the given database.

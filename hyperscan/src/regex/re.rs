@@ -3,11 +3,12 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::vec;
 
-use anyhow::{Error, Result};
-
-use crate::common::BlockDatabase;
-use crate::compile::{Builder, Flags, Pattern};
-use crate::runtime::Matching;
+use crate::{
+    common::BlockDatabase,
+    compile::{Builder, Flags, Pattern},
+    runtime::Matching,
+    Error, Result,
+};
 
 /// Match represents a single match of a regex in a haystack.
 ///
@@ -108,7 +109,7 @@ impl FromStr for Regex {
     type Err = Error;
 
     /// Attempts to parse a string into a regular expression
-    fn from_str(s: &str) -> Result<Regex, Error> {
+    fn from_str(s: &str) -> Result<Regex> {
         Regex::new(s)
     }
 }

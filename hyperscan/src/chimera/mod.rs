@@ -27,7 +27,7 @@
 //! ```
 mod common;
 mod compile;
-mod errors;
+mod error;
 mod pattern;
 mod runtime;
 
@@ -35,8 +35,8 @@ mod runtime;
 pub use crate::ffi::chimera as ffi;
 
 pub use self::common::{version, Database, DatabaseRef};
-pub use self::compile::{compile, Builder, Mode};
-pub use self::errors::{CompileError, Error};
+pub use self::compile::{compile, Builder, CompileError, Mode};
+pub use self::error::Error;
 pub use self::pattern::{Flags, Pattern, Patterns};
 pub use self::runtime::{
     Capture, Error as MatchError, ErrorEventHandler, MatchEventHandler, Matching, Scratch, ScratchRef,

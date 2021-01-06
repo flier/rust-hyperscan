@@ -1,8 +1,10 @@
 mod database;
+mod error;
 mod mode;
 mod serialized;
 
 pub use self::database::{BlockDatabase, Database, DatabaseRef, StreamingDatabase, VectoredDatabase};
+pub use self::error::Error;
 pub use self::mode::{Block, Mode, Streaming, Vectored};
 pub use self::serialized::Serialized;
 

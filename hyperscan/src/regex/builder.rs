@@ -1,7 +1,4 @@
-use anyhow::Result;
-
-use crate::compile::Flags;
-use crate::regex::Regex;
+use crate::{compile::Flags, regex::Regex, Result};
 
 /// A configurable builder for a regular expression.
 ///

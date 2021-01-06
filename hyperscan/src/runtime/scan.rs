@@ -2,14 +2,16 @@ use std::io::Read;
 use std::mem;
 use std::ptr;
 
-use anyhow::Result;
 use foreign_types::ForeignTypeRef;
 use libc::c_uint;
 
-use crate::common::{Block, DatabaseRef, Streaming, Vectored};
-use crate::errors::AsResult;
-use crate::ffi;
-use crate::runtime::{split_closure, ScratchRef, StreamRef};
+use crate::{
+    common::{Block, DatabaseRef, Streaming, Vectored},
+    error::AsResult,
+    ffi,
+    runtime::{split_closure, ScratchRef, StreamRef},
+    Result,
+};
 
 /// Indicating whether or not matching should continue on the target data.
 #[repr(i32)]
@@ -49,6 +51,10 @@ impl Default for Matching {
 /// will produce undefined behavior.
 pub trait MatchEventHandler {
     /// Split the match event handler to callback and userdata.
+    ///
+    /// # Safety
+    ///
+    /// The returned function can only be called with the returned pointer, or a pointer to another C closure.
     unsafe fn split(&mut self) -> (ffi::match_event_handler, *mut libc::c_void);
 }
 

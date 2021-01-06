@@ -4,11 +4,13 @@ use std::ops::Range;
 use std::ptr;
 use std::slice;
 
-use anyhow::Result;
 use derive_more::{Deref, From, Into};
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
-use crate::chimera::{errors::AsResult, ffi, DatabaseRef};
+use crate::{
+    chimera::{error::AsResult, ffi, DatabaseRef},
+    Result,
+};
 
 foreign_type! {
     /// A large enough region of scratch space to support a given database.
@@ -134,6 +136,10 @@ impl Capture {
 /// provided in order to suppress match production.
 pub trait MatchEventHandler<'a> {
     /// Split the match event handler to callback and userdata.
+    ///
+    /// # Safety
+    ///
+    /// The returned function can only be called with the returned pointer, or a pointer to another C closure.
     unsafe fn split(&mut self) -> (ffi::ch_match_event_handler, *mut libc::c_void);
 }
 
@@ -205,6 +211,10 @@ where
 /// that some matches for a given expression may not be reported.
 pub trait ErrorEventHandler {
     /// Split the match event handler to callback and userdata.
+    ///
+    /// # Safety
+    ///
+    /// The returned function can only be called with the returned pointer, or a pointer to another C closure.
     unsafe fn split(&mut self) -> (ffi::ch_error_event_handler, *mut libc::c_void);
 }
 

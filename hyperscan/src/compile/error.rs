@@ -3,8 +3,7 @@ use std::fmt;
 
 use foreign_types::{foreign_type, ForeignType};
 
-use crate::errors::{AsResult, Error as HsError};
-use crate::ffi;
+use crate::{common::Error as HsError, error::AsResult, ffi};
 
 pub trait AsCompileResult: Sized {
     type Output;
@@ -21,7 +20,7 @@ pub trait AsCompileResult: Sized {
 
 impl AsCompileResult for ffi::hs_error_t {
     type Output = ();
-    type Err = anyhow::Error;
+    type Err = HsError;
 
     fn ok_or_else<F>(self, err: F) -> Result<Self::Output, Self::Err>
     where
@@ -30,9 +29,9 @@ impl AsCompileResult for ffi::hs_error_t {
         if self == ffi::HS_SUCCESS as ffi::hs_error_t {
             Ok(())
         } else if self == ffi::HS_COMPILER_ERROR {
-            Err(HsError::CompileError(unsafe { Error::from_ptr(err()) }).into())
+            Err(HsError::CompileError(unsafe { Error::from_ptr(err()) }))
         } else {
-            Err(HsError::from(self).into())
+            Err(HsError::from(self))
         }
     }
 }

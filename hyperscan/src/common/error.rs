@@ -1,12 +1,8 @@
-use std::fmt;
-
 use thiserror::Error;
 
-#[cfg(feature = "compile")]
-use crate::compile::Error as CompileError;
 use crate::ffi;
 
-/// Error Codes
+/// Hyperscan Error Codes
 #[derive(Debug, Error, PartialEq)]
 pub enum Error {
     /// A parameter passed to this function was invalid.
@@ -24,7 +20,7 @@ pub enum Error {
     /// The pattern compiler failed with more detail.
     #[cfg(feature = "compile")]
     #[error("The pattern compiler failed with more detail, {0}.")]
-    CompileError(CompileError),
+    CompileError(crate::compile::Error),
 
     /// The given database was built for a different version of Hyperscan.
     #[error("The given database was built for a different version of Hyperscan.")]
@@ -88,41 +84,6 @@ impl From<ffi::hs_error_t> for Error {
             #[cfg(feature = "v5")]
             ffi::HS_UNKNOWN_ERROR => UnknownError,
             _ => Code(err),
-        }
-    }
-}
-
-pub trait AsResult
-where
-    Self: Sized,
-{
-    type Output;
-    type Error: fmt::Debug;
-
-    fn ok(self) -> Result<Self::Output, Self::Error>;
-
-    fn map<U, F: FnOnce(Self::Output) -> U>(self, op: F) -> Result<U, Self::Error> {
-        self.ok().map(op)
-    }
-
-    fn and_then<U, F: FnOnce(Self::Output) -> Result<U, Self::Error>>(self, op: F) -> Result<U, Self::Error> {
-        self.ok().and_then(op)
-    }
-
-    fn expect(self, msg: &str) -> Self::Output {
-        self.ok().expect(msg)
-    }
-}
-
-impl AsResult for ffi::hs_error_t {
-    type Output = ();
-    type Error = anyhow::Error;
-
-    fn ok(self) -> Result<Self::Output, Self::Error> {
-        if self == ffi::HS_SUCCESS as ffi::hs_error_t {
-            Ok(())
-        } else {
-            Err(Error::from(self).into())
         }
     }
 }
