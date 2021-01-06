@@ -17,7 +17,7 @@ jobs:
     - name: Download Hyperscan
       run: |
         wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
-        tar xvf v$HYPERSCAN_VERSION.tar.gz
+        tar xvf v$HYPERSCAN_VERSION.tar.gz -C ${{ github.workspace }}/hyperscan --strip-components=1
 
     - name: Build with CMake
       uses: ashutoshvarma/action-cmake-build@master
@@ -25,7 +25,7 @@ jobs:
         configure-options: -G Ninja -DBUILD_STATIC_AND_SHARED=on
         build-dir: ${{ runner.workspace }}/build
         build-type: RelWithDebInfo
-        source-dir: ${{ github.workspace }}/hyperscan-$HYPERSCAN_VERSION
+        source-dir: ${{ github.workspace }}/hyperscan
         install-build: true
 
     - name: Cache Cargo
