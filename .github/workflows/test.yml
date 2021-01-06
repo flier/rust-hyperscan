@@ -3,7 +3,6 @@ name: Run tests
 on: [push, pull_request]
 
 env:
-  BUILD_TYPE: Release
   HYPERSCAN_VERSION: 5.3.0
   CARGO_TERM_COLOR: always
 
@@ -20,13 +19,14 @@ jobs:
         wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
         tar xvf v$HYPERSCAN_VERSION.tar.gz
 
-    - name: Build Hyperscan
-      working-directory: ${{github.workspace}}/build
-      shell: bash
-      run: |
-        mkdir ${{github.workspace}}/build
-        cmake $GITHUB_WORKSPACE/hyperscan-$HYPERSCAN_VERSION -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja
-        ninja install
+    - name: Build with CMake
+      uses: ashutoshvarma/action-cmake-build@master
+      with:
+        configure-options: -G Ninja -DBUILD_STATIC_AND_SHARED=on
+        build-dir: ${{ runner.workspace }}/build
+        build-type: RelWithDebInfo
+        source-dir: ${{github.workspace}}/hyperscan-${{HYPERSCAN_VERSION}}
+        install-build: true
 
     - name: Cache Cargo
       uses: actions/cache@v2
