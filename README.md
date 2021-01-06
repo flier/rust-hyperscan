@@ -63,6 +63,7 @@ $ tar xvf -C pcre pcre-8.44.tar.gz
 
 $ mkdir build && cd build
 $ cmake .. -DCMAKE_INSTALL_PREFIX=`pwd`
+$ make
 ```
 
 Then point to the hyperscan installation directory with the `HYPERSCAN_ROOT` environment variable to enable `chimera` feature.
