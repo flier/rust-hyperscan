@@ -17,6 +17,7 @@ jobs:
     - name: Download Hyperscan
       run: |
         wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
+        mkdir ${{ github.workspace }}/hyperscan
         tar xvf v$HYPERSCAN_VERSION.tar.gz -C ${{ github.workspace }}/hyperscan --strip-components=1
 
     - name: Build with CMake
