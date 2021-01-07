@@ -23,7 +23,7 @@ jobs:
       id: cache-hyperscan-source
       with:
         path: ${{ github.workspace }}/hyperscan
-        key: ${{ runner.os }}-hyperscan-source-$HYPERSCAN_VERSION-$PCRE_VERSION
+        key: ${{ runner.os }}-hyperscan-source-${{ env.HYPERSCAN_VERSION }}-${{ env.PCRE_VERSION }}
 
     - name: Download Hyperscan
       if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
@@ -43,15 +43,15 @@ jobs:
       uses: actions/cache@v2
       id: cache-hyperscan-build
       with:
-        path: ./build
-        key: ${{ runner.os }}-hyperscan-build-$HYPERSCAN_VERSION-$PCRE_VERSION
+        path: ${{ env.HYPERSCAN_ROOT }}
+        key: ${{ runner.os }}-hyperscan-build-${{ env.HYPERSCAN_VERSION }}-${{ env.PCRE_VERSION }}
 
     - name: Build Hyperscan
       if: steps.cache-hyperscan-build.outputs.cache-hit != 'true'
       uses: ashutoshvarma/action-cmake-build@master
       with:
-        configure-options: -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=./build
-        build-dir: ./build
+        configure-options: -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=${{ env.HYPERSCAN_ROOT }}
+        build-dir: ${{ env.HYPERSCAN_ROOT }}
         build-type: RelWithDebInfo
         source-dir: ${{ github.workspace }}/hyperscan
         install-build: true
