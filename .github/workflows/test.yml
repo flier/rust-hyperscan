@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   HYPERSCAN_VERSION: 5.3.0
-  HYPERSCAN_ROOT: ./build
+  HYPERSCAN_ROOT: ${{ github.workspace }}/build
   PCRE_VERSION: 8.44
   CARGO_TERM_COLOR: always
 
@@ -73,7 +73,7 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-rust-${{ rustc_hash }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Run cargo check
       uses: actions-rs/cargo@v1
