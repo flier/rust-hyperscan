@@ -10,17 +10,24 @@ fn find_hyperscan() -> Result<PathBuf> {
 
     if let Ok(prefix) = env::var("HYPERSCAN_ROOT") {
         let prefix = Path::new(&prefix);
+        let inc_path = prefix.join("include/hs");
+        let link_path = prefix.join("lib");
+
+        if cfg!(feature = "tracing") {
+            cargo_emit::warning!("use HYPERSCAN_ROOT = {}", prefix.display());
+        }
+
         if !prefix.exists() || !prefix.is_dir() {
             bail!("HYPERSCAN_ROOT should point to a directory that exists.");
         }
-
-        let inc_path = prefix.join("include/hs");
-        let link_path = prefix.join("lib");
-        if link_path.exists() && link_path.is_dir() {
-            cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
-        } else {
+        if !inc_path.exists() || !inc_path.is_dir() {
+            bail!("`$HYPERSCAN_ROOT/include/hs` subdirectory not found.");
+        }
+        if !link_path.exists() || !link_path.is_dir() {
             bail!("`$HYPERSCAN_ROOT/lib` subdirectory not found.");
         }
+
+        cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
 
         let mut link_libs = vec![];
 
@@ -184,8 +191,8 @@ fn generate_chimera_binding(_: &Path, _: &Path) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let inc_dir = find_hyperscan()
-        .with_context(|| anyhow!("please download and install hyperscan from https://www.hyperscan.io/"))?;
+    let inc_dir =
+        find_hyperscan().with_context(|| "please download and install hyperscan from https://www.hyperscan.io/")?;
     let out_dir = env::var("OUT_DIR")?;
     let out_dir = Path::new(&out_dir);
 
