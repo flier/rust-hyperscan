@@ -79,16 +79,15 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --verbose --release --features=chimera,tracing
+        args: --verbose --release -p hyperscan --features=chimera,tracing
 
     - name: Run cargo test
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --verbose --release --features=chimera,tracing
+        args: --verbose --release -p hyperscan --features=chimera,tracing
 
     - name: Run cargo clippy
       uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --features=chimera,tracing
