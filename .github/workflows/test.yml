@@ -23,7 +23,7 @@ jobs:
       id: cache-hyperscan-source
       with:
         path: ${{ github.workspace }}/hyperscan
-        key: ${{ runner.os }}-hyperscan-source-${{ env.HYPERSCAN_VERSION }}-${{ env.PCRE_VERSION }}
+        key: ${{ runner.os }}-source-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
 
     - name: Download Hyperscan
       if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
@@ -44,7 +44,7 @@ jobs:
       id: cache-hyperscan-build
       with:
         path: ${{ env.HYPERSCAN_ROOT }}
-        key: ${{ runner.os }}-hyperscan-build-${{ env.HYPERSCAN_VERSION }}-${{ env.PCRE_VERSION }}
+        key: ${{ runner.os }}-build-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
 
     - name: Build Hyperscan
       if: steps.cache-hyperscan-build.outputs.cache-hit != 'true'
