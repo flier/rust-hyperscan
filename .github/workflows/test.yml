@@ -75,25 +75,20 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Run cargo check
-      uses: actions-rs/cargo@v1
-      with:
-        command: check
-        args: --verbose
-
-    - name: Run cargo clippy
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-
     - name: Run cargo build
       uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --verbose --release --all-features
+        args: --verbose --release --features=chimera,tracing
 
     - name: Run cargo test
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --verbose --release --all-features
+        args: --verbose --release --features=chimera,tracing
+
+    - name: Run cargo clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --features=chimera,tracing
