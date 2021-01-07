@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   HYPERSCAN_VERSION: 5.3.0
-  HYPERSCAN_ROOT: ${{ github.workspace }}/build
+  HYPERSCAN_ROOT: ${{ github.workspace }}/usr/local
   PCRE_VERSION: 8.44
   CARGO_TERM_COLOR: always
 
@@ -51,7 +51,7 @@ jobs:
       uses: ashutoshvarma/action-cmake-build@master
       with:
         configure-options: -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=${{ env.HYPERSCAN_ROOT }}
-        build-dir: ${{ env.HYPERSCAN_ROOT }}
+        build-dir: ./build
         build-type: RelWithDebInfo
         source-dir: ${{ github.workspace }}/hyperscan
         install-build: true
