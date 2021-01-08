@@ -184,7 +184,7 @@ fn generate_chimera_binding(_: &Path, out_dir: &Path) -> Result<()> {
         .with_context(|| "copy binding file")
 }
 
-#[allow(clippy::unnecessary_wraps)]
+#[allow(clippy::unnecessary_wrap)]
 #[cfg(not(feature = "chimera"))]
 fn generate_chimera_binding(_: &Path, _: &Path) -> Result<()> {
     Ok(())
