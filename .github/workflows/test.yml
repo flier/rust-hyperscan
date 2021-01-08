@@ -91,15 +91,15 @@ jobs:
 
     - name: Run cargo test for hyperscan-sys
       working-directory: hyperscan-sys
-      run: cargo test --verbose --release
+      run: cargo test --verbose --release --features=tracing
 
     - name: Run cargo test for hyperscan-sys with chimera
       working-directory: hyperscan-sys
-      run: cargo test --verbose --release --features=chimera
+      run: cargo test --verbose --release --features=chimera,tracing
 
     - name: Run cargo test for hyperscan-sys with chimera and generated binding
       working-directory: hyperscan-sys
-      run: cargo test --verbose --release --features=gen,chimera
+      run: cargo test --verbose --release --features=gen,chimera,tracing
 
     - name: Run cargo test
       working-directory: hyperscan
