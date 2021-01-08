@@ -1,4 +1,4 @@
-name: Run tests
+name: Run tests with generated binding file
 
 on: [push, pull_request]
 
