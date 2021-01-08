@@ -45,6 +45,7 @@ jobs:
 
   fmt:
     name: Rustfmt
+    needs: check
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -83,12 +84,11 @@ jobs:
 
   clippy:
     name: Clippy
+    needs: check
     runs-on: ubuntu-20.04
-
     strategy:
       matrix:
         toolchain: [stable, nightly]
-
     steps:
     - name: Install dependencies
       run: |
@@ -123,6 +123,7 @@ jobs:
 
   test:
     name: Tests
+    needs: check
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -159,6 +160,7 @@ jobs:
 
   gen:
     name: Generate binding file
+    needs: check
     runs-on: ubuntu-20.04
     env:
       LLVM_VERSION: 10.0
@@ -214,6 +216,7 @@ jobs:
 
   chimera:
     name: Chimera
+    needs: [test, gen]
     runs-on: ubuntu-20.04
     env:
       HYPERSCAN_VERSION: 5.3.0
