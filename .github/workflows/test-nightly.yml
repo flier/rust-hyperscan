@@ -18,10 +18,10 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Install stable Rust with clippy and rustfmt
+    - name: Install nightly Rust with clippy and rustfmt
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: nightly
         components: rustfmt, clippy
         override: true
 

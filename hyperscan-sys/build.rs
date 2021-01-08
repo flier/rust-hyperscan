@@ -17,6 +17,16 @@ fn find_hyperscan() -> Result<PathBuf> {
             cargo_emit::warning!("use HYPERSCAN_ROOT = {}", prefix.display());
         }
 
+        if !prefix.exists() || !prefix.is_dir() {
+            bail!("HYPERSCAN_ROOT should point to a directory that exists.");
+        }
+        if !inc_path.exists() || !inc_path.is_dir() {
+            bail!("`$HYPERSCAN_ROOT/include/hs` subdirectory not found.");
+        }
+        if !link_path.exists() || !link_path.is_dir() {
+            bail!("`$HYPERSCAN_ROOT/lib` subdirectory not found.");
+        }
+
         cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
 
         let mut link_libs = vec![];

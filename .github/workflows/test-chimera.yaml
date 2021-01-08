@@ -1,0 +1,114 @@
+name: Run tests
+
+on: [push, pull_request]
+
+env:
+  HYPERSCAN_VERSION: 5.3.0
+  HYPERSCAN_ROOT: ${{ github.workspace }}/dist
+  PCRE_VERSION: 8.44
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -yq libboost-dev libpcap-dev ragel
+
+    - name: Cache LLVM and Clang
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: ${{ runner.temp }}/llvm
+        key: llvm-10.0
+
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "10.0"
+        directory: ${{ runner.temp }}/llvm
+        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+
+    - name: Cache Hyperscan Source
+      uses: actions/cache@v2
+      id: cache-hyperscan-source
+      with:
+        path: ${{ github.workspace }}/hyperscan
+        key: ${{ runner.os }}-source-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
+
+    - name: Download Hyperscan
+      if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
+      run: |
+        wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
+        mkdir ${{ github.workspace }}/hyperscan
+        tar xvf v$HYPERSCAN_VERSION.tar.gz -C ${{ github.workspace }}/hyperscan --strip-components=1
+
+    - name: Download PCRE
+      if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
+      run: |
+        wget https://ftp.pcre.org/pub/pcre/pcre-$PCRE_VERSION.tar.gz
+        mkdir ${{ github.workspace }}/hyperscan/pcre
+        tar xvf pcre-$PCRE_VERSION.tar.gz -C ${{ github.workspace }}/hyperscan/pcre --strip-components=1
+
+    - name: Cache Hyperscan Build
+      uses: actions/cache@v2
+      id: cache-hyperscan-build
+      with:
+        path: ${{ env.HYPERSCAN_ROOT }}
+        key: ${{ runner.os }}-build-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
+
+    - name: Build Hyperscan
+      if: steps.cache-hyperscan-build.outputs.cache-hit != 'true'
+      uses: ashutoshvarma/action-cmake-build@master
+      with:
+        configure-options: -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=${{ env.HYPERSCAN_ROOT }}
+        build-dir: ./build
+        build-type: RelWithDebInfo
+        source-dir: ${{ github.workspace }}/hyperscan
+        install-build: true
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Install stable Rust with clippy and rustfmt
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: rustfmt, clippy
+        override: true
+
+    - name: Cache Cargo
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Run cargo test for hyperscan-sys
+      working-directory: hyperscan-sys
+      run: cargo test --verbose --release --features=full,tracing
+
+    - name: Run cargo test for hyperscan-sys with chimera
+      working-directory: hyperscan-sys
+      run: cargo test --verbose --release --features=full,tracing,chimera
+
+    - name: Run cargo test for hyperscan-sys with chimera and generated binding
+      working-directory: hyperscan-sys
+      run: cargo test --verbose --release --features=full,tracing,chimera,gen
+
+    - name: Run cargo test
+      working-directory: hyperscan
+      run: cargo test --verbose --release
+
+    - name: Run cargo test with chimera
+      working-directory: hyperscan
+      run: cargo test --verbose --release --features=chimera
+
+    - name: Run cargo clippy
+      working-directory: hyperscan
+      run: cargo clippy
