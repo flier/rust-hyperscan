@@ -97,7 +97,7 @@ jobs:
       with:
         profile: minimal
         toolchain: ${{ matrix.toolchain }}
-        components: rustfmt
+        components: clippy
         override: true
 
     - name: Checkout
@@ -127,7 +127,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -yq libhyperscan-dev
+        sudo apt-get install -yq libhyperscan-dev libpcap-dev
 
     - name: Install ${{ matrix.toolchain }} Rust
       uses: actions-rs/toolchain@v1
@@ -164,7 +164,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -yq libhyperscan-dev
+        sudo apt-get install -yq libhyperscan-dev libpcap-dev
 
     - name: Cache LLVM and Clang
       id: cache-llvm
