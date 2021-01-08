@@ -18,6 +18,20 @@ jobs:
         sudo apt-get update
         sudo apt-get install -yq libboost-dev libpcap-dev ragel
 
+    - name: Cache LLVM and Clang
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: ${{ runner.temp }}/llvm
+        key: llvm-10.0
+
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "10.0"
+        directory: ${{ runner.temp }}/llvm
+        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+
     - name: Cache Hyperscan Source
       uses: actions/cache@v2
       id: cache-hyperscan-source
@@ -75,13 +89,25 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+    - name: Run cargo test for hyperscan-sys
+      working-directory: hyperscan-sys
+      run: cargo test --verbose --release
+
+    - name: Run cargo test for hyperscan-sys with chimera
+      working-directory: hyperscan-sys
+      run: cargo test --verbose --release --features=chimera
+
+    - name: Run cargo test for hyperscan-sys with chimera and generated binding
+      working-directory: hyperscan-sys
+      run: cargo test --verbose --release --features=gen,chimera
+
     - name: Run cargo test
       working-directory: hyperscan
-      run: cargo test --verbose --release --features=tracing
+      run: cargo test --verbose --release
 
     - name: Run cargo test with chimera
       working-directory: hyperscan
-      run: cargo test --verbose --release --features=chimera,tracing
+      run: cargo test --verbose --release --features=chimera
 
     - name: Run cargo clippy
       working-directory: hyperscan
