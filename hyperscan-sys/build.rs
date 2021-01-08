@@ -43,7 +43,6 @@ fn find_hyperscan() -> Result<PathBuf> {
 
         if cfg!(feature = "chimera") {
             link_libs.push("chimera".into());
-            link_libs.push("pcre".into());
         }
 
         if cfg!(feature = "tracing") {
