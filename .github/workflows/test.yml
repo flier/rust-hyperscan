@@ -6,8 +6,12 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  prepare:
+  test:
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        toolchain: [stable, nightly]
 
     steps:
     - name: Install dependencies
@@ -15,12 +19,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install -yq libboost-dev libpcap-dev ragel libhyperscan-dev
 
-    - name: Install stable Rust with clippy and rustfmt
+    - name: Install Rust with clippy and rustfmt
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: ${{ matrix.toolchain }}
         components: rustfmt, clippy
         override: true
+
+    - name: Checkout
+      uses: actions/checkout@v2
 
     - name: Cache Cargo
       uses: actions/cache@v2
@@ -30,9 +37,6 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Checkout
-      uses: actions/checkout@v2
 
     - name: Run cargo test
       run: cargo test --verbose --release
