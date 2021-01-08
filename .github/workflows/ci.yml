@@ -19,6 +19,7 @@ jobs:
         sudo apt-get install -yq libhyperscan-dev
 
     - name: Install ${{ matrix.toolchain }} Rust
+      id: install-rust
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
@@ -35,9 +36,10 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-${{ steps.install-rust.outputs.rustc }}-${{ steps.install-rust.outputs.rustc_hash }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - uses: actions-rs/cargo@v1
+    - name: Check
+      uses: actions-rs/cargo@v1
       with:
         command: check
 
@@ -73,7 +75,8 @@ jobs:
           target
         key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - uses: actions-rs/cargo@v1
+    - name: Rustfmt
+      uses: actions-rs/cargo@v1
       with:
         command: fmt
         args: --all -- --check
@@ -112,7 +115,8 @@ jobs:
           target
         key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - uses: actions-rs/cargo@v1
+    - name: Clippy
+      uses: actions-rs/cargo@v1
       with:
         command: clippy
         args: -- -D warnings
@@ -148,7 +152,8 @@ jobs:
           target
         key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - uses: actions-rs/cargo@v1
+    - name: Test
+      uses: actions-rs/cargo@v1
       with:
         command: test
 
