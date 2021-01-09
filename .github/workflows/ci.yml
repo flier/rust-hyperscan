@@ -327,8 +327,8 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       HYPERSCAN_ROOT: ${{ github.workspace }}/../dist
-      LD_LIBRARY_PATH: ${{ env.HYPERSCAN_ROOT }}/lib
-      DYLD_LIBRARY_PATH: ${{ env.HYPERSCAN_ROOT }}/lib
+      LD_LIBRARY_PATH: ${{ github.workspace }}/../dist/lib
+      DYLD_LIBRARY_PATH: ${{ github.workspace }}/../dist/lib
     steps:
     - name: Install dependencies
       run: |
