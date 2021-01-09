@@ -162,7 +162,7 @@ jobs:
       with:
         command: test
 
-  test:
+  test-v4:
     name: Tests (hyperscan v4)
     needs: check
     runs-on: ubuntu-18.04
