@@ -57,7 +57,7 @@ bitflags! {
 foreign_type! {
     /// A type containing information on the target platform
     /// which may optionally be provided to the compile calls
-    pub unsafe type Platform {
+    pub unsafe type Platform: Send + Sync {
         type CType = ffi::hs_platform_info_t;
 
         fn drop = free_platform_info;

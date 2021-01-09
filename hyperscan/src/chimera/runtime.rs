@@ -14,7 +14,7 @@ use crate::{
 
 foreign_type! {
     /// A large enough region of scratch space to support a given database.
-    pub unsafe type Scratch {
+    pub unsafe type Scratch: Send {
         type CType = ffi::ch_scratch_t;
 
         fn drop = free_scratch;
