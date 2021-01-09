@@ -3,6 +3,10 @@ name: Continuous integration
 on: [push, pull_request]
 
 env:
+  HYPERSCAN_ROOT: ${{ github.workspace }}/dist
+  HYPERSCAN_VERSION: 5.3.0
+  PCRE_VERSION: 8.44
+  LLVM_VERSION: 10.0
   CARGO_TERM_COLOR: always
 
 defaults:
@@ -203,7 +207,7 @@ jobs:
     needs: check
     runs-on: ubuntu-20.04
     env:
-      LLVM_VERSION: 10.0
+      LLVM_VERSION: ${{ env.LLVM_VERSION }}
     strategy:
       matrix:
         toolchain: [stable, nightly]
@@ -258,34 +262,14 @@ jobs:
       working-directory: hyperscan
       run: cargo test --verbose --release --features=gen
 
-  chimera:
-    name: Chimera
-    needs: [test, test-v4, gen]
+  hyperscan:
     runs-on: ubuntu-20.04
-    env:
-      HYPERSCAN_VERSION: 5.3.0
-      HYPERSCAN_ROOT: ${{ github.workspace }}/dist
-      PCRE_VERSION: 8.44
 
     steps:
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -yq libboost-dev libpcap-dev ragel tree
-
-    - name: Cache LLVM and Clang
-      id: cache-llvm
-      uses: actions/cache@v2
-      with:
-        path: ${{ runner.temp }}/llvm
-        key: llvm-10.0
-
-    - name: Install LLVM and Clang
-      uses: KyleMayes/install-llvm-action@v1
-      with:
-        version: "10.0"
-        directory: ${{ runner.temp }}/llvm
-        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
 
     - name: Cache Hyperscan Source
       uses: actions/cache@v2
@@ -315,7 +299,8 @@ jobs:
         path: ${{ env.HYPERSCAN_ROOT }}
         key: ${{ runner.os }}-build-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
 
-    - run: mkdir -p ${{ env.HYPERSCAN_ROOT }}
+    - name: Create HYPERSCAN_ROOT folder
+      run: mkdir -p ${{ env.HYPERSCAN_ROOT }}
 
     - name: Build Hyperscan
       if: steps.cache-hyperscan-build.outputs.cache-hit != 'true'
@@ -326,6 +311,41 @@ jobs:
         build-type: RelWithDebInfo
         source-dir: ${{ github.workspace }}/hyperscan
         install-build: true
+        install-options: --prefix ${{ env.HYPERSCAN_ROOT }}
+
+    - name: List installed files
+      run: tree $HYPERSCAN_ROOT
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
+        path: ${{ env.HYPERSCAN_ROOT }}
+
+  chimera:
+    name: Chimera
+    needs: [test, test-v4, gen, hyperscan]
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Download hyperscan
+      uses: actions/download-artifact@v2
+      with:
+        name: hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
+
+    - name: Cache LLVM and Clang
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: ${{ runner.temp }}/llvm
+        key: llvm-${{ env.LLVM_VERSION }}
+
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: ${{ env.LLVM_VERSION }}
+        directory: ${{ runner.temp }}/llvm
+        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
 
     - name: Install stable Rust with clippy and rustfmt
       uses: actions-rs/toolchain@v1
@@ -345,9 +365,6 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: List installed files
-      run: tree $HYPERSCAN_ROOT
 
     - name: Run cargo test for hyperscan-sys
       working-directory: hyperscan-sys
