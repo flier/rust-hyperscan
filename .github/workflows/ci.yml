@@ -311,6 +311,8 @@ jobs:
         path: ${{ env.HYPERSCAN_ROOT }}
         key: ${{ runner.os }}-build-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
 
+    - run: mkdir -p ${{ env.HYPERSCAN_ROOT }}
+
     - name: Build Hyperscan
       if: steps.cache-hyperscan-build.outputs.cache-hit != 'true'
       uses: ashutoshvarma/action-cmake-build@master
