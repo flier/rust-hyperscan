@@ -5,6 +5,10 @@ on: [push, pull_request]
 env:
   CARGO_TERM_COLOR: always
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check:
     name: Check
@@ -158,6 +162,42 @@ jobs:
       with:
         command: test
 
+  test:
+    name: Tests (hyperscan v4)
+    needs: check
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        toolchain: [stable, nightly]
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -yq libhyperscan-dev libpcap-dev
+
+    - name: Install ${{ matrix.toolchain }} Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.toolchain }}
+        override: true
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache Cargo
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Test
+      working-directory: hyperscan
+      run: cargo test --verbose --release --no-default-features --features=full
+
   gen:
     name: Generate binding file
     needs: check
@@ -227,7 +267,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -yq libboost-dev libpcap-dev ragel
+        sudo apt-get install -yq libboost-dev libpcap-dev ragel tree
 
     - name: Cache LLVM and Clang
       id: cache-llvm
@@ -299,6 +339,9 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: List installed files
+      run: tree $HYPERSCAN_ROOT
 
     - name: Run cargo test for hyperscan-sys
       working-directory: hyperscan-sys
