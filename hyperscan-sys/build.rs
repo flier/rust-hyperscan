@@ -29,35 +29,33 @@ fn find_hyperscan() -> Result<PathBuf> {
 
         cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
 
-        let mut link_libs = vec![];
-
-        if !cfg!(feature = "compile") && cfg!(feature = "runtime") {
-            link_libs.push("static=hs_runtime".into());
-        } else {
-            link_libs.push(format!("{}=hs", link_kind));
-
-            if cfg!(feature = "static") {
-                link_libs.push("c++".into());
+        if cfg!(feature = "static") {
+            if cfg!(target_os = "macos") {
+                cargo_emit::rustc_link_lib!("c++");
+            } else {
+                cargo_emit::rustc_link_lib!("stdc++");
             }
         }
 
+        if !cfg!(feature = "compile") && cfg!(feature = "runtime") {
+            cargo_emit::rustc_link_lib!("hs_runtime" => link_kind);
+        } else {
+            cargo_emit::rustc_link_lib!("hs" => link_kind);
+        }
+
         if cfg!(feature = "chimera") {
-            link_libs.push("chimera".into());
+            cargo_emit::rustc_link_lib!("chimera" => "static");
+            cargo_emit::rustc_link_lib!("pcre");
         }
 
         if cfg!(feature = "tracing") {
             cargo_emit::warning!(
-                "building with Hyperscan with {} library @ {:?}, libs={:?}, link_paths=[{:?}], include_paths=[{:?}]",
+                "building with Hyperscan with {} library @ {:?}, link_paths=[{:?}], include_paths=[{:?}]",
                 link_kind,
                 prefix,
-                link_libs,
                 link_path,
                 inc_path
             );
-        }
-
-        for lib in link_libs {
-            cargo_emit::rustc_link_lib!(lib);
         }
 
         Ok(inc_path)
