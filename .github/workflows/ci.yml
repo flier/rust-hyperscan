@@ -246,17 +246,21 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Run cargo test for hyperscan-sys
+    - name: Run cargo test for hyperscan-sys with generated binding files
       working-directory: hyperscan-sys
       run: cargo test --verbose --release --features=gen
 
-    - name: Run cargo test
+    - name: Run cargo test for hyperscan-sys with generated binding files
+      working-directory: hyperscan-sys
+      run: cargo test --verbose --release --no-default-features --features=full,gen
+
+    - name: Run cargo test with generated binding files
       working-directory: hyperscan
-      run: cargo test --verbose --release
+      run: cargo test --verbose --release --features=gen
 
   chimera:
     name: Chimera
-    needs: [test, gen]
+    needs: [test, test-v4, gen]
     runs-on: ubuntu-20.04
     env:
       HYPERSCAN_VERSION: 5.3.0

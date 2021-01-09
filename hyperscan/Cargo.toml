@@ -14,6 +14,7 @@ edition = "2018"
 [features]
 default = ["full", "v5"]
 static = ["hyperscan-sys/static"]
+gen = ["hyperscan-sys/gen"]
 full = ["compile", "runtime"]
 compile = ["hyperscan-sys/compile", "bitflags", "derive_more"]
 runtime = ["hyperscan-sys/runtime"]
