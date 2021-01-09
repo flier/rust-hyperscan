@@ -326,9 +326,13 @@ jobs:
     needs: [test, test-v4, gen, hyperscan]
     runs-on: ubuntu-20.04
     env:
-      HYPERSCAN_ROOT: ${{ github.workspace }}/dist
-
+      HYPERSCAN_ROOT: ${{ github.workspace }}/../dist
     steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -yq libpcap-dev tree
+
     - name: Download hyperscan build
       uses: actions/download-artifact@v2
       with:
@@ -336,8 +340,7 @@ jobs:
         path: ${{ env.HYPERSCAN_ROOT }}
 
     - name: List installed files
-      working-directory: ${{ env.HYPERSCAN_ROOT }}
-      run: ls -R
+      run: tree $HYPERSCAN_ROOT
 
     - name: Cache LLVM and Clang
       id: cache-llvm
