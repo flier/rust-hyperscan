@@ -329,10 +329,15 @@ jobs:
       HYPERSCAN_ROOT: ${{ github.workspace }}/dist
 
     steps:
-    - name: Download hyperscan
+    - name: Download hyperscan build
       uses: actions/download-artifact@v2
       with:
         name: hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
+        path: ${{ env.HYPERSCAN_ROOT }}
+
+    - name: List installed files
+      working-directory: ${{ env.HYPERSCAN_ROOT }}
+      run: ls -R
 
     - name: Cache LLVM and Clang
       id: cache-llvm
