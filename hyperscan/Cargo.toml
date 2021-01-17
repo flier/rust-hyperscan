@@ -12,15 +12,21 @@ keywords = ["regex", "hyperscan", "streaming"]
 edition = "2018"
 
 [features]
-default = ["full", "v5"]
+default = ["full", "latest"]
+
 static = ["hyperscan-sys/static"]
 gen = ["hyperscan-sys/gen"]
+
 full = ["compile", "runtime"]
 compile = ["hyperscan-sys/compile", "bitflags", "derive_more"]
 runtime = ["hyperscan-sys/runtime"]
 chimera = ["hyperscan-sys/chimera", "bitflags", "derive_more", "static"]
+
+latest = ["v5_4"]
+v5_4 = ["v5"]
 v5 = ["literal"]
 literal = []
+
 unstable = ["pattern"]
 pattern = ["regex/pattern"]
 

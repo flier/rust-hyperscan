@@ -73,7 +73,15 @@ pub enum Error {
     #[error("The scratch region was already in use.")]
     ScratchInUse,
 
+    /// Unexpected internal error from Hyperscan.
+    ///
+    /// This error indicates that there was unexpected matching behaviors from Hyperscan.
+    /// This could be related to invalid usage of scratch space or invalid memory operations by users.
+    #[error("Unexpected internal error from Hyperscan.")]
+    UnknownError,
+
     /// Returned when pcre_exec (called for some expressions internally from `ch_scan`) failed due to a fatal error.
+    #[cfg(feature = "v5_4")]
     #[error("Failed due to a fatal error")]
     FailInternal,
 
@@ -97,6 +105,7 @@ impl From<ffi::ch_error_t> for Error {
             ffi::CH_BAD_ALIGN => BadAlign,
             ffi::CH_BAD_ALLOC => BadAlloc,
             ffi::CH_SCRATCH_IN_USE => ScratchInUse,
+            ffi::CH_UNKNOWN_HS_ERROR => UnknownError,
             ffi::CH_FAIL_INTERNAL => FailInternal,
             _ => Code(err),
         }

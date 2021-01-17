@@ -3,7 +3,7 @@ name: Continuous integration
 on: [push, pull_request]
 
 env:
-  HYPERSCAN_VERSION: 5.3.0
+  HYPERSCAN_VERSION: 5.4.0
   PCRE_VERSION: 8.44
   LLVM_VERSION: 10.0
   CARGO_TERM_COLOR: always
@@ -310,7 +310,6 @@ jobs:
         build-type: RelWithDebInfo
         source-dir: ${{ github.workspace }}/hyperscan
         install-build: true
-        install-options: --prefix ${{ env.HYPERSCAN_ROOT }}
 
     - name: List installed files
       run: tree $HYPERSCAN_ROOT
@@ -329,6 +328,8 @@ jobs:
       HYPERSCAN_ROOT: ${{ github.workspace }}/../dist
       LD_LIBRARY_PATH: ${{ github.workspace }}/../dist/lib
       DYLD_LIBRARY_PATH: ${{ github.workspace }}/../dist/lib
+      PKG_CONFIG_PATH: ${{ github.workspace }}/../dist/lib/pkgconfig
+
     steps:
     - name: Install dependencies
       run: |
