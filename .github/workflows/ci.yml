@@ -257,7 +257,7 @@ jobs:
 
     - name: Run cargo test with generated binding files
       working-directory: hyperscan
-      run: cargo test --verbose --release --features=gen
+      run: cargo test --verbose --release --no-default-features --features=gen,full,v5_3
 
   hyperscan:
     runs-on: ubuntu-20.04

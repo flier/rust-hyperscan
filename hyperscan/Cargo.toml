@@ -23,9 +23,11 @@ runtime = ["hyperscan-sys/runtime"]
 chimera = ["hyperscan-sys/chimera", "bitflags", "derive_more", "static"]
 
 latest = ["v5_4"]
-v5_4 = ["v5"]
-v5 = ["literal"]
+v5_4 = ["v5_3"]
+v5_3 = ["v5"]
+v5 = ["v4", "literal"]
 literal = []
+v4 = []
 
 unstable = ["pattern"]
 pattern = ["regex/pattern"]
