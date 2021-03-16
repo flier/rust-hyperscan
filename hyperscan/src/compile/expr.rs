@@ -8,6 +8,7 @@ use anyhow::{anyhow, bail, Error, Result};
 use bitflags::bitflags;
 use derive_more::{From, Into};
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
+use libc::c_char;
 
 use crate::compile::{AsCompileResult, Pattern};
 use crate::ffi;
@@ -303,7 +304,7 @@ impl Pattern {
 
         let info = unsafe {
             ffi::hs_expression_ext_info(
-                expr.as_ptr() as *const i8,
+                expr.as_ptr() as *const c_char,
                 self.flags.bits(),
                 &self.ext.0 as *const _,
                 info.as_mut_ptr(),
