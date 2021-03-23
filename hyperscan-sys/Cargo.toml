@@ -28,7 +28,7 @@ libc = "0.2"
 anyhow = "1.0"
 pkg-config = "0.3"
 
-bindgen = { version = "0.54", optional = true }
+bindgen = { version = "0.57", optional = true }
 
 [lib]
 doctest = false

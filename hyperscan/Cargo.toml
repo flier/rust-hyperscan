@@ -26,12 +26,12 @@ pattern = ["regex/pattern"]
 [dependencies]
 anyhow = "1.0"
 bitflags = { version = "1.0", optional = true }
-cfg-if = "0.1"
+cfg-if = "1.0"
 derive_more = { version = "0.99", optional = true }
 foreign-types = "0.5"
 libc = "0.2"
 malloc_buf = "1.0"
-semver = "0.10"
+semver = "0.11"
 thiserror = "1.0"
 
 hyperscan-sys = { version = "0.2", path = "../hyperscan-sys" }
@@ -40,14 +40,14 @@ hyperscan-sys = { version = "0.2", path = "../hyperscan-sys" }
 byteorder = "1.2"
 doc-comment = "0.3"
 either = "1.5"
-pcap = "0.7"
-pnet = "0.26"
-rand = "0.7"
+pcap = "0.8"
+pnet = "0.27"
+rand = "0.8"
 regex = "1.1"
 structopt = "0.3"
 
 [build-dependencies]
-rustc_version = "0.2"
+rustc_version = "0.3"
 
 [package.metadata.docs.rs]
 all-features = true
