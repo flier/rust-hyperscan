@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use anyhow::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
+use libc::c_char;
 
 use crate::common::{Database, Mode};
 use crate::compile::{AsCompileResult, Flags, Pattern, Patterns, PlatformRef};
@@ -93,7 +94,7 @@ impl Builder for Pattern {
 
         unsafe {
             ffi::hs_compile(
-                expr.as_bytes_with_nul().as_ptr() as *const i8,
+                expr.as_bytes_with_nul().as_ptr() as *const c_char,
                 self.flags.bits(),
                 mode,
                 platform.map_or_else(null_mut, ForeignTypeRef::as_ptr),
