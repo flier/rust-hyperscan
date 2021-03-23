@@ -4,6 +4,7 @@ use std::mem::MaybeUninit;
 use std::result::Result as StdResult;
 
 use foreign_types::{ForeignType, ForeignTypeRef};
+use libc::c_char;
 use malloc_buf::Malloc;
 
 use crate::common::{Database, DatabaseRef};
@@ -57,7 +58,7 @@ impl<T: AsRef<[u8]>> Serialized for T {
         let mut db = MaybeUninit::uninit();
 
         unsafe {
-            ffi::hs_deserialize_database(buf.as_ptr() as *const i8, buf.len(), db.as_mut_ptr())
+            ffi::hs_deserialize_database(buf.as_ptr() as *const c_char, buf.len(), db.as_mut_ptr())
                 .map(|_| Database::from_ptr(db.assume_init()))
         }
     }
@@ -103,7 +104,7 @@ impl<T> DatabaseRef<T> {
     pub fn deserialize_at<B: AsRef<[u8]>>(&mut self, bytes: B) -> Result<()> {
         let bytes = bytes.as_ref();
 
-        unsafe { ffi::hs_deserialize_database_at(bytes.as_ptr() as *const i8, bytes.len(), self.as_ptr()).ok() }
+        unsafe { ffi::hs_deserialize_database_at(bytes.as_ptr() as *const c_char, bytes.len(), self.as_ptr()).ok() }
     }
 }
 

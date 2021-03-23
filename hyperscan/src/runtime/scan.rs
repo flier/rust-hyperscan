@@ -3,7 +3,7 @@ use std::mem;
 use std::ptr;
 
 use foreign_types::ForeignTypeRef;
-use libc::c_uint;
+use libc::{c_char, c_uint};
 
 use crate::{
     common::{Block, DatabaseRef, Streaming, Vectored},
@@ -123,7 +123,7 @@ impl DatabaseRef<Block> {
 
             ffi::hs_scan(
                 self.as_ptr(),
-                data.as_ptr() as *const i8,
+                data.as_ptr() as *const c_char,
                 data.len() as u32,
                 0,
                 scratch.as_ptr(),
@@ -176,7 +176,7 @@ impl DatabaseRef<Vectored> {
 
             ffi::hs_scan_vector(
                 self.as_ptr(),
-                ptrs.as_slice().as_ptr() as *const *const i8,
+                ptrs.as_slice().as_ptr() as *const *const c_char,
                 lens.as_slice().as_ptr() as *const _,
                 ptrs.len() as u32,
                 0,
@@ -284,7 +284,7 @@ impl StreamRef {
 
             ffi::hs_scan_stream(
                 self.as_ptr(),
-                data.as_ptr() as *const i8,
+                data.as_ptr() as *const c_char,
                 data.len() as u32,
                 0,
                 scratch.as_ptr(),

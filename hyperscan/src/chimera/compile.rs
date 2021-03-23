@@ -6,6 +6,7 @@ use std::ptr::null;
 use std::str::FromStr;
 
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
+use libc::c_char;
 
 use crate::{
     chimera::{ffi, Database, Error as ChError, Pattern, Patterns},
@@ -288,7 +289,7 @@ impl Builder for Pattern {
         platform: Option<&PlatformRef>,
     ) -> Result<Database, Self::Err> {
         let expr = CString::new(self.expression.as_str())?;
-        let ptr = expr.as_bytes_with_nul().as_ptr() as *const i8;
+        let ptr = expr.as_bytes_with_nul().as_ptr() as *const c_char;
         let flags = self.flags.bits();
         let mut db = MaybeUninit::uninit();
         let mut err = MaybeUninit::uninit();

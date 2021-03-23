@@ -59,7 +59,8 @@ To enable `Chimera` support, you need to manually download PCRE 8.41 or above, u
 ```bash
 $ cd hyperscan-5.3.0
 $ wget https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz
-$ tar xvf -C pcre pcre-8.44.tar.gz
+$ mkdir pcre
+$ tar xvf pcre-8.44.tar.gz --strip-components=1 --directory pcre
 
 $ mkdir build && cd build
 $ cmake .. -DCMAKE_INSTALL_PREFIX=`pwd` -G Ninja
