@@ -1,6 +1,6 @@
 [package]
 name = "hyperscan-sys"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Flier Lu <flier.lu@gmail.com>"]
 description = "Hyperscan bindings for Rust with Multiple Pattern and Streaming Scan"
 homepage = "https://github.com/flier/rust-hyperscan"
