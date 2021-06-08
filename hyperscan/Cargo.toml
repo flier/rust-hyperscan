@@ -31,7 +31,7 @@ derive_more = { version = "0.99", optional = true }
 foreign-types = "0.5"
 libc = "0.2"
 malloc_buf = "1.0"
-semver = "0.11"
+semver = "1"
 thiserror = "1.0"
 
 hyperscan-sys = { version = "0.2", path = "../hyperscan-sys" }
@@ -41,13 +41,13 @@ byteorder = "1.2"
 doc-comment = "0.3"
 either = "1.5"
 pcap = "0.8"
-pnet = "0.27"
+pnet = "0.28"
 rand = "0.8"
 regex = "1.1"
 structopt = "0.3"
 
 [build-dependencies]
-rustc_version = "0.3"
+rustc_version = "0.4"
 
 [package.metadata.docs.rs]
 all-features = true

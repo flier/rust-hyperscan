@@ -25,10 +25,10 @@ gen = ["bindgen"]
 libc = "0.2"
 
 [build-dependencies]
-anyhow = "1.0"
+anyhow = "1"
 pkg-config = "0.3"
 
-bindgen = { version = "0.57", optional = true }
+bindgen = { version = "0.58", optional = true }
 
 [lib]
 doctest = false
