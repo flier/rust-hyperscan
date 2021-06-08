@@ -49,6 +49,10 @@ impl Default for Matching {
 /// will produce undefined behavior.
 pub trait MatchEventHandler {
     /// Split the match event handler to callback and userdata.
+    ///
+    /// # Safety
+    ///
+    /// Do not implement this trait directly, use `()`, `Matching` or `|id, from, to, flags| -> Matching`.
     unsafe fn split(&mut self) -> (ffi::match_event_handler, *mut libc::c_void);
 }
 
