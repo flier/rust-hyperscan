@@ -94,7 +94,7 @@ fn find_hyperscan() -> Result<PathBuf> {
     }
 }
 
-#[cfg(feature = "gen")]
+#[cfg(any(feature = "gen", not(target_pointer_width = "64")))]
 fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let out_file = out_dir.join("hyperscan.rs");
     let inc_file = inc_dir.join("hs.h");
@@ -124,14 +124,14 @@ fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
         .with_context(|| "write wrapper")
 }
 
-#[cfg(not(feature = "gen"))]
+#[cfg(all(not(feature = "gen"), target_pointer_width = "64"))]
 fn generate_binding(_: &Path, out_dir: &Path) -> Result<()> {
     std::fs::copy("src/hyperscan.rs", out_dir.join("hyperscan.rs"))
         .map(|_| ())
         .with_context(|| "copy binding file")
 }
 
-#[cfg(all(feature = "gen", feature = "chimera"))]
+#[cfg(all(feature = "chimera", any(feature = "gen", not(target_pointer_width = "64"))))]
 fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let out_file = out_dir.join("chimera.rs");
     let inc_file = inc_dir.join("ch.h");
@@ -161,14 +161,14 @@ fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
         .with_context(|| "write wrapper")
 }
 
-#[cfg(all(not(feature = "gen"), feature = "chimera"))]
+#[cfg(all(not(feature = "gen"), feature = "chimera", target_pointer_width = "64"))]
 fn generate_chimera_binding(_: &Path, out_dir: &Path) -> Result<()> {
     std::fs::copy("src/chimera.rs", out_dir.join("chimera.rs"))
         .map(|_| ())
         .with_context(|| "copy binding file")
 }
 
-#[cfg(not(feature = "chimera"))]
+#[cfg(all(not(feature = "chimera"), target_pointer_width = "64"))]
 fn generate_chimera_binding(_: &Path, _: &Path) -> Result<()> {
     Ok(())
 }
