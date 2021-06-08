@@ -79,6 +79,13 @@ pub enum Error {
     #[error("Failed due to a fatal error")]
     FailInternal,
 
+    /// Unexpected internal error from Hyperscan.
+    ///
+    /// This error indicates that there was unexpected matching behaviors from Hyperscan.
+    /// This could be related to invalid usage of scratch space or invalid memory operations by users.
+    #[error("Unexpected internal error from Hyperscan.")]
+    UnknownHSError,
+
     /// Unknown error code
     #[error("Unknown error code: {0}")]
     Code(ffi::ch_error_t),
@@ -100,6 +107,7 @@ impl From<ffi::ch_error_t> for Error {
             ffi::CH_BAD_ALLOC => BadAlloc,
             ffi::CH_SCRATCH_IN_USE => ScratchInUse,
             ffi::CH_FAIL_INTERNAL => FailInternal,
+            ffi::CH_UNKNOWN_HS_ERROR => UnknownHSError,
             _ => Code(err),
         }
     }

@@ -37,6 +37,12 @@ pub enum Tune {
 
     /// Intel(R) microarchitecture code name Goldmont
     Goldmont = ffi::HS_TUNE_FAMILY_GLM,
+
+    /// Intel(R) microarchitecture code name Icelake
+    Icelake = ffi::HS_TUNE_FAMILY_ICL,
+
+    /// Intel(R) microarchitecture code name Icelake Server
+    IcelakeServer = ffi::HS_TUNE_FAMILY_ICX,
 }
 
 impl Default for Tune {
@@ -53,6 +59,8 @@ bitflags! {
         const AVX2 = ffi::HS_CPU_FEATURES_AVX2 as u64;
         /// Intel(R) Advanced Vector Extensions 512 (Intel(R) AVX512)
         const AVX512 = ffi::HS_CPU_FEATURES_AVX512 as u64;
+        /// Intel(R) Advanced Vector Extensions 512 Vector Byte Manipulation Instructions (Intel(R) AVX512VBMI)
+        const AVX512VBMI = ffi::HS_CPU_FEATURES_AVX512VBMI as u64;
     }
 }
 
