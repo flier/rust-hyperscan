@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, bail, Context, Result};
 
 fn find_hyperscan() -> Result<PathBuf> {
-    println!("cargo:rerun-if-env-changed=HYPERSCAN_ROOT");
+    cargo_emit::rerun_if_env_changed!("HYPERSCAN_ROOT");
 
     let link_kind = if cfg!(feature = "static") { "static" } else { "dylib" };
 
@@ -14,10 +14,10 @@ fn find_hyperscan() -> Result<PathBuf> {
             bail!("HYPERSCAN_ROOT should point to a directory that exists.");
         }
 
-        let inc_path = prefix.join("include");
+        let inc_path = prefix.join("include/hs");
         let link_path = prefix.join("lib");
         if link_path.exists() && link_path.is_dir() {
-            println!("cargo:rustc-link-search=native={}", link_path.to_string_lossy());
+            cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
         } else {
             bail!("`$HYPERSCAN_ROOT/lib` subdirectory not found.");
         }
@@ -39,8 +39,8 @@ fn find_hyperscan() -> Result<PathBuf> {
             link_libs.push("pcre".into());
         }
 
-        println!(
-            "cargo:warning=building with Hyperscan with {} library @ {:?}, libs={:?}, link_paths=[{:?}], include_paths=[{:?}]",
+        cargo_emit::warning!(
+            "building with Hyperscan with {} library @ {:?}, libs={:?}, link_paths=[{:?}], include_paths=[{:?}]",
             link_kind,
             prefix,
             link_libs,
@@ -49,7 +49,7 @@ fn find_hyperscan() -> Result<PathBuf> {
         );
 
         for lib in link_libs {
-            println!("cargo:rustc-link-lib={}", lib);
+            cargo_emit::rustc_link_lib!(lib);
         }
 
         Ok(inc_path)
@@ -60,9 +60,13 @@ fn find_hyperscan() -> Result<PathBuf> {
             .env_metadata(true)
             .probe("libhs")?;
 
-        println!(
-            "cargo:warning=building with Hyperscan {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
-            libhs.version, link_kind, libhs.libs, libhs.link_paths, libhs.include_paths
+        cargo_emit::warning!(
+            "building with Hyperscan {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
+            libhs.version,
+            link_kind,
+            libhs.libs,
+            libhs.link_paths,
+            libhs.include_paths
         );
 
         if cfg!(feature = "chimera") {
@@ -72,9 +76,13 @@ fn find_hyperscan() -> Result<PathBuf> {
                 .env_metadata(true)
                 .probe("libch")?;
 
-            println!(
-                "cargo:warning=building with Chimera {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
-                libch.version, link_kind, libch.libs, libch.link_paths, libch.include_paths
+            cargo_emit::warning!(
+                "building with Chimera {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
+                libch.version,
+                link_kind,
+                libch.libs,
+                libch.link_paths,
+                libch.include_paths
             );
         }
 
@@ -92,29 +100,26 @@ fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let inc_file = inc_dir.join("hs.h");
     let inc_file = inc_file.to_str().expect("header file");
 
-    println!(
-        "cargo:warning=generating raw Hyperscan binding file @ {}",
-        out_file.display()
-    );
+    cargo_emit::warning!("generating raw Hyperscan binding file @ {}", out_file.display());
 
-    println!("cargo:rerun-if-changed={}", inc_file);
+    cargo_emit::rerun_if_changed!(inc_file);
 
     bindgen::builder()
         .header(inc_file)
         .use_core()
         .ctypes_prefix("::libc")
         .clang_args(&["-x", "c++", "-std=c++11"])
-        .whitelist_var("^HS_.*")
-        .whitelist_type("^hs_.*")
-        .whitelist_function("^hs_.*")
-        .blacklist_type("^__darwin_.*")
+        .allowlist_var("^HS_.*")
+        .allowlist_type("^hs_.*")
+        .allowlist_function("^hs_.*")
+        .blocklist_type("^__darwin_.*")
         .size_t_is_usize(true)
         .derive_copy(true)
         .derive_debug(true)
         .derive_default(true)
         .derive_partialeq(true)
         .generate()
-        .map_err(|_| Error::msg("generate binding files"))?
+        .map_err(|_| anyhow::Error::msg("generate binding files"))?
         .write_to_file(out_file)
         .with_context(|| "write wrapper")
 }
@@ -132,29 +137,26 @@ fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let inc_file = inc_dir.join("ch.h");
     let inc_file = inc_file.to_str().expect("header file");
 
-    println!(
-        "cargo:warning=generating raw Chimera binding file @ {}",
-        out_file.display()
-    );
+    cargo_emit::warning!("generating raw Chimera binding file @ {}", out_file.display());
 
-    println!("cargo:rerun-if-changed={}", inc_file);
+    cargo_emit::rerun_if_changed!(inc_file);
 
     bindgen::builder()
         .header(inc_file)
         .use_core()
         .ctypes_prefix("::libc")
         .clang_args(&["-x", "c++", "-std=c++11"])
-        .whitelist_var("^CH_.*")
-        .whitelist_type("^ch_.*")
-        .whitelist_function("^ch_.*")
-        .blacklist_type("^__darwin_.*")
+        .allowlist_var("^CH_.*")
+        .allowlist_type("^ch_.*")
+        .allowlist_function("^ch_.*")
+        .blocklist_type("^__darwin_.*")
         .size_t_is_usize(true)
         .derive_copy(true)
         .derive_debug(true)
         .derive_default(true)
         .derive_partialeq(true)
         .generate()
-        .map_err(|_| Error::msg("generate binding files"))?
+        .map_err(|_| anyhow::Error::msg("generate binding files"))?
         .write_to_file(out_file)
         .with_context(|| "write wrapper")
 }

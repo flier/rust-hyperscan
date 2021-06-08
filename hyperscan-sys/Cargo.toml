@@ -27,6 +27,7 @@ libc = "0.2"
 [build-dependencies]
 anyhow = "1"
 pkg-config = "0.3"
+cargo-emit = "0.1"
 
 bindgen = { version = "0.58", optional = true }
 
