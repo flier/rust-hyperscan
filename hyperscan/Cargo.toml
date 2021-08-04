@@ -20,6 +20,7 @@ runtime = ["hyperscan-sys/runtime"]
 chimera = ["hyperscan-sys/chimera", "bitflags", "derive_more", "static"]
 v5 = ["literal"]
 literal = []
+async = ["futures"]
 unstable = ["pattern"]
 pattern = ["regex/pattern"]
 
@@ -35,6 +36,7 @@ semver = "1"
 thiserror = "1.0"
 
 hyperscan-sys = { version = "0.2", path = "../hyperscan-sys" }
+futures = {version = "0.3.16", optional = true }
 
 [dev-dependencies]
 byteorder = "1.2"
@@ -45,6 +47,7 @@ pnet = "0.28"
 rand = "0.8"
 regex = "1.1"
 structopt = "0.3"
+tokio-test = "0.4.2"
 
 [build-dependencies]
 rustc_version = "0.4"

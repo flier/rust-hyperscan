@@ -11,6 +11,9 @@ use crate::errors::AsResult;
 use crate::ffi;
 use crate::runtime::{split_closure, ScratchRef, StreamRef};
 
+#[cfg(feature = "async")]
+use futures::io::{AsyncRead, AsyncReadExt};
+
 /// Indicating whether or not matching should continue on the target data.
 #[repr(i32)]
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -227,6 +230,55 @@ impl DatabaseRef<Streaming> {
         let (callback, userdata) = unsafe { on_match_event.split() };
 
         while let Ok(len) = reader.read(&mut buf[..]) {
+            if len == 0 {
+                break;
+            }
+
+            stream.scan(&buf[..len], scratch, (callback, userdata))?;
+        }
+
+        stream.close(scratch, (callback, userdata))
+    }
+    /// Pattern matching takes place for stream-mode pattern databases using AsyncRead.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use futures::io::Cursor;
+    /// # use hyperscan::prelude::*;
+    /// # use tokio_test;
+    /// const SCAN_BUF_SIZE: usize = 4096;
+    /// let mut buf = String::from_utf8(vec![b'x'; SCAN_BUF_SIZE - 2]).unwrap();
+    ///
+    /// buf.push_str("baaab");
+    ///
+    /// let db: StreamingDatabase = pattern! { "a+"; SOM_LEFTMOST }.build().unwrap();
+    /// let s = db.alloc_scratch().unwrap();
+    /// let mut cur = Cursor::new(buf.as_bytes());
+    /// let mut matches = vec![];
+    ///
+    /// tokio_test::block_on(async {
+    ///     db.async_scan(&mut cur, &s, |_, from, to, _| {
+    ///         matches.push((from, to));
+    ///
+    ///         Matching::Continue
+    ///     }).await.unwrap();
+    /// });
+    ///
+    /// assert_eq!(matches, vec![(4095, 4096), (4095, 4097), (4095, 4098)]);
+    /// ```
+    #[cfg(feature = "async")]
+    pub async fn async_scan<R, F>(&self, reader: &mut R, scratch: &ScratchRef, mut on_match_event: F) -> Result<()>
+    where
+        R: AsyncRead + Unpin,
+        F: MatchEventHandler,
+    {
+        let stream = self.open_stream()?;
+        let mut buf = [0; SCAN_BUF_SIZE];
+
+        let (callback, userdata) = unsafe { on_match_event.split() };
+
+        while let Ok(len) = reader.read(&mut buf[..]).await {
             if len == 0 {
                 break;
             }
