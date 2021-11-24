@@ -179,10 +179,10 @@ fn main() -> Result<()> {
     let out_dir = env::var("OUT_DIR")?;
     let out_dir = Path::new(&out_dir);
 
-    generate_binding(&inc_dir, &out_dir)?;
+    generate_binding(&inc_dir, out_dir)?;
 
     if cfg!(feature = "chimera") {
-        generate_chimera_binding(&inc_dir, &out_dir)?;
+        generate_chimera_binding(&inc_dir, out_dir)?;
     }
 
     Ok(())

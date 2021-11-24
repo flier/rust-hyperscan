@@ -134,6 +134,10 @@ impl Capture {
 /// provided in order to suppress match production.
 pub trait MatchEventHandler<'a> {
     /// Split the match event handler to callback and userdata.
+    ///
+    /// # Safety
+    ///
+    /// The callback function must be valid for the lifetime of the userdata.
     unsafe fn split(&mut self) -> (ffi::ch_match_event_handler, *mut libc::c_void);
 }
 
@@ -205,6 +209,10 @@ where
 /// that some matches for a given expression may not be reported.
 pub trait ErrorEventHandler {
     /// Split the match event handler to callback and userdata.
+    ///
+    /// # Safety
+    ///
+    /// The callback function must be valid for the lifetime of the userdata.
     unsafe fn split(&mut self) -> (ffi::ch_error_event_handler, *mut libc::c_void);
 }
 
