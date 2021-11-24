@@ -20,10 +20,12 @@ fn find_hyperscan() -> Result<PathBuf> {
         if !prefix.exists() || !prefix.is_dir() {
             bail!("HYPERSCAN_ROOT should point to a directory that exists.");
         }
-        if !inc_path.exists() || !inc_path.is_dir() {
-            bail!("`$HYPERSCAN_ROOT/include/hs` subdirectory not found.");
-        }
-        if !link_path.exists() || !link_path.is_dir() {
+
+        let inc_path = prefix.join("include/hs");
+        let link_path = prefix.join("lib");
+        if link_path.exists() && link_path.is_dir() {
+            cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
+        } else {
             bail!("`$HYPERSCAN_ROOT/lib` subdirectory not found.");
         }
 
@@ -104,7 +106,7 @@ fn find_hyperscan() -> Result<PathBuf> {
     }
 }
 
-#[cfg(feature = "gen")]
+#[cfg(any(feature = "gen", not(target_pointer_width = "64")))]
 fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let out_file = out_dir.join("hyperscan.rs");
     let inc_file = inc_dir.join("hs.h");
@@ -121,29 +123,29 @@ fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
         .use_core()
         .ctypes_prefix("::libc")
         .clang_args(&["-x", "c++", "-std=c++11"])
-        .whitelist_var("^HS_.*")
-        .whitelist_type("^hs_.*")
-        .whitelist_function("^hs_.*")
-        .blacklist_type("^__darwin_.*")
+        .allowlist_var("^HS_.*")
+        .allowlist_type("^hs_.*")
+        .allowlist_function("^hs_.*")
+        .blocklist_type("^__darwin_.*")
         .size_t_is_usize(true)
         .derive_copy(true)
         .derive_debug(true)
         .derive_default(true)
         .derive_partialeq(true)
         .generate()
-        .map_err(|_| anyhow!("generate binding files"))?
+        .map_err(|_| anyhow::Error::msg("generate binding files"))?
         .write_to_file(out_file)
         .with_context(|| "write wrapper")
 }
 
-#[cfg(not(feature = "gen"))]
+#[cfg(all(not(feature = "gen"), target_pointer_width = "64"))]
 fn generate_binding(_: &Path, out_dir: &Path) -> Result<()> {
     std::fs::copy("src/hyperscan.rs", out_dir.join("hyperscan.rs"))
         .map(|_| ())
         .with_context(|| "copy binding file")
 }
 
-#[cfg(all(feature = "gen", feature = "chimera"))]
+#[cfg(all(feature = "chimera", any(feature = "gen", not(target_pointer_width = "64"))))]
 fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let out_file = out_dir.join("chimera.rs");
     let inc_file = inc_dir.join("ch.h");
@@ -160,30 +162,29 @@ fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
         .use_core()
         .ctypes_prefix("::libc")
         .clang_args(&["-x", "c++", "-std=c++11"])
-        .whitelist_var("^CH_.*")
-        .whitelist_type("^ch_.*")
-        .whitelist_function("^ch_.*")
-        .blacklist_type("^__darwin_.*")
+        .allowlist_var("^CH_.*")
+        .allowlist_type("^ch_.*")
+        .allowlist_function("^ch_.*")
+        .blocklist_type("^__darwin_.*")
         .size_t_is_usize(true)
         .derive_copy(true)
         .derive_debug(true)
         .derive_default(true)
         .derive_partialeq(true)
         .generate()
-        .map_err(|_| anyhow!("generate binding files"))?
+        .map_err(|_| anyhow::Error::msg("generate binding files"))?
         .write_to_file(out_file)
         .with_context(|| "write wrapper")
 }
 
-#[cfg(all(not(feature = "gen"), feature = "chimera"))]
+#[cfg(all(not(feature = "gen"), feature = "chimera", target_pointer_width = "64"))]
 fn generate_chimera_binding(_: &Path, out_dir: &Path) -> Result<()> {
     std::fs::copy("src/chimera.rs", out_dir.join("chimera.rs"))
         .map(|_| ())
         .with_context(|| "copy binding file")
 }
 
-#[allow(clippy::unknown_clippy_lints, clippy::unnecessary_wraps)]
-#[cfg(not(feature = "chimera"))]
+#[cfg(all(not(feature = "chimera"), target_pointer_width = "64"))]
 fn generate_chimera_binding(_: &Path, _: &Path) -> Result<()> {
     Ok(())
 }
@@ -194,10 +195,10 @@ fn main() -> Result<()> {
     let out_dir = env::var("OUT_DIR")?;
     let out_dir = Path::new(&out_dir);
 
-    generate_binding(&inc_dir, &out_dir)?;
+    generate_binding(&inc_dir, out_dir)?;
 
     if cfg!(feature = "chimera") {
-        generate_chimera_binding(&inc_dir, &out_dir)?;
+        generate_chimera_binding(&inc_dir, out_dir)?;
     }
 
     Ok(())

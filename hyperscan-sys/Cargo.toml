@@ -1,36 +1,36 @@
 [package]
-name = "hyperscan-sys"
-version = "0.2.1"
 authors = ["Flier Lu <flier.lu@gmail.com>"]
 description = "Hyperscan bindings for Rust with Multiple Pattern and Streaming Scan"
-homepage = "https://github.com/flier/rust-hyperscan"
-repository = "https://github.com/flier/rust-hyperscan"
 documentation = "https://docs.rs/crate/hyperscan-sys/"
-license = "Apache-2.0"
-readme = "../README.md"
-keywords = ["regex", "hyperscan", "streaming"]
 edition = "2018"
+homepage = "https://github.com/flier/rust-hyperscan"
+keywords = ["regex", "hyperscan", "streaming"]
+license = "Apache-2.0"
 links = "hs"
+name = "hyperscan-sys"
+readme = "../README.md"
+repository = "https://github.com/flier/rust-hyperscan"
+version = "0.2.2"
 
 [features]
-default = ["runtime"]
-static = []
-full = ["compile", "runtime"]
-compile = []
-runtime = []
 chimera = ["static"]
+compile = []
+default = ["runtime"]
+full = ["compile", "runtime"]
 gen = ["bindgen", "tracing"]
+runtime = []
+static = []
 tracing = []
 
 [dependencies]
 libc = "0.2"
 
 [build-dependencies]
-anyhow = "1.0"
+anyhow = "1"
+cargo-emit = "0.2"
 pkg-config = "0.3"
-cargo-emit = "0.1"
 
-bindgen = { version = "0.57", optional = true }
+bindgen = {version = "0.59", optional = true}
 
 [lib]
 doctest = false

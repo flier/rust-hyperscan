@@ -1,77 +1,80 @@
 [package]
-name = "hyperscan"
-version = "0.2.1"
 authors = ["Flier Lu <flier.lu@gmail.com>"]
 description = "Hyperscan bindings for Rust with Multiple Pattern and Streaming Scan"
-homepage = "https://github.com/flier/rust-hyperscan"
-repository = "https://github.com/flier/rust-hyperscan"
 documentation = "https://docs.rs/crate/hyperscan/"
-license = "Apache-2.0"
-readme = "../README.md"
-keywords = ["regex", "hyperscan", "streaming"]
 edition = "2018"
+homepage = "https://github.com/flier/rust-hyperscan"
+keywords = ["regex", "hyperscan", "streaming"]
+license = "Apache-2.0"
+name = "hyperscan"
+readme = "../README.md"
+repository = "https://github.com/flier/rust-hyperscan"
+version = "0.2.2"
 
 [features]
 default = ["full", "latest"]
 
-static = ["hyperscan-sys/static"]
 gen = ["hyperscan-sys/gen"]
+static = ["hyperscan-sys/static"]
 
-full = ["compile", "runtime"]
-compile = ["hyperscan-sys/compile", "bitflags", "derive_more"]
-runtime = ["hyperscan-sys/runtime"]
 chimera = ["hyperscan-sys/chimera", "bitflags", "derive_more", "static"]
+compile = ["hyperscan-sys/compile", "bitflags", "derive_more"]
+full = ["compile", "runtime"]
+runtime = ["hyperscan-sys/runtime"]
 
+async = ["futures"]
 latest = ["v5_4"]
-v5_4 = ["v5_3"]
-v5_3 = ["v5"]
-v5 = ["v4", "literal"]
 literal = []
-v4 = []
-
-unstable = ["pattern"]
 pattern = ["regex/pattern"]
+unstable = ["pattern"]
+v4 = []
+v5 = ["v4", "literal"]
+v5_3 = ["v5"]
+v5_4 = ["v5_3"]
 
 [dependencies]
-bitflags = { version = "1.0", optional = true }
+anyhow = "1.0"
+bitflags = {version = "1.3", optional = true}
 cfg-if = "1.0"
-derive_more = { version = "0.99", optional = true }
+derive_more = {version = "0.99", optional = true}
 foreign-types = "0.5"
 libc = "0.2"
 malloc_buf = "1.0"
-semver = "0.11"
+semver = "1"
 thiserror = "1.0"
 
-hyperscan-sys = { version = "0.2", path = "../hyperscan-sys" }
+futures = {version = "0.3.16", optional = true}
+hyperscan-sys = {version = "0.2", path = "../hyperscan-sys"}
 
 [dev-dependencies]
 anyhow = "1.0"
 byteorder = "1.2"
 doc-comment = "0.3"
 either = "1.5"
-pcap = "0.8"
-pnet = "0.27"
+pcap = "0.9"
+pnet = "0.28"
 rand = "0.8"
 regex = "1.4"
 structopt = "0.3"
+tokio-test = "0.4.2"
 
 [build-dependencies]
-rustc_version = "0.3"
+rustc_version = "0.4"
 
 [package.metadata.docs.rs]
 all-features = true
 
 [[example]]
 name = "patbench"
-test = false
 required-features = ["full"]
+test = false
 
 [[example]]
 name = "pcapscan"
-test = false
 required-features = ["full"]
+test = false
 
 [[example]]
 name = "simplegrep"
-test = false
 required-features = ["full"]
+test = false
