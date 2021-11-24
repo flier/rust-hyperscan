@@ -65,9 +65,5 @@ ADD . /rust-hyperscan/
 
 WORKDIR /rust-hyperscan
 
-ARG FEATURES=chimera
-
-RUN cargo build --features ${FEATURES}
-
 ENTRYPOINT ["cargo"]
-CMD ["test", "--features", "${FEATURES}"]
+CMD ["test"]

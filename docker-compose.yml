@@ -7,6 +7,7 @@ services:
         hyperscan: 5.4
       args:
         HYPERSCAN_VERSION: 5.4.0
+    command: test --features chimera
   hyperscan-5.2:
     build:
       context: .
@@ -14,6 +15,7 @@ services:
         hyperscan: 5.2
       args:
         HYPERSCAN_VERSION: 5.2.1
+    command: test --features chimera
   hyperscan-4.7:
     build:
       context: .
@@ -23,4 +25,3 @@ services:
         UBUNTU_VERSION: 18.04
         HYPERSCAN_VERSION: 4.7.0
         PCRE_VERSION: 8.41
-        CRATE_FEATURES:
