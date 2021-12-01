@@ -112,7 +112,6 @@ impl From<ffi::ch_error_t> for Error {
             ffi::CH_BAD_ALIGN => BadAlign,
             ffi::CH_BAD_ALLOC => BadAlloc,
             ffi::CH_SCRATCH_IN_USE => ScratchInUse,
-            ffi::CH_UNKNOWN_HS_ERROR => UnknownError,
             ffi::CH_FAIL_INTERNAL => FailInternal,
             ffi::CH_UNKNOWN_HS_ERROR => UnknownHSError,
             _ => Code(err),

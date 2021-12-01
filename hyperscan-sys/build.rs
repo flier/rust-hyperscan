@@ -21,8 +21,6 @@ fn find_hyperscan() -> Result<PathBuf> {
             bail!("HYPERSCAN_ROOT should point to a directory that exists.");
         }
 
-        let inc_path = prefix.join("include/hs");
-        let link_path = prefix.join("lib");
         if link_path.exists() && link_path.is_dir() {
             cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
         } else {
