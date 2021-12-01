@@ -451,8 +451,16 @@ jobs:
         with:
           path: ${{ github.workspace }}/dist
           key: ${{ runner.os }}-build-hyperscan-${{ matrix.hyperscan }}-pcre-${{ matrix.pcre }}
-          restore-keys: |
-            ${{ runner.os }}-build-hyperscan-${{ matrix.hyperscan }}-
+
+      - name: Install Hyperscan ${{ matrix.hyperscan }} with PCRE ${{ matrix.pcre }}
+        if: steps.cache-hyperscan.outputs.cache-hit == false
+        uses: flier/install-hyperscan@main
+        with:
+          hyperscan_version: ${{ matrix.hyperscan }}
+          pcre_version: ${{ matrix.pcre }}
+          build_static_lib: on
+          src_dir: ${{ runner.temp }}/hyperscan/
+          install_prefix: ${{ github.workspace }}/dist/
 
       - name: Upload Hyperscan ${{ matrix.hyperscan }}
         if: steps.cache-hyperscan.outputs.cache-hit == false
