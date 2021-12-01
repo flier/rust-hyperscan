@@ -20,35 +20,35 @@ jobs:
       matrix:
         toolchain: [stable, nightly]
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq libhyperscan-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libhyperscan-dev
 
-    - name: Install ${{ matrix.toolchain }} Rust
-      id: install-rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.toolchain }}
-        override: true
+      - name: Install ${{ matrix.toolchain }} Rust
+        id: install-rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
 
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Cache Cargo
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-${{ steps.install-rust.outputs.rustc }}-${{ steps.install-rust.outputs.rustc_hash }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-${{ steps.install-rust.outputs.rustc }}-${{ steps.install-rust.outputs.rustc_hash }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Check
-      uses: actions-rs/cargo@v1
-      with:
-        command: check
+      - name: Check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
 
   fmt:
     name: Rustfmt
@@ -58,36 +58,36 @@ jobs:
       matrix:
         toolchain: [stable, nightly]
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq libhyperscan-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libhyperscan-dev
 
-    - name: Install ${{ matrix.toolchain }} Rust with rustfmt
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.toolchain }}
-        components: rustfmt
-        override: true
+      - name: Install ${{ matrix.toolchain }} Rust with rustfmt
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt
+          override: true
 
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Cache Cargo
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Rustfmt
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --all -- --check
+      - name: Rustfmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
 
   clippy:
     name: Clippy
@@ -97,36 +97,36 @@ jobs:
       matrix:
         toolchain: [stable, nightly]
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq libhyperscan-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libhyperscan-dev
 
-    - name: Install ${{ matrix.toolchain }} Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.toolchain }}
-        components: clippy
-        override: true
+      - name: Install ${{ matrix.toolchain }} Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy
+          override: true
 
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Cache Cargo
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Clippy
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: -- -D warnings
+      - name: Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
 
   test:
     name: Tests
@@ -136,34 +136,34 @@ jobs:
       matrix:
         toolchain: [stable, nightly]
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq libhyperscan-dev libpcap-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libhyperscan-dev libpcap-dev
 
-    - name: Install ${{ matrix.toolchain }} Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.toolchain }}
-        override: true
+      - name: Install ${{ matrix.toolchain }} Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
 
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Cache Cargo
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Test
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
 
   test-v4:
     name: Tests (hyperscan v4)
@@ -173,33 +173,33 @@ jobs:
       matrix:
         toolchain: [stable, nightly]
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq libhyperscan-dev libpcap-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libhyperscan-dev libpcap-dev
 
-    - name: Install ${{ matrix.toolchain }} Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.toolchain }}
-        override: true
+      - name: Install ${{ matrix.toolchain }} Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
 
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Cache Cargo
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Test
-      working-directory: hyperscan
-      run: cargo test --verbose --release --no-default-features --features=full
+      - name: Test
+        working-directory: hyperscan
+        run: cargo test --verbose --release --no-default-features --features=full
 
   gen:
     name: Generate binding file
@@ -209,55 +209,55 @@ jobs:
       matrix:
         toolchain: [stable, nightly]
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq libhyperscan-dev libpcap-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libhyperscan-dev libpcap-dev
 
-    - name: Cache LLVM and Clang
-      id: cache-llvm
-      uses: actions/cache@v2
-      with:
-        path: ${{ runner.temp }}/llvm
-        key: llvm-${{ env.LLVM_VERSION }}
+      - name: Cache LLVM and Clang
+        id: cache-llvm
+        uses: actions/cache@v2
+        with:
+          path: ${{ runner.temp }}/llvm
+          key: llvm-${{ env.LLVM_VERSION }}
 
-    - name: Install LLVM and Clang
-      uses: KyleMayes/install-llvm-action@v1
-      with:
-        version: ${{ env.LLVM_VERSION }}
-        directory: ${{ runner.temp }}/llvm
-        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: ${{ env.LLVM_VERSION }}
+          directory: ${{ runner.temp }}/llvm
+          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
 
-    - name: Install ${{ matrix.toolchain }} Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.toolchain }}
-        override: true
+      - name: Install ${{ matrix.toolchain }} Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
 
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Cache Cargo
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Run cargo test for hyperscan-sys with generated binding files
-      working-directory: hyperscan-sys
-      run: cargo test --verbose --release --features=gen
+      - name: Run cargo test for hyperscan-sys with generated binding files
+        working-directory: hyperscan-sys
+        run: cargo test --verbose --release --features=gen
 
-    - name: Run cargo test for hyperscan-sys with generated binding files
-      working-directory: hyperscan-sys
-      run: cargo test --verbose --release --no-default-features --features=full,gen
+      - name: Run cargo test for hyperscan-sys with generated binding files
+        working-directory: hyperscan-sys
+        run: cargo test --verbose --release --no-default-features --features=full,gen
 
-    - name: Run cargo test with generated binding files
-      working-directory: hyperscan
-      run: cargo test --verbose --release --no-default-features --features=gen,full,v5_3
+      - name: Run cargo test with generated binding files
+        working-directory: hyperscan
+        run: cargo test --verbose --release --no-default-features --features=gen,full,v5_3
 
   hyperscan:
     runs-on: ubuntu-20.04
@@ -265,60 +265,60 @@ jobs:
       HYPERSCAN_ROOT: ${{ github.workspace }}/dist
 
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq libboost-dev libpcap-dev ragel tree
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libboost-dev libpcap-dev ragel tree
 
-    - name: Cache Hyperscan Source
-      uses: actions/cache@v2
-      id: cache-hyperscan-source
-      with:
-        path: ${{ github.workspace }}/hyperscan
-        key: ${{ runner.os }}-source-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
+      - name: Cache Hyperscan Source
+        uses: actions/cache@v2
+        id: cache-hyperscan-source
+        with:
+          path: ${{ github.workspace }}/hyperscan
+          key: ${{ runner.os }}-source-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
 
-    - name: Download Hyperscan
-      if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
-      run: |
-        wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
-        mkdir ${{ github.workspace }}/hyperscan
-        tar xvf v$HYPERSCAN_VERSION.tar.gz -C ${{ github.workspace }}/hyperscan --strip-components=1
+      - name: Download Hyperscan
+        if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
+          mkdir ${{ github.workspace }}/hyperscan
+          tar xvf v$HYPERSCAN_VERSION.tar.gz -C ${{ github.workspace }}/hyperscan --strip-components=1
 
-    - name: Download PCRE
-      if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
-      run: |
-        wget https://ftp.pcre.org/pub/pcre/pcre-$PCRE_VERSION.tar.gz
-        mkdir ${{ github.workspace }}/hyperscan/pcre
-        tar xvf pcre-$PCRE_VERSION.tar.gz -C ${{ github.workspace }}/hyperscan/pcre --strip-components=1
+      - name: Download PCRE
+        if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
+        run: |
+          wget https://ftp.pcre.org/pub/pcre/pcre-$PCRE_VERSION.tar.gz
+          mkdir ${{ github.workspace }}/hyperscan/pcre
+          tar xvf pcre-$PCRE_VERSION.tar.gz -C ${{ github.workspace }}/hyperscan/pcre --strip-components=1
 
-    - name: Cache Hyperscan Build
-      uses: actions/cache@v2
-      id: cache-hyperscan-build
-      with:
-        path: ${{ env.HYPERSCAN_ROOT }}
-        key: ${{ runner.os }}-build-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
+      - name: Cache Hyperscan Build
+        uses: actions/cache@v2
+        id: cache-hyperscan-build
+        with:
+          path: ${{ env.HYPERSCAN_ROOT }}
+          key: ${{ runner.os }}-build-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
 
-    - name: Create HYPERSCAN_ROOT folder
-      run: mkdir -p ${{ env.HYPERSCAN_ROOT }}
+      - name: Create HYPERSCAN_ROOT folder
+        run: mkdir -p ${{ env.HYPERSCAN_ROOT }}
 
-    - name: Build Hyperscan
-      if: steps.cache-hyperscan-build.outputs.cache-hit != 'true'
-      uses: ashutoshvarma/action-cmake-build@master
-      with:
-        configure-options: -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=${{ env.HYPERSCAN_ROOT }}
-        build-dir: ./build
-        build-type: RelWithDebInfo
-        source-dir: ${{ github.workspace }}/hyperscan
-        install-build: true
+      - name: Build Hyperscan
+        if: steps.cache-hyperscan-build.outputs.cache-hit != 'true'
+        uses: ashutoshvarma/action-cmake-build@master
+        with:
+          configure-options: -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=${{ env.HYPERSCAN_ROOT }}
+          build-dir: ./build
+          build-type: RelWithDebInfo
+          source-dir: ${{ github.workspace }}/hyperscan
+          install-build: true
 
-    - name: List installed files
-      run: tree $HYPERSCAN_ROOT
+      - name: List installed files
+        run: tree $HYPERSCAN_ROOT
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
-        path: ${{ env.HYPERSCAN_ROOT }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
+          path: ${{ env.HYPERSCAN_ROOT }}
 
   chimera:
     name: Chimera
@@ -331,69 +331,182 @@ jobs:
       PKG_CONFIG_PATH: ${{ github.workspace }}/../dist/lib/pkgconfig
 
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq libpcap-dev tree
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libpcap-dev tree
 
-    - name: Download hyperscan build
-      uses: actions/download-artifact@v2
-      with:
-        name: hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
-        path: ${{ env.HYPERSCAN_ROOT }}
+      - name: Download hyperscan build
+        uses: actions/download-artifact@v2
+        with:
+          name: hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
+          path: ${{ env.HYPERSCAN_ROOT }}
 
-    - name: List installed files
-      run: tree $HYPERSCAN_ROOT
+      - name: List installed files
+        run: tree $HYPERSCAN_ROOT
 
-    - name: Cache LLVM and Clang
-      id: cache-llvm
-      uses: actions/cache@v2
-      with:
-        path: ${{ runner.temp }}/llvm
-        key: llvm-${{ env.LLVM_VERSION }}
+      - name: Cache LLVM and Clang
+        id: cache-llvm
+        uses: actions/cache@v2
+        with:
+          path: ${{ runner.temp }}/llvm
+          key: llvm-${{ env.LLVM_VERSION }}
 
-    - name: Install LLVM and Clang
-      uses: KyleMayes/install-llvm-action@v1
-      with:
-        version: ${{ env.LLVM_VERSION }}
-        directory: ${{ runner.temp }}/llvm
-        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: ${{ env.LLVM_VERSION }}
+          directory: ${{ runner.temp }}/llvm
+          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
 
-    - name: Install stable Rust with clippy and rustfmt
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        components: rustfmt, clippy
-        override: true
+      - name: Install stable Rust with clippy and rustfmt
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          override: true
 
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Cache Cargo
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Run cargo test for hyperscan-sys
-      working-directory: hyperscan-sys
-      run: cargo test --verbose --release --features=full,tracing
+      - name: Run cargo test for hyperscan-sys
+        working-directory: hyperscan-sys
+        run: cargo test --verbose --release --features=full,tracing
 
-    - name: Run cargo test for hyperscan-sys with chimera
-      working-directory: hyperscan-sys
-      run: cargo test --verbose --release --features=full,tracing,chimera
+      - name: Run cargo test for hyperscan-sys with chimera
+        working-directory: hyperscan-sys
+        run: cargo test --verbose --release --features=full,tracing,chimera
 
-    - name: Run cargo test for hyperscan-sys with chimera and generated binding
-      working-directory: hyperscan-sys
-      run: cargo test --verbose --release --features=full,tracing,chimera,gen
+      - name: Run cargo test for hyperscan-sys with chimera and generated binding
+        working-directory: hyperscan-sys
+        run: cargo test --verbose --release --features=full,tracing,chimera,gen
 
-    - name: Run cargo test
-      working-directory: hyperscan
-      run: cargo test --verbose --release
+      - name: Run cargo test
+        working-directory: hyperscan
+        run: cargo test --verbose --release
 
-    - name: Run cargo test with chimera
-      working-directory: hyperscan
-      run: cargo test --verbose --release --features=chimera
+      - name: Run cargo test with chimera
+        working-directory: hyperscan
+        run: cargo test --verbose --release --features=chimera
+
+  build-and-test:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            hyperscan: 5.4.0
+            pcre: 8.45
+            toolchain: stable
+            chimera: true
+          - os: macos-latest
+            hyperscan: 5.2.1
+            pcre: 8.45
+            chimera: true
+          - os: ubuntu-20.04
+            hyperscan: 5.4.0
+            pcre: 8.45
+            chimera: true
+          - os: ubuntu-20.04
+            hyperscan: 5.2.1
+            pcre: 8.45
+            chimera: true
+          - os: ubuntu-18.04
+            hyperscan: 4.7.0
+            pcre: 8.41
+            chimera: false
+    name: Tests @ ${{ matrix.os }} for hyperscan ${{ matrix.hyperscan }}
+    runs-on: ${{ matrix.os }}
+    env:
+      PKG_CONFIG_PATH: ${{ github.workspace }}/dist/lib/pkgconfig
+    steps:
+      - name: Install Linux dependencies
+        if: startsWith(matrix.os, 'ubuntu-')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq build-essential ca-certificates cmake libboost-dev libbz2-dev libpcap-dev \
+            ninja-build pkg-config python2.7 ragel wget zlib1g-dev tree
+
+      - name: Install MacOS dependencies
+        if: startsWith(matrix.os, 'macos-')
+        run: |
+          brew update
+          brew install pkg-config libpcap ragel cmake boost ninja lzlib wget tree
+
+      - uses: actions/checkout@v2
+
+      - name: Cache Hyperscan library
+        id: cache-hyperscan
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-hyperscan-library
+        with:
+          path: ${{ github.workspace }}/dist
+          key: ${{ runner.os }}-build-hyperscan-${{ matrix.hyperscan }}-pcre-${{ matrix.pcre }}
+          restore-keys: |
+            ${{ runner.os }}-build-hyperscan-${{ matrix.hyperscan }}-
+
+      - name: Upload Hyperscan ${{ matrix.hyperscan }}
+        if: steps.cache-hyperscan.outputs.cache-hit == false
+        uses: actions/upload-artifact@v2
+        with:
+          name: hyperscan-${{ matrix.hyperscan }}-pcre-${{ matrix.pcre }}
+          path: ${{ github.workspace }}/dist/
+          if-no-files-found: error
+
+      - name: Check cached Hyperscan ${{ matrix.hyperscan}} with PCRE ${{ matrix.pcre }}
+        if: steps.cache-hyperscan.outputs.cache-hit
+        run: |
+          tree ${{ github.workspace }}/dist
+
+      - name: Install stable Rust with clippy and rustfmt
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          override: true
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run cargo test for hyperscan-sys
+        working-directory: hyperscan-sys
+        run: cargo test --verbose --release --features=full,tracing
+
+      - name: Run cargo test for hyperscan-sys with chimera
+        if: steps.matrix.chimera
+        working-directory: hyperscan-sys
+        run: cargo test --verbose --release --features=full,tracing,chimera
+
+      - name: Run cargo test for hyperscan-sys with chimera and generated binding
+        if: steps.matrix.chimera
+        working-directory: hyperscan-sys
+        run: cargo test --verbose --release --features=full,tracing,chimera,gen
+
+      - name: Run cargo test
+        working-directory: hyperscan
+        run: cargo test --verbose --release
+
+      - name: Run cargo test with chimera
+        if: steps.matrix.chimera
+        working-directory: hyperscan
+        run: cargo test --verbose --release --features=chimera
