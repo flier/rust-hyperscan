@@ -123,14 +123,14 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Clippy
-        if: matrix.toolchain == "stable"
+        if: matrix.toolchain == 'stable'
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: -- -D warnings
 
       - name: Clippy
-        if: matrix.toolchain == "nightly"
+        if: matrix.toolchain == 'nightly'
         uses: actions-rs/cargo@v1
         with:
           command: clippy
