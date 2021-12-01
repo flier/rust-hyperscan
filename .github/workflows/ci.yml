@@ -246,8 +246,7 @@ jobs:
           build_static_lib: on
           src_dir: ${{ runner.temp }}/hyperscan/
           install_prefix: ${{ github.workspace }}/dist
-          install_dependencies: true
-          use_cache: true
+          cache_key: ${{ runner.os }}-build-hyperscan-${{ matrix.hyperscan }}-pcre-${{ matrix.pcre }}-${{ secrets.CACHE_VERSION }}
           upload_artifact: true
 
       - run: |
