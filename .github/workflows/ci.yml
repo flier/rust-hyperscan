@@ -182,7 +182,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose
+          args: --verbose --release --no-default-features --features=full,v5
 
       - name: Test Hyperscan v4
         if: matrix.os == 'ubuntu-18.04'
@@ -196,7 +196,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --features=gen
+          args: --verbose --release --no-default-features --features=full,v5,gen
 
       - name: Test Hyperscan v4 with generated binding files
         if: matrix.os == 'ubuntu-18.04'
@@ -311,30 +311,44 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p hyperscan-sys --verbose --release --features=full,tracing,static
+          args: -p hyperscan-sys --verbose --release --no-default-features --features=full,tracing,static
 
       - name: Run cargo test for hyperscan-sys with chimera
         if: steps.matrix.chimera
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p hyperscan-sys --verbose --release --features=full,tracing,chimera
+          args: -p hyperscan-sys --verbose --release --no-default-features --features=full,tracing,chimera
+
+      - name: Run cargo test for hyperscan-sys with generated binding
+        if: steps.matrix.chimera
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p hyperscan-sys --verbose --release --no-default-features --features=full,tracing,gen
 
       - name: Run cargo test for hyperscan-sys with chimera and generated binding
         if: steps.matrix.chimera
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p hyperscan-sys --verbose --release --features=full,tracing,chimera,gen
+          args: -p hyperscan-sys --verbose --release --no-default-features --features=full,tracing,chimera,gen
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --release --features=static
+          args: --verbose --release --no-default-features --features=full,static
 
-      - name: Run cargo test with chimera
+      - name: Run cargo test with Hyperscan and Chimera API
         if: steps.matrix.chimera
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,chimera
+
+      - name: Run cargo test with Hyperscan v5.4 or later and Chimera API
+        if: steps.matrix.chimera && startsWith(matrix.hyperscan, '5.4')
         uses: actions-rs/cargo@v1
         with:
           command: test
