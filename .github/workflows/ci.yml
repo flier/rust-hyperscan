@@ -235,19 +235,6 @@ jobs:
     env:
       PKG_CONFIG_PATH: ${{ github.workspace }}/dist/lib/pkgconfig
     steps:
-      - name: Install Linux dependencies
-        if: startsWith(matrix.os, 'ubuntu-')
-        run: |
-          sudo apt-get update
-          sudo apt-get install -yq build-essential ca-certificates cmake libboost-dev libbz2-dev libpcap-dev \
-            ninja-build pkg-config python2.7 ragel wget zlib1g-dev tree
-
-      - name: Install MacOS dependencies
-        if: startsWith(matrix.os, 'macos-')
-        run: |
-          brew update
-          brew install pkg-config libpcap ragel cmake boost ninja lzlib wget tree
-
       - uses: actions/checkout@v2
 
       - name: Install Hyperscan ${{ matrix.hyperscan }} with PCRE ${{ matrix.pcre }}
@@ -259,6 +246,7 @@ jobs:
           build_static_lib: on
           src_dir: ${{ runner.temp }}/hyperscan/
           install_prefix: ${{ github.workspace }}/dist
+          install_dependencies: true
           use_cache: true
           upload_artifact: true
 
