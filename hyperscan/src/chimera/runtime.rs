@@ -1,5 +1,3 @@
-#![allow(clippy::non_send_fields_in_send_ty)]
-
 use std::fmt;
 use std::mem::{self, MaybeUninit};
 use std::ops::Range;

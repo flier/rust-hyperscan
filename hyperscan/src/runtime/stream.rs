@@ -1,5 +1,3 @@
-#![allow(clippy::non_send_fields_in_send_ty)]
-
 use std::mem::MaybeUninit;
 
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
