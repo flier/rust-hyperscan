@@ -123,10 +123,18 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Clippy
+        if: matrix.toolchain == "stable"
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: -- -D warnings
+
+      - name: Clippy
+        if: matrix.toolchain == "nightly"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings -A clippy::non_send_fields_in_send_ty
 
   test:
     name: Tests
@@ -452,6 +460,11 @@ jobs:
           path: ${{ github.workspace }}/dist
           key: ${{ runner.os }}-build-hyperscan-${{ matrix.hyperscan }}-pcre-${{ matrix.pcre }}
 
+      - name: Check cached Hyperscan ${{ matrix.hyperscan}} with PCRE ${{ matrix.pcre }}
+        if: steps.cache-hyperscan.outputs.cache-hit
+        run: |
+          tree ${{ github.workspace }}/dist
+
       - name: Install Hyperscan ${{ matrix.hyperscan }} with PCRE ${{ matrix.pcre }}
         if: steps.cache-hyperscan.outputs.cache-hit == false
         uses: flier/install-hyperscan@main
@@ -460,20 +473,22 @@ jobs:
           pcre_version: ${{ matrix.pcre }}
           build_static_lib: on
           src_dir: ${{ runner.temp }}/hyperscan/
-          install_prefix: ${{ github.workspace }}/dist/
+          install_prefix: ${{ github.workspace }}/dist
+
+      - run: |
+          pkg-config --libs --cflags libhs
+
+      - if: steps.matrix.chimera
+        run: |
+          pkg-config --libs --cflags libch
 
       - name: Upload Hyperscan ${{ matrix.hyperscan }}
         if: steps.cache-hyperscan.outputs.cache-hit == false
         uses: actions/upload-artifact@v2
         with:
           name: hyperscan-${{ matrix.hyperscan }}-pcre-${{ matrix.pcre }}
-          path: ${{ github.workspace }}/dist/
+          path: ${{ github.workspace }}/dist
           if-no-files-found: error
-
-      - name: Check cached Hyperscan ${{ matrix.hyperscan}} with PCRE ${{ matrix.pcre }}
-        if: steps.cache-hyperscan.outputs.cache-hit
-        run: |
-          tree ${{ github.workspace }}/dist
 
       - name: Install stable Rust with clippy and rustfmt
         uses: actions-rs/toolchain@v1
@@ -481,9 +496,6 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
           override: true
-
-      - name: Checkout
-        uses: actions/checkout@v2
 
       - name: Cache Cargo
         uses: actions/cache@v2
