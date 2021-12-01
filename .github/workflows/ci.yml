@@ -14,7 +14,7 @@ defaults:
 
 jobs:
   check:
-    name: Check
+    name: Check with Rust ${{ matrix.toolchain }}
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -51,7 +51,7 @@ jobs:
           command: check
 
   fmt:
-    name: Rustfmt
+    name: Check format with Rust ${{ matrix.toolchain }}
     needs: check
     runs-on: ubuntu-20.04
     strategy:
@@ -90,7 +90,7 @@ jobs:
           args: --all -- --check
 
   clippy:
-    name: Clippy
+    name: Clippy with Rust ${{ matrix.toolchain }}
     needs: check
     runs-on: ubuntu-20.04
     strategy:
@@ -137,17 +137,24 @@ jobs:
           args: -- -D warnings -A clippy::non_send_fields_in_send_ty
 
   test:
-    name: Tests
+    name: Tests build-in Hyperscan package with Rust ${{ matrix.toolchain }} @ ${{ matrix.os }}
     needs: check
-    runs-on: ubuntu-20.04
     strategy:
       matrix:
+        os: [ubuntu-20.04, ubuntu-18.04, macos-latest]
         toolchain: [stable, nightly]
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Install dependencies
+      - name: Install Linux dependencies
+        if: startsWith(matrix.os, 'ubuntu-')
         run: |
           sudo apt-get update
-          sudo apt-get install -yq libhyperscan-dev libpcap-dev
+          sudo apt-get install -yq libhyperscan-dev libpcap-dev pkg-config
+
+      - name: Install MacOS dependencies for testing libraries
+        if: startsWith(matrix.os, 'macos-')
+        run: |
+          brew install hyperscan pkg-config libpcap
 
       - name: Install ${{ matrix.toolchain }} Rust
         uses: actions-rs/toolchain@v1
@@ -163,248 +170,40 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Test
+      - name: Test Hyperscan v5
+        if: matrix.os != 'ubuntu-18.04'
         uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --verbose
 
-  test-v4:
-    name: Tests (hyperscan v4)
-    needs: check
-    runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        toolchain: [stable, nightly]
-    steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -yq libhyperscan-dev libpcap-dev
-
-      - name: Install ${{ matrix.toolchain }} Rust
-        uses: actions-rs/toolchain@v1
+      - name: Test Hyperscan v4
+        if: matrix.os == 'ubuntu-18.04'
+        uses: actions-rs/cargo@v1
         with:
-          profile: minimal
-          toolchain: ${{ matrix.toolchain }}
-          override: true
+          command: test
+          args: --verbose --release --no-default-features --features=full
 
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Cache Cargo
-        uses: actions/cache@v2
+      - name: Test Hyperscan v5 with generated binding files
+        if: matrix.os != 'ubuntu-18.04'
+        uses: actions-rs/cargo@v1
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          command: test
+          args: --verbose --features=gen
 
-      - name: Test
-        working-directory: hyperscan
-        run: cargo test --verbose --release --no-default-features --features=full
-
-  gen:
-    name: Generate binding file
-    needs: check
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        toolchain: [stable, nightly]
-    steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -yq libhyperscan-dev libpcap-dev
-
-      - name: Cache LLVM and Clang
-        id: cache-llvm
-        uses: actions/cache@v2
+      - name: Test Hyperscan v4 with generated binding files
+        if: matrix.os == 'ubuntu-18.04'
+        uses: actions-rs/cargo@v1
         with:
-          path: ${{ runner.temp }}/llvm
-          key: llvm-${{ env.LLVM_VERSION }}
-
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: ${{ env.LLVM_VERSION }}
-          directory: ${{ runner.temp }}/llvm
-          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
-
-      - name: Install ${{ matrix.toolchain }} Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.toolchain }}
-          override: true
-
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Cache Cargo
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run cargo test for hyperscan-sys with generated binding files
-        working-directory: hyperscan-sys
-        run: cargo test --verbose --release --features=gen
-
-      - name: Run cargo test for hyperscan-sys with generated binding files
-        working-directory: hyperscan-sys
-        run: cargo test --verbose --release --no-default-features --features=full,gen
-
-      - name: Run cargo test with generated binding files
-        working-directory: hyperscan
-        run: cargo test --verbose --release --no-default-features --features=gen,full,v5_3
-
-  hyperscan:
-    runs-on: ubuntu-20.04
-    env:
-      HYPERSCAN_ROOT: ${{ github.workspace }}/dist
-
-    steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -yq libboost-dev libpcap-dev ragel tree
-
-      - name: Cache Hyperscan Source
-        uses: actions/cache@v2
-        id: cache-hyperscan-source
-        with:
-          path: ${{ github.workspace }}/hyperscan
-          key: ${{ runner.os }}-source-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
-
-      - name: Download Hyperscan
-        if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
-        run: |
-          wget https://github.com/intel/hyperscan/archive/v$HYPERSCAN_VERSION.tar.gz
-          mkdir ${{ github.workspace }}/hyperscan
-          tar xvf v$HYPERSCAN_VERSION.tar.gz -C ${{ github.workspace }}/hyperscan --strip-components=1
-
-      - name: Download PCRE
-        if: steps.cache-hyperscan-source.outputs.cache-hit != 'true'
-        run: |
-          wget https://ftp.pcre.org/pub/pcre/pcre-$PCRE_VERSION.tar.gz
-          mkdir ${{ github.workspace }}/hyperscan/pcre
-          tar xvf pcre-$PCRE_VERSION.tar.gz -C ${{ github.workspace }}/hyperscan/pcre --strip-components=1
-
-      - name: Cache Hyperscan Build
-        uses: actions/cache@v2
-        id: cache-hyperscan-build
-        with:
-          path: ${{ env.HYPERSCAN_ROOT }}
-          key: ${{ runner.os }}-build-hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
-
-      - name: Create HYPERSCAN_ROOT folder
-        run: mkdir -p ${{ env.HYPERSCAN_ROOT }}
-
-      - name: Build Hyperscan
-        if: steps.cache-hyperscan-build.outputs.cache-hit != 'true'
-        uses: ashutoshvarma/action-cmake-build@master
-        with:
-          configure-options: -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=${{ env.HYPERSCAN_ROOT }}
-          build-dir: ./build
-          build-type: RelWithDebInfo
-          source-dir: ${{ github.workspace }}/hyperscan
-          install-build: true
-
-      - name: List installed files
-        run: tree $HYPERSCAN_ROOT
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
-          path: ${{ env.HYPERSCAN_ROOT }}
-
-  chimera:
-    name: Chimera
-    needs: [test, test-v4, gen, hyperscan]
-    runs-on: ubuntu-20.04
-    env:
-      HYPERSCAN_ROOT: ${{ github.workspace }}/../dist
-      LD_LIBRARY_PATH: ${{ github.workspace }}/../dist/lib
-      DYLD_LIBRARY_PATH: ${{ github.workspace }}/../dist/lib
-      PKG_CONFIG_PATH: ${{ github.workspace }}/../dist/lib/pkgconfig
-
-    steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -yq libpcap-dev tree
-
-      - name: Download hyperscan build
-        uses: actions/download-artifact@v2
-        with:
-          name: hyperscan-${{ env.HYPERSCAN_VERSION }}-pcre-${{ env.PCRE_VERSION }}
-          path: ${{ env.HYPERSCAN_ROOT }}
-
-      - name: List installed files
-        run: tree $HYPERSCAN_ROOT
-
-      - name: Cache LLVM and Clang
-        id: cache-llvm
-        uses: actions/cache@v2
-        with:
-          path: ${{ runner.temp }}/llvm
-          key: llvm-${{ env.LLVM_VERSION }}
-
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: ${{ env.LLVM_VERSION }}
-          directory: ${{ runner.temp }}/llvm
-          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
-
-      - name: Install stable Rust with clippy and rustfmt
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-          override: true
-
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Cache Cargo
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run cargo test for hyperscan-sys
-        working-directory: hyperscan-sys
-        run: cargo test --verbose --release --features=full,tracing
-
-      - name: Run cargo test for hyperscan-sys with chimera
-        working-directory: hyperscan-sys
-        run: cargo test --verbose --release --features=full,tracing,chimera
-
-      - name: Run cargo test for hyperscan-sys with chimera and generated binding
-        working-directory: hyperscan-sys
-        run: cargo test --verbose --release --features=full,tracing,chimera,gen
-
-      - name: Run cargo test
-        working-directory: hyperscan
-        run: cargo test --verbose --release
-
-      - name: Run cargo test with chimera
-        working-directory: hyperscan
-        run: cargo test --verbose --release --features=chimera
+          command: test
+          args: --verbose --release --no-default-features --features=full,gen
 
   build-and-test:
     strategy:
@@ -431,7 +230,7 @@ jobs:
             hyperscan: 4.7.0
             pcre: 8.41
             chimera: false
-    name: Tests @ ${{ matrix.os }} for hyperscan ${{ matrix.hyperscan }}
+    name: Build Hyperscan ${{ matrix.hyperscan }} and Tests with Rust ${{ matrix.toolchain }} @ ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     env:
       PKG_CONFIG_PATH: ${{ github.workspace }}/dist/lib/pkgconfig
@@ -509,24 +308,34 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run cargo test for hyperscan-sys
-        working-directory: hyperscan-sys
-        run: cargo test --verbose --release --features=full,tracing
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p hyperscan-sys --verbose --release --features=full,tracing,static
 
       - name: Run cargo test for hyperscan-sys with chimera
         if: steps.matrix.chimera
-        working-directory: hyperscan-sys
-        run: cargo test --verbose --release --features=full,tracing,chimera
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p hyperscan-sys --verbose --release --features=full,tracing,chimera
 
       - name: Run cargo test for hyperscan-sys with chimera and generated binding
         if: steps.matrix.chimera
-        working-directory: hyperscan-sys
-        run: cargo test --verbose --release --features=full,tracing,chimera,gen
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p hyperscan-sys --verbose --release --features=full,tracing,chimera,gen
 
       - name: Run cargo test
-        working-directory: hyperscan
-        run: cargo test --verbose --release
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --features=static
 
       - name: Run cargo test with chimera
         if: steps.matrix.chimera
-        working-directory: hyperscan
-        run: cargo test --verbose --release --features=chimera
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --features=chimera
