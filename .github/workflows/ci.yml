@@ -250,20 +250,6 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - name: Cache Hyperscan library
-        id: cache-hyperscan
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-hyperscan-library
-        with:
-          path: ${{ github.workspace }}/dist
-          key: ${{ runner.os }}-build-hyperscan-${{ matrix.hyperscan }}-pcre-${{ matrix.pcre }}
-
-      - name: Check cached Hyperscan ${{ matrix.hyperscan}} with PCRE ${{ matrix.pcre }}
-        if: steps.cache-hyperscan.outputs.cache-hit
-        run: |
-          tree ${{ github.workspace }}/dist
-
       - name: Install Hyperscan ${{ matrix.hyperscan }} with PCRE ${{ matrix.pcre }}
         if: steps.cache-hyperscan.outputs.cache-hit == false
         uses: flier/install-hyperscan@main
@@ -273,6 +259,8 @@ jobs:
           build_static_lib: on
           src_dir: ${{ runner.temp }}/hyperscan/
           install_prefix: ${{ github.workspace }}/dist
+          use_cache: true
+          upload_artifact: true
 
       - run: |
           pkg-config --libs --cflags libhs
@@ -280,14 +268,6 @@ jobs:
       - if: steps.matrix.chimera
         run: |
           pkg-config --libs --cflags libch
-
-      - name: Upload Hyperscan ${{ matrix.hyperscan }}
-        if: steps.cache-hyperscan.outputs.cache-hit == false
-        uses: actions/upload-artifact@v2
-        with:
-          name: hyperscan-${{ matrix.hyperscan }}-pcre-${{ matrix.pcre }}
-          path: ${{ github.workspace }}/dist
-          if-no-files-found: error
 
       - name: Install stable Rust with clippy and rustfmt
         uses: actions-rs/toolchain@v1
