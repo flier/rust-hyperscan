@@ -1,4 +1,4 @@
-# rust-hyperscan [![Continuous integration](https://github.com/flier/rust-hyperscan/actions/workflows/ci.yml/badge.svg)](https://github.com/flier/rust-hyperscan/actions/workflows/ci.yml) [![crate](https://img.shields.io/crates/v/hyperscan.svg)](https://crates.io/crates/hyperscan) [![docs](https://docs.rs/hyperscan/badge.svg)](https://docs.rs/crate/hyperscan/)
+# rust-hyperscan [![Continuous integration](https://github.com/flier/rust-hyperscan/actions/workflows/ci.yml/badge.svg)](https://github.com/flier/rust-hyperscan/actions/workflows/ci.yml) [![crate](https://img.shields.io/crates/v/hyperscan.svg)](https://crates.io/crates/hyperscan) [![docs](https://docs.rs/hyperscan/badge.svg)](https://flier.github.io/rust-hyperscan/doc/hyperscan/index.html)
 
 [Hyperscan](https://github.com/intel/hyperscan) is a high-performance regular expression matching library.
 
