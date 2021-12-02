@@ -1,4 +1,4 @@
-# rust-hyperscan [![Continuous integration](https://github.com/flier/rust-hyperscan/actions/workflows/ci.yml/badge.svg)](https://github.com/flier/rust-hyperscan/actions/workflows/ci.yml) [![crate](https://img.shields.io/crates/v/hyperscan.svg)](https://crates.io/crates/hyperscan) [![docs](https://docs.rs/hyperscan/badge.svg)](https://flier.github.io/rust-hyperscan/doc/hyperscan/index.html)
+# rust-hyperscan [![Continuous integration](https://github.com/flier/rust-hyperscan/actions/workflows/ci.yml/badge.svg)](https://github.com/flier/rust-hyperscan/actions/workflows/ci.yml) [![crate](https://img.shields.io/crates/v/hyperscan.svg)](https://crates.io/crates/hyperscan) [![docs](https://docs.rs/hyperscan/badge.svg)](https://flier.github.io/rust-hyperscan/doc/hyperscan/index.html) [![Crates.io](https://img.shields.io/crates/l/hyperscan)](https://spdx.org/licenses/Apache-2.0.html)
 
 [Hyperscan](https://github.com/intel/hyperscan) is a high-performance regular expression matching library.
 
@@ -102,3 +102,11 @@ version = "0.2"
 default-features = false
 features = ["runtime"]
 ```
+
+## License
+
+This project is licensed under either of Apache License [APACHE-2.0](https://spdx.org/licenses/Apache-2.0.html) or MIT license [MIT](https://spdx.org/licenses/MIT.html) at your option.
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in Futures by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
