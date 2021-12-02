@@ -1,6 +1,14 @@
 name: Continuous integration
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "**.md"
 
 env:
   HYPERSCAN_VERSION: 5.4.0
