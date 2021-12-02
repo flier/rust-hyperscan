@@ -188,7 +188,7 @@ fn generate_chimera_binding(_: &Path, _: &Path) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    if let Ok(_) = std::env::var("DOCS_RS") {
+    if std::env::var("DOCS_RS").is_ok() {
         return Ok(());
     }
 
