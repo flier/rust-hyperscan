@@ -241,6 +241,7 @@ impl DatabaseRef<Streaming> {
 
         stream.close(scratch, (callback, userdata))
     }
+
     /// Pattern matching takes place for stream-mode pattern databases using AsyncRead.
     ///
     /// # Examples

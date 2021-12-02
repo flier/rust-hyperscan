@@ -218,31 +218,46 @@ jobs:
     strategy:
       matrix:
         include:
+          - os: macos-11
+            hyperscan: 5.4.0
+            pcre: 8.45
+            chimera: true
+            toolchain: nightly
           - os: macos-latest
             hyperscan: 5.4.0
             pcre: 8.45
-            toolchain: stable
             chimera: true
+            toolchain: stable
           - os: macos-latest
             hyperscan: 5.2.1
             pcre: 8.45
             chimera: true
+            toolchain: stable
           - os: ubuntu-20.04
             hyperscan: 5.4.0
             pcre: 8.45
             chimera: true
+            toolchain: nightly
+          - os: ubuntu-20.04
+            hyperscan: 5.4.0
+            pcre: 8.45
+            chimera: true
+            toolchain: stable
           - os: ubuntu-20.04
             hyperscan: 5.3.0
             pcre: 8.45
             chimera: true
+            toolchain: stable
           - os: ubuntu-20.04
             hyperscan: 5.2.1
             pcre: 8.45
             chimera: true
+            toolchain: stable
           - os: ubuntu-18.04
             hyperscan: 4.7.0
             pcre: 8.41
             chimera: false
+            toolchain: stable
     name: Build Hyperscan ${{ matrix.hyperscan }} and Tests with Rust ${{ matrix.toolchain }} @ ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     env:
@@ -271,8 +286,8 @@ jobs:
       - name: Install stable Rust with clippy and rustfmt
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
-          components: rustfmt, clippy
+          toolchain: ${{ matrix.toolchain }}
+          components: minimal
           override: true
 
       - name: Cache Cargo
@@ -313,11 +328,18 @@ jobs:
           command: test
           args: -p hyperscan-sys --verbose --release --no-default-features --features=full,tracing,chimera,gen
 
-      - name: Run cargo test
+      - name: Run cargo test with Hyperscan async API
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --release --no-default-features --features=full,static
+          args: --verbose --release --no-default-features --features=full,static,async
+
+      - name: Run cargo test with Hyperscan unstable API
+        if: matrix.toolchain == 'nightly'
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,static,unstable
 
       - name: Run cargo test with Hyperscan and Chimera API
         if: matrix.chimera
