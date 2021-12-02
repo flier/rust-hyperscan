@@ -206,6 +206,7 @@ jobs:
           args: --verbose --release --no-default-features --features=full,gen
 
   build-and-test:
+    needs: check
     strategy:
       matrix:
         include:
@@ -317,7 +318,7 @@ jobs:
           command: test
           args: --verbose --release --no-default-features --features=full,chimera
 
-      - name: Run cargo test with Hyperscan and Chimera API
+      - name: Run cargo test with Hyperscan v5.x and Chimera API
         if: ${{ matrix.chimera && startsWith(matrix.hyperscan, '5.') }}
         uses: actions-rs/cargo@v1
         with:
