@@ -112,6 +112,7 @@ impl From<ffi::ch_error_t> for Error {
             ffi::CH_BAD_ALIGN => BadAlign,
             ffi::CH_BAD_ALLOC => BadAlloc,
             ffi::CH_SCRATCH_IN_USE => ScratchInUse,
+            #[cfg(feature = "v5_4")]
             ffi::CH_FAIL_INTERNAL => FailInternal,
             ffi::CH_UNKNOWN_HS_ERROR => UnknownHSError,
             _ => Code(err),
