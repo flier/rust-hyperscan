@@ -1,0 +1,72 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="The multiple regular expression compiler with extended parameter support."><meta name="keywords" content="rust, rustlang, rust-lang, hs_compile_ext_multi"><title>hs_compile_ext_multi in hyperscan_sys - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../ayu.css" disabled ><script id="default-settings" ></script><script src="../storage.js"></script><script src="../crates.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../hyperscan_sys/index.html'><div class='logo-container rust-logo'><img src='../rust-logo.png' alt='logo'></div></a><div class="sidebar-elems"><h2 class="location">Other items in<br><a href="index.html">hyperscan_sys</a></h2><div id="sidebar-vars" data-name="hs_compile_ext_multi" data-ty="fn" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../wheel.svg"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Function <a href="index.html">hyperscan_sys</a>::<wbr><a class="fn" href="#">hs_compile_ext_multi</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../src/hyperscan_sys/Users/flier/github/rust-hyperscan/target/debug/build/hyperscan-sys-b352db2b4868fcc6/out/hyperscan.rs.html#1166-1176" title="goto source code">[src]</a></span></h1><pre class="rust fn"><code>pub unsafe extern &quot;C&quot; fn hs_compile_ext_multi(<br>&nbsp;&nbsp;&nbsp;&nbsp;expressions: *const *const c_char, <br>&nbsp;&nbsp;&nbsp;&nbsp;flags: *const c_uint, <br>&nbsp;&nbsp;&nbsp;&nbsp;ids: *const c_uint, <br>&nbsp;&nbsp;&nbsp;&nbsp;ext: *const *const <a class="type" href="type.hs_expr_ext_t.html" title="type hyperscan_sys::hs_expr_ext_t">hs_expr_ext_t</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;elements: c_uint, <br>&nbsp;&nbsp;&nbsp;&nbsp;mode: c_uint, <br>&nbsp;&nbsp;&nbsp;&nbsp;platform: *const <a class="type" href="type.hs_platform_info_t.html" title="type hyperscan_sys::hs_platform_info_t">hs_platform_info_t</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;db: *mut *mut <a class="type" href="type.hs_database_t.html" title="type hyperscan_sys::hs_database_t">hs_database_t</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;error: *mut *mut <a class="type" href="type.hs_compile_error_t.html" title="type hyperscan_sys::hs_compile_error_t">hs_compile_error_t</a><br>) -&gt; <a class="type" href="type.hs_error_t.html" title="type hyperscan_sys::hs_error_t">hs_error_t</a></code></pre><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>The multiple regular expression compiler with extended parameter support.</p>
+<p>This function call compiles a group of expressions into a database in the
+same way as @ref hs_compile_multi(), but allows additional parameters to be
+specified via an @ref hs_expr_ext_t structure per expression.</p>
+<p>@param expressions
+Array of NULL-terminated expressions to compile. Note that (as for @ref
+hs_compile()) these strings must contain only the pattern to be
+matched, with no delimiters or flags. For example, the expression
+<code>/abc?def/i</code> should be compiled by providing <code>abc?def</code> as the first
+string in the @p expressions array, and @ref HS_FLAG_CASELESS as the
+first value in the @p flags array.</p>
+<p>@param flags
+Array of flags which modify the behaviour of each expression. Multiple
+flags may be used by ORing them together. Specifying the NULL pointer
+in place of an array will set the flags value for all patterns to zero.
+Valid values are:
+- HS_FLAG_CASELESS - Matching will be performed case-insensitively.
+- HS_FLAG_DOTALL - Matching a <code>.</code> will not exclude newlines.
+- HS_FLAG_MULTILINE - <code>^</code> and <code>$</code> anchors match any newlines in data.
+- HS_FLAG_SINGLEMATCH - Only one match will be generated by patterns
+with this match id per stream.
+- HS_FLAG_ALLOWEMPTY - Allow expressions which can match against an
+empty string, such as <code>.*</code>.
+- HS_FLAG_UTF8 - Treat this pattern as a sequence of UTF-8 characters.
+- HS_FLAG_UCP - Use Unicode properties for character classes.
+- HS_FLAG_PREFILTER - Compile pattern in prefiltering mode.
+- HS_FLAG_SOM_LEFTMOST - Report the leftmost start of match offset
+when a match is found.
+- HS_FLAG_COMBINATION - Parse the expression in logical combination
+syntax.
+- HS_FLAG_QUIET - Ignore match reporting for this expression. Used for
+the sub-expressions in logical combinations.</p>
+<p>@param ids
+An array of integers specifying the ID number to be associated with the
+corresponding pattern in the expressions array. Specifying the NULL
+pointer in place of an array will set the ID value for all patterns to
+zero.</p>
+<p>@param ext
+An array of pointers to filled @ref hs_expr_ext_t structures that
+define extended behaviour for each pattern. NULL may be specified if no
+extended behaviour is needed for an individual pattern, or in place of
+the whole array if it is not needed for any expressions. Memory used by
+these structures must be both allocated and freed by the caller.</p>
+<p>@param elements
+The number of elements in the input arrays.</p>
+<p>@param mode
+Compiler mode flags that affect the database as a whole. One of @ref
+HS_MODE_STREAM, @ref HS_MODE_BLOCK or @ref HS_MODE_VECTORED must be
+supplied, to select between the generation of a streaming, block or
+vectored database. In addition, other flags (beginning with HS_MODE_)
+may be supplied to enable specific features. See @ref HS_MODE_FLAG for
+more details.</p>
+<p>@param platform
+If not NULL, the platform structure is used to determine the target
+platform for the database. If NULL, a database suitable for running
+on the current host platform is produced.</p>
+<p>@param db
+On success, a pointer to the generated database will be returned in
+this parameter, or NULL on failure. The caller is responsible for
+deallocating the buffer using the @ref hs_free_database() function.</p>
+<p>@param error
+If the compile fails, a pointer to a @ref hs_compile_error_t will be
+returned, providing details of the error condition. The caller is
+responsible for deallocating the buffer using the @ref
+hs_free_compile_error() function.</p>
+<p>@return
+@ref HS_SUCCESS is returned on successful compilation; @ref
+HS_COMPILER_ERROR on failure, with details provided in the @p error
+parameter.</p>
+</div></details></section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../" data-current-crate="hyperscan_sys" data-search-index-js="../search-index.js" data-search-js="../search.js"></div>
+    <script src="../main.js"></script>
+</body></html>

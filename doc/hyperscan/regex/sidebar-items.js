@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Regex","A compiled regular expression for matching Unicode strings."]],"type":[["RegexBuilder","A configurable builder for a regular expression."],["RegexSetBuilder","A configurable builder for a set of regular expressions."]]});

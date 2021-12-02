@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="The basic regular expression compiler."><meta name="keywords" content="rust, rustlang, rust-lang, ch_compile"><title>ch_compile in hyperscan_sys::chimera - Rust</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../hyperscan_sys/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a><div class="sidebar-elems"><h2 class="location">Other items in<br><a href="../index.html">hyperscan_sys</a>::<wbr><a href="index.html">chimera</a></h2><div id="sidebar-vars" data-name="ch_compile" data-ty="fn" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Function <a href="../index.html">hyperscan_sys</a>::<wbr><a href="index.html">chimera</a>::<wbr><a class="fn" href="#">ch_compile</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../../src/hyperscan_sys/Users/flier/github/rust-hyperscan/target/debug/build/hyperscan-sys-b352db2b4868fcc6/out/chimera.rs.html#415-422" title="goto source code">[src]</a></span></h1><pre class="rust fn"><code>pub unsafe extern &quot;C&quot; fn ch_compile(<br>&nbsp;&nbsp;&nbsp;&nbsp;expression: *const c_char, <br>&nbsp;&nbsp;&nbsp;&nbsp;flags: c_uint, <br>&nbsp;&nbsp;&nbsp;&nbsp;mode: c_uint, <br>&nbsp;&nbsp;&nbsp;&nbsp;platform: *const <a class="type" href="type.hs_platform_info_t.html" title="type hyperscan_sys::chimera::hs_platform_info_t">hs_platform_info_t</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;db: *mut *mut <a class="type" href="type.ch_database_t.html" title="type hyperscan_sys::chimera::ch_database_t">ch_database_t</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;compile_error: *mut *mut <a class="type" href="type.ch_compile_error_t.html" title="type hyperscan_sys::chimera::ch_compile_error_t">ch_compile_error_t</a><br>) -&gt; <a class="type" href="type.ch_error_t.html" title="type hyperscan_sys::chimera::ch_error_t">ch_error_t</a></code></pre><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>The basic regular expression compiler.</p>
+<p>This is the function call with which an expression is compiled into a
+Chimera database which can be passed to the runtime function (
+@ref ch_scan())</p>
+<p>@param expression
+The NULL-terminated expression to parse. Note that this string must
+represent ONLY the pattern to be matched, with no delimiters or flags;
+any global flags should be specified with the @a flags argument. For
+example, the expression <code>/abc?def/i</code> should be compiled by providing
+<code>abc?def</code> as the @a expression, and @ref CH_FLAG_CASELESS as the @a
+flags.</p>
+<p>@param flags
+Flags which modify the behaviour of the expression. Multiple flags may
+be used by ORing them together. Valid values are:
+- CH_FLAG_CASELESS - Matching will be performed case-insensitively.
+- CH_FLAG_DOTALL - Matching a <code>.</code> will not exclude newlines.
+- CH_FLAG_MULTILINE - <code>^</code> and <code>$</code> anchors match any newlines in data.
+- CH_FLAG_SINGLEMATCH - Only one match will be generated for the
+expression per stream.
+- CH_FLAG_UTF8 - Treat this pattern as a sequence of UTF-8 characters.
+- CH_FLAG_UCP - Use Unicode properties for character classes.</p>
+<p>@param mode
+Compiler mode flag that affect the database as a whole for capturing
+groups. One of  CH_MODE_NOGROUPS or  CH_MODE_GROUPS must be supplied.
+See @ref CH_MODE_FLAG for more details.</p>
+<p>@param platform
+If not NULL, the platform structure is used to determine the target
+platform for the database. If NULL, a database suitable for running
+on the current host platform is produced.</p>
+<p>@param db
+On success, a pointer to the generated database will be returned in
+this parameter, or NULL on failure. The caller is responsible for
+deallocating the buffer using the @ref ch_free_database() function.</p>
+<p>@param compile_error
+If the compile fails, a pointer to a @ref ch_compile_error_t will be
+returned, providing details of the error condition. The caller is
+responsible for deallocating the buffer using the @ref
+ch_free_compile_error() function.</p>
+<p>@return
+@ref CH_SUCCESS is returned on successful compilation; @ref
+CH_COMPILER_ERROR on failure, with details provided in the error
+parameter.</p>
+</div></details></section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="hyperscan_sys" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div>
+    <script src="../../main.js"></script>
+</body></html>

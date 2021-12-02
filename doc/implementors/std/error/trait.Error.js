@@ -1,10 +1,3 @@
 (function() {var implementors = {};
-implementors["hyperscan"] = ["impl <a class='trait' href='https://doc.rust-lang.org/nightly/std/error/trait.Error.html' title='std::error::Error'>Error</a> for <a class='enum' href='hyperscan/enum.Error.html' title='hyperscan::Error'>Error</a>",];
-
-            if (window.register_implementors) {
-                window.register_implementors(implementors);
-            } else {
-                window.pending_implementors = implementors;
-            }
-        
-})()
+implementors["hyperscan"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.56.1/std/error/trait.Error.html\" title=\"trait std::error::Error\">Error</a> for <a class=\"enum\" href=\"hyperscan/enum.HsError.html\" title=\"enum hyperscan::HsError\">Error</a>","synthetic":false,"types":["hyperscan::common::error::Error"]},{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.56.1/std/error/trait.Error.html\" title=\"trait std::error::Error\">Error</a> for <a class=\"enum\" href=\"hyperscan/enum.Error.html\" title=\"enum hyperscan::Error\">Error</a>","synthetic":false,"types":["hyperscan::error::Error"]},{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.56.1/std/error/trait.Error.html\" title=\"trait std::error::Error\">Error</a> for <a class=\"enum\" href=\"hyperscan/chimera/prelude/enum.Error.html\" title=\"enum hyperscan::chimera::prelude::Error\">Error</a>","synthetic":false,"types":["hyperscan::chimera::error::Error"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
