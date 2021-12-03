@@ -11,9 +11,6 @@ on:
       - "**.md"
 
 env:
-  HYPERSCAN_VERSION: 5.4.0
-  PCRE_VERSION: 8.44
-  LLVM_VERSION: 10.0
   CARGO_TERM_COLOR: always
 
 defaults:
@@ -23,7 +20,7 @@ defaults:
 jobs:
   check:
     name: Check with Rust ${{ matrix.toolchain }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         toolchain: [stable, nightly]
@@ -61,7 +58,7 @@ jobs:
   fmt:
     name: Check format with Rust ${{ matrix.toolchain }}
     needs: check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         toolchain: [stable, nightly]
@@ -100,7 +97,7 @@ jobs:
   clippy:
     name: Clippy with Rust ${{ matrix.toolchain }}
     needs: check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         toolchain: [stable, nightly]
@@ -149,7 +146,7 @@ jobs:
     needs: check
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04, macos-latest]
+        os: [ubuntu-20.04, ubuntu-18.04, macos-11, macos-latest]
         toolchain: [stable, nightly]
     runs-on: ${{ matrix.os }}
     steps:
@@ -377,12 +374,15 @@ jobs:
           - ubuntu: 20.04
             hyperscan: 5.4.0
             pcre: 8.45
+            features: [full, v5_4, chimera]
           - ubuntu: 20.04
             hyperscan: 5.2.1
             pcre: 8.45
+            features: [full, v5, chimera]
           - ubuntu: 18.04
             hyperscan: 4.7.0
             pcre: 8.41
+            features: [full, static]
     name: Build Docker Container for Hyperscan ${{ matrix.hyperscan }} with PCRE ${{ matrix.pcre }} @ Ubuntu ${{ matrix.ubuntu }}
     runs-on: ubuntu-latest
     steps:
@@ -400,4 +400,5 @@ jobs:
           push: false
           tags: flier/rust-hyperscan:${{ matrix.hyperscan }}
       - run: |
-          docker run --rm flier/rust-hyperscan:${{ matrix.hyperscan }}
+          docker run --rm flier/rust-hyperscan:${{ matrix.hyperscan }} \
+            test --verbose --release --no-default-features --features=${{ join(matrix.features, ',') }}
