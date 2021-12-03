@@ -368,3 +368,32 @@ jobs:
         with:
           command: test
           args: --verbose --release --no-default-features --features=full,v5_4,chimera
+
+  docker:
+    needs: check
+    strategy:
+      matrix:
+        include:
+          - ubuntu: 20.04
+            hyperscan: 5.4.0
+            pcre: 8.45
+          - ubuntu: 20.04
+            hyperscan: 5.2.1
+            pcre: 8.45
+          - ubuntu: 18.04
+            hyperscan: 4.7.0
+            pcre: 8.41
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/build-push-action@v2
+        with:
+          context: .
+          build-args: |
+            UBUNTU_VERSION=${{ matrix.ubuntu }}
+            HYPERSCAN_VERSION=${{ matrix.hyperscan }}
+            PCRE_VERSION=${{ matrix.pcre }}
+          push: false
+          tags: flier/rust-hyperscan:${{ matrix.hyperscan }}
