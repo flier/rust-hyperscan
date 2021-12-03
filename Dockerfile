@@ -66,4 +66,4 @@ ADD . /rust-hyperscan/
 WORKDIR /rust-hyperscan
 
 ENTRYPOINT ["cargo"]
-CMD ["test", "-v", "--features static"]
+CMD ["test", "-v", "--features", "static"]
