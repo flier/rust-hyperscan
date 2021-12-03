@@ -396,6 +396,7 @@ jobs:
             UBUNTU_VERSION=${{ matrix.ubuntu }}
             HYPERSCAN_VERSION=${{ matrix.hyperscan }}
             PCRE_VERSION=${{ matrix.pcre }}
+          load: true
           push: false
           tags: flier/rust-hyperscan:${{ matrix.hyperscan }}
       - run: |
