@@ -383,6 +383,7 @@ jobs:
           - ubuntu: 18.04
             hyperscan: 4.7.0
             pcre: 8.41
+    name: Build Docker Container for Hyperscan ${{ matrix.hyperscan }} with PCRE ${{ matrix.pcre }} @ Ubuntu ${{ matrix.ubuntu }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -397,3 +398,5 @@ jobs:
             PCRE_VERSION=${{ matrix.pcre }}
           push: false
           tags: flier/rust-hyperscan:${{ matrix.hyperscan }}
+      - run: |
+          docker run --rm flier/rust-hyperscan:${{ matrix.hyperscan }} test -v
