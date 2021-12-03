@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install golang
+# Install Rust
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${RUST_TOOLCHAIN} -y
 ENV PATH=/root/.cargo/bin:$PATH
@@ -66,4 +66,4 @@ ADD . /rust-hyperscan/
 WORKDIR /rust-hyperscan
 
 ENTRYPOINT ["cargo"]
-CMD ["test"]
+CMD ["test", "-v", "--features static"]

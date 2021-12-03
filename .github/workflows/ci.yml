@@ -400,4 +400,4 @@ jobs:
           push: false
           tags: flier/rust-hyperscan:${{ matrix.hyperscan }}
       - run: |
-          docker run --rm flier/rust-hyperscan:${{ matrix.hyperscan }} test -v
+          docker run --rm flier/rust-hyperscan:${{ matrix.hyperscan }}
