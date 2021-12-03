@@ -49,20 +49,26 @@ hyperscan-sys = {version = "0.2", path = "../hyperscan-sys"}
 [dev-dependencies]
 anyhow = "1.0"
 byteorder = "1.2"
+criterion = "0.3"
 doc-comment = "0.3"
 either = "1.5"
+lazy_static = "1.4"
 pcap = "0.9"
 pnet = "0.28"
 rand = "0.8"
-regex = "1.4"
+regex = "1.5"
 structopt = "0.3"
-tokio-test = "0.4.2"
+tokio-test = "0.4"
 
 [build-dependencies]
 rustc_version = "0.4"
 
 [package.metadata.docs.rs]
 all-features = true
+
+[[bench]]
+harness = false
+name = "bench"
 
 [[example]]
 name = "patbench"
