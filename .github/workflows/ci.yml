@@ -281,7 +281,6 @@ jobs:
           src_dir: ${{ runner.temp }}/hyperscan/
           install_prefix: ${{ github.workspace }}/dist
           cache_key: ${{ runner.os }}-build-hyperscan-${{ matrix.hyperscan }}-pcre-${{ matrix.pcre }}-${{ secrets.CACHE_VERSION }}
-          upload_artifact: true
 
       - run: |
           pkg-config --libs --cflags libhs
