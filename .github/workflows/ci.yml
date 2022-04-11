@@ -230,6 +230,11 @@ jobs:
             pcre: 8.45
             chimera: true
             toolchain: stable
+          - os: macos-latest
+            hyperscan: 5.1.1
+            pcre: 8.45
+            chimera: true
+            toolchain: stable
           - os: ubuntu-20.04
             hyperscan: 5.4.0
             pcre: 8.45
@@ -247,6 +252,11 @@ jobs:
             toolchain: stable
           - os: ubuntu-20.04
             hyperscan: 5.2.1
+            pcre: 8.45
+            chimera: true
+            toolchain: stable
+          - os: ubuntu-20.04
+            hyperscan: 5.1.1
             pcre: 8.45
             chimera: true
             toolchain: stable
@@ -352,12 +362,12 @@ jobs:
           command: test
           args: --verbose --release --no-default-features --features=full,v5,chimera
 
-      - name: Run cargo test with Hyperscan v5.3 or later and Chimera API
-        if: ${{ matrix.chimera && startsWith(matrix.hyperscan, '5.3') }}
+      - name: Run cargo test with Hyperscan v5.2 or later and Chimera API
+        if: ${{ matrix.chimera && startsWith(matrix.hyperscan, '5.2') }}
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --release --no-default-features --features=full,v5_3,chimera
+          args: --verbose --release --no-default-features --features=full,v5_2,chimera
 
       - name: Run cargo test with Hyperscan v5.4 or later and Chimera API
         if: ${{ matrix.chimera && startsWith(matrix.hyperscan, '5.4') }}

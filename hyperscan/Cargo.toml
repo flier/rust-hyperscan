@@ -28,9 +28,9 @@ literal = []
 pattern = ["regex/pattern"]
 unstable = ["pattern"]
 v4 = []
-v5 = ["v4", "literal"]
-v5_3 = ["v5"]
-v5_4 = ["v5_3"]
+v5 = ["v4"]
+v5_2 = ["v5", "literal"]
+v5_4 = ["v5_2"]
 
 [dependencies]
 anyhow = "1.0"
