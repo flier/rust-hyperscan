@@ -2,11 +2,14 @@ use std::fmt;
 use std::iter::FromIterator;
 use std::str::FromStr;
 
-use anyhow::{bail, Error, Result};
 use bitflags::bitflags;
 use derive_more::{Deref, DerefMut, From, Index, IndexMut, Into, IntoIterator};
 
-use crate::{compile::ExprExt, ffi};
+use crate::{
+    compile::ExprExt,
+    error::{Error, Result},
+    ffi,
+};
 
 bitflags! {
     /// Pattern flags
@@ -42,7 +45,7 @@ bitflags! {
 impl FromStr for Flags {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         let mut flags = Flags::empty();
 
         for c in s.chars() {
@@ -60,9 +63,7 @@ impl FromStr for Flags {
                 'C' => flags |= Flags::COMBINATION,
                 #[cfg(feature = "v5")]
                 'Q' => flags |= Flags::QUIET,
-                _ => {
-                    bail!("invalid pattern flag: {}", c);
-                }
+                _ => return Err(Error::InvalidFlag(c)),
             }
         }
 
@@ -276,7 +277,7 @@ impl fmt::Display for Pattern {
 impl FromStr for Pattern {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         let (id, expr) = match s.find(":/") {
             Some(off) => (Some(s[..off].parse()?), &s[off + 1..]),
             None => (None, s),
@@ -319,7 +320,7 @@ impl FromStr for Pattern {
 #[derive(Clone, Debug, Deref, DerefMut, From, Index, IndexMut, Into, IntoIterator)]
 #[deref(forward)]
 #[deref_mut(forward)]
-pub struct Patterns(Vec<Pattern>);
+pub struct Patterns(pub Vec<Pattern>);
 
 impl FromIterator<Pattern> for Patterns {
     fn from_iter<T: IntoIterator<Item = Pattern>>(iter: T) -> Self {
@@ -330,7 +331,7 @@ impl FromIterator<Pattern> for Patterns {
 impl FromStr for Patterns {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         s.lines()
             .flat_map(|line| {
                 let line = line.trim();

@@ -42,7 +42,7 @@ mod ffi {
 }
 
 mod common;
-mod errors;
+mod error;
 #[cfg(feature = "compile")]
 #[macro_use]
 mod compile;
@@ -66,14 +66,11 @@ pub use crate::common::Streaming;
 #[deprecated = "use `VectoredMode` instead"]
 pub use crate::common::Vectored;
 pub use crate::common::{
-    version, version_str, Block as BlockMode, BlockDatabase, Database, DatabaseRef, Mode,
+    version, version_str, Block as BlockMode, BlockDatabase, Database, DatabaseRef, Error as HsError, Mode,
     Serialized as SerializedDatabase, Streaming as StreamingMode, StreamingDatabase, Vectored as VectoredMode,
     VectoredDatabase,
 };
-#[doc(hidden)]
-#[deprecated = "use `Error` instead"]
-pub use crate::errors::Error as HsError;
-pub use crate::errors::Error;
+pub use crate::error::{Error, Result};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "compile")] {

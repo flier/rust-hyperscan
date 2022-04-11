@@ -3,13 +3,14 @@ use std::mem::MaybeUninit;
 use std::ptr::null_mut;
 use std::str::FromStr;
 
-use anyhow::Error;
 use foreign_types::{ForeignType, ForeignTypeRef};
 use libc::c_char;
 
-use crate::common::{Database, Mode};
-use crate::compile::{AsCompileResult, Flags, Pattern, Patterns, PlatformRef};
-use crate::ffi;
+use crate::{
+    common::{Database, Mode},
+    compile::{AsCompileResult, Flags, Pattern, Patterns, PlatformRef},
+    ffi, Error,
+};
 
 #[cfg(feature = "literal")]
 use crate::compile::{Literal, LiteralFlags, Literals};
@@ -103,6 +104,7 @@ impl Builder for Pattern {
             )
             .ok_or_else(|| err.assume_init())
             .map(|_| Database::from_ptr(db.assume_init()))
+            .map_err(|err| err.into())
         }
     }
 }
@@ -153,6 +155,7 @@ impl Builder for Patterns {
             )
             .ok_or_else(|| err.assume_init())
             .map(|_| Database::from_ptr(db.assume_init()))
+            .map_err(|err| err.into())
         }
     }
 }
@@ -184,6 +187,7 @@ impl Builder for Literal {
             )
             .ok_or_else(|| err.assume_init())
             .map(|_| Database::from_ptr(db.assume_init()))
+            .map_err(|err| err.into())
         }
     }
 }
@@ -236,6 +240,7 @@ impl Builder for Literals {
             )
             .ok_or_else(|| err.assume_init())
             .map(|_| Database::from_ptr(db.assume_init()))
+            .map_err(|err| err.into())
         }
     }
 }
@@ -268,7 +273,7 @@ impl<T: Mode> Database<T> {
 }
 
 impl<T: Mode> FromStr for Database<T> {
-    type Err = anyhow::Error;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.parse::<Pattern>()?.build::<T>()

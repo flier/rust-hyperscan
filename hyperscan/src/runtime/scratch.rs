@@ -1,16 +1,13 @@
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
-use anyhow::Result;
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
-use crate::common::DatabaseRef;
-use crate::errors::AsResult;
-use crate::ffi;
+use crate::{common::DatabaseRef, error::AsResult, ffi, Result};
 
 foreign_type! {
     /// A large enough region of scratch space to support a given database.
-    pub unsafe type Scratch {
+    pub unsafe type Scratch: Send {
         type CType = ffi::hs_scratch_t;
 
         fn drop = free_scratch;

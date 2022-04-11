@@ -4,14 +4,29 @@ use std::mem::MaybeUninit;
 use std::ops::Deref;
 use std::str::FromStr;
 
-use anyhow::{anyhow, bail, Error, Result};
 use bitflags::bitflags;
 use derive_more::{From, Into};
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 use libc::c_char;
+use thiserror::Error;
 
-use crate::compile::{AsCompileResult, Pattern};
-use crate::ffi;
+use crate::{
+    compile::{AsCompileResult, Pattern},
+    ffi, Result,
+};
+
+/// Hyperscan Error Codes
+#[derive(Debug, Error, PartialEq)]
+pub enum Error {
+    #[error("missing parameter")]
+    MissingParameter,
+
+    #[error("missing value")]
+    MissingValue,
+
+    #[error("unexpected parameter {0}")]
+    UnexpectedParameter(String),
+}
 
 bitflags! {
     /// These flags are used in `hs_expr_ext_t::flags` to indicate which fields are used.
@@ -81,9 +96,9 @@ impl fmt::Display for ExprExt {
 }
 
 impl FromStr for ExprExt {
-    type Err = Error;
+    type Err = crate::Error;
 
-    fn from_str(mut s: &str) -> Result<Self, Self::Err> {
+    fn from_str(mut s: &str) -> Result<Self> {
         if s.starts_with('{') && s.ends_with('}') {
             s = &s[1..s.len() - 1];
         }
@@ -92,8 +107,8 @@ impl FromStr for ExprExt {
             .map(|kv| kv.splitn(2, '='))
             .fold(Ok(ExprExt::default()), |ext, mut kv| {
                 ext.and_then(|mut ext| {
-                    let key = kv.next().ok_or_else(|| anyhow!("missing parameter"))?;
-                    let value = kv.next().ok_or_else(|| anyhow!("missing value"))?;
+                    let key = kv.next().ok_or(Error::MissingParameter)?;
+                    let value = kv.next().ok_or(Error::MissingValue)?;
 
                     match key {
                         "min_offset" => {
@@ -111,7 +126,7 @@ impl FromStr for ExprExt {
                         "hamming_distance" => {
                             ext.set_hamming_distance(value.parse()?);
                         }
-                        _ => bail!("unexpected parameter: {}", key),
+                        _ => return Err(Error::UnexpectedParameter(key.into()).into()),
                     }
 
                     Ok(ext)

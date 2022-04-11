@@ -10,46 +10,52 @@ fn find_hyperscan() -> Result<PathBuf> {
 
     if let Ok(prefix) = env::var("HYPERSCAN_ROOT") {
         let prefix = Path::new(&prefix);
+        let inc_path = prefix.join("include/hs");
+        let link_path = prefix.join("lib");
+
+        if cfg!(feature = "tracing") {
+            cargo_emit::warning!("use HYPERSCAN_ROOT = {}", prefix.display());
+        }
+
         if !prefix.exists() || !prefix.is_dir() {
             bail!("HYPERSCAN_ROOT should point to a directory that exists.");
         }
 
-        let inc_path = prefix.join("include/hs");
-        let link_path = prefix.join("lib");
         if link_path.exists() && link_path.is_dir() {
             cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
         } else {
             bail!("`$HYPERSCAN_ROOT/lib` subdirectory not found.");
         }
 
-        let mut link_libs = vec![];
+        cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
 
-        if !cfg!(feature = "compile") && cfg!(feature = "runtime") {
-            link_libs.push("static=hs_runtime".into());
-        } else {
-            link_libs.push(format!("{}=hs", link_kind));
-
-            if cfg!(feature = "static") {
-                link_libs.push("c++".into());
+        if cfg!(feature = "static") {
+            if cfg!(target_os = "macos") {
+                cargo_emit::rustc_link_lib!("c++");
+            } else {
+                cargo_emit::rustc_link_lib!("stdc++");
             }
         }
 
-        if cfg!(feature = "chimera") {
-            link_libs.push("chimera".into());
-            link_libs.push("pcre".into());
+        if !cfg!(feature = "compile") && cfg!(feature = "runtime") {
+            cargo_emit::rustc_link_lib!("hs_runtime" => link_kind);
+        } else {
+            cargo_emit::rustc_link_lib!("hs" => link_kind);
         }
 
-        cargo_emit::warning!(
-            "building with Hyperscan with {} library @ {:?}, libs={:?}, link_paths=[{:?}], include_paths=[{:?}]",
-            link_kind,
-            prefix,
-            link_libs,
-            link_path,
-            inc_path
-        );
+        if cfg!(feature = "chimera") {
+            cargo_emit::rustc_link_lib!("chimera" => "static");
+            cargo_emit::rustc_link_lib!("pcre" => "static");
+        }
 
-        for lib in link_libs {
-            cargo_emit::rustc_link_lib!(lib);
+        if cfg!(feature = "tracing") {
+            cargo_emit::warning!(
+                "building with Hyperscan with {} library @ {:?}, link_paths=[{:?}], include_paths=[{:?}]",
+                link_kind,
+                prefix,
+                link_path,
+                inc_path
+            );
         }
 
         Ok(inc_path)
@@ -60,14 +66,16 @@ fn find_hyperscan() -> Result<PathBuf> {
             .env_metadata(true)
             .probe("libhs")?;
 
-        cargo_emit::warning!(
-            "building with Hyperscan {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
-            libhs.version,
-            link_kind,
-            libhs.libs,
-            libhs.link_paths,
-            libhs.include_paths
-        );
+        if cfg!(feature = "tracing") {
+            cargo_emit::warning!(
+                "building with Hyperscan {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
+                libhs.version,
+                link_kind,
+                libhs.libs,
+                libhs.link_paths,
+                libhs.include_paths
+            );
+        }
 
         if cfg!(feature = "chimera") {
             let libch = pkg_config::Config::new()
@@ -76,14 +84,16 @@ fn find_hyperscan() -> Result<PathBuf> {
                 .env_metadata(true)
                 .probe("libch")?;
 
-            cargo_emit::warning!(
-                "building with Chimera {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
-                libch.version,
-                link_kind,
-                libch.libs,
-                libch.link_paths,
-                libch.include_paths
-            );
+            if cfg!(feature = "tracing") {
+                cargo_emit::warning!(
+                    "building with Chimera {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
+                    libch.version,
+                    link_kind,
+                    libch.libs,
+                    libch.link_paths,
+                    libch.include_paths
+                );
+            }
         }
 
         libhs
@@ -100,7 +110,9 @@ fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let inc_file = inc_dir.join("hs.h");
     let inc_file = inc_file.to_str().expect("header file");
 
-    cargo_emit::warning!("generating raw Hyperscan binding file @ {}", out_file.display());
+    if cfg!(feature = "tracing") {
+        cargo_emit::warning!("generating raw Hyperscan binding file @ {}", out_file.display());
+    }
 
     cargo_emit::rerun_if_changed!(inc_file);
 
@@ -137,7 +149,9 @@ fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
     let inc_file = inc_dir.join("ch.h");
     let inc_file = inc_file.to_str().expect("header file");
 
-    cargo_emit::warning!("generating raw Chimera binding file @ {}", out_file.display());
+    if cfg!(feature = "tracing") {
+        cargo_emit::warning!("generating raw Chimera binding file @ {}", out_file.display());
+    }
 
     cargo_emit::rerun_if_changed!(inc_file);
 
@@ -174,8 +188,12 @@ fn generate_chimera_binding(_: &Path, _: &Path) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let inc_dir = find_hyperscan()
-        .with_context(|| anyhow!("please download and install hyperscan from https://www.hyperscan.io/"))?;
+    if std::env::var("DOCS_RS").is_ok() {
+        return Ok(());
+    }
+
+    let inc_dir =
+        find_hyperscan().with_context(|| "please download and install hyperscan from https://www.hyperscan.io/")?;
     let out_dir = env::var("OUT_DIR")?;
     let out_dir = Path::new(&out_dir);
 

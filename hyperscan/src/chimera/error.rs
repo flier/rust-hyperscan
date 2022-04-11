@@ -1,11 +1,9 @@
-use std::ffi::CStr;
 use std::fmt;
 use std::result::Result as StdResult;
 
-use foreign_types::{foreign_type, ForeignType};
 use thiserror::Error;
 
-use crate::ffi::chimera as ffi;
+use crate::{chimera::CompileError, ffi::chimera as ffi};
 
 /// A type for errors returned by Chimera functions.
 #[derive(Debug, Error, PartialEq)]
@@ -75,7 +73,15 @@ pub enum Error {
     #[error("The scratch region was already in use.")]
     ScratchInUse,
 
+    /// Unexpected internal error from Hyperscan.
+    ///
+    /// This error indicates that there was unexpected matching behaviors from Hyperscan.
+    /// This could be related to invalid usage of scratch space or invalid memory operations by users.
+    #[error("Unexpected internal error from Hyperscan.")]
+    UnknownError,
+
     /// Returned when pcre_exec (called for some expressions internally from `ch_scan`) failed due to a fatal error.
+    #[cfg(feature = "v5_4")]
     #[error("Failed due to a fatal error")]
     FailInternal,
 
@@ -106,6 +112,7 @@ impl From<ffi::ch_error_t> for Error {
             ffi::CH_BAD_ALIGN => BadAlign,
             ffi::CH_BAD_ALLOC => BadAlloc,
             ffi::CH_SCRATCH_IN_USE => ScratchInUse,
+            #[cfg(feature = "v5_4")]
             ffi::CH_FAIL_INTERNAL => FailInternal,
             ffi::CH_UNKNOWN_HS_ERROR => UnknownHSError,
             _ => Code(err),
@@ -137,98 +144,11 @@ where
 
 impl AsResult for ffi::ch_error_t {
     type Output = ();
-    type Error = anyhow::Error;
+    type Error = crate::Error;
 
     fn ok(self) -> StdResult<Self::Output, Self::Error> {
         if self == ffi::CH_SUCCESS as ffi::ch_error_t {
             Ok(())
-        } else {
-            Err(Error::from(self).into())
-        }
-    }
-}
-
-foreign_type! {
-    /// Providing details of the compile error condition.
-    pub unsafe type CompileError: Send + Sync {
-        type CType = ffi::ch_compile_error_t;
-
-        fn drop = free_compile_error;
-    }
-}
-
-unsafe fn free_compile_error(err: *mut ffi::ch_compile_error_t) {
-    ffi::ch_free_compile_error(err).expect("free compile error");
-}
-
-impl fmt::Display for CompileError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.message())
-    }
-}
-
-impl fmt::Debug for CompileError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("CompileError")
-            .field("message", &self.message())
-            .field("expression", &self.expression())
-            .finish()
-    }
-}
-
-impl PartialEq for CompileError {
-    fn eq(&self, other: &Self) -> bool {
-        self.as_ptr() == other.as_ptr()
-    }
-}
-
-impl CompileError {
-    unsafe fn as_ref(&self) -> &ffi::ch_compile_error_t {
-        self.as_ptr().as_ref().unwrap()
-    }
-
-    /// A human-readable error message describing the error.
-    pub fn message(&self) -> &str {
-        unsafe { CStr::from_ptr(self.as_ref().message).to_str().unwrap() }
-    }
-
-    /// The zero-based number of the expression that caused the error (if this can be determined).
-    pub fn expression(&self) -> Option<usize> {
-        let n = unsafe { self.as_ref().expression };
-
-        if n < 0 {
-            None
-        } else {
-            Some(n as usize)
-        }
-    }
-}
-
-pub trait AsCompileResult: Sized {
-    type Output;
-    type Err: fmt::Display;
-
-    fn ok_or(self, err: *mut ffi::ch_compile_error_t) -> Result<Self::Output, Self::Err> {
-        self.ok_or_else(|| err)
-    }
-
-    fn ok_or_else<F>(self, err: F) -> Result<Self::Output, Self::Err>
-    where
-        F: FnOnce() -> *mut ffi::ch_compile_error_t;
-}
-
-impl AsCompileResult for ffi::ch_error_t {
-    type Output = ();
-    type Err = anyhow::Error;
-
-    fn ok_or_else<F>(self, err: F) -> Result<Self::Output, Self::Err>
-    where
-        F: FnOnce() -> *mut ffi::ch_compile_error_t,
-    {
-        if self == ffi::CH_SUCCESS as ffi::ch_error_t {
-            Ok(())
-        } else if self == ffi::CH_COMPILER_ERROR {
-            Err(Error::CompileError(unsafe { CompileError::from_ptr(err()) }).into())
         } else {
             Err(Error::from(self).into())
         }

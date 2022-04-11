@@ -2,14 +2,16 @@ use std::io::Read;
 use std::mem;
 use std::ptr;
 
-use anyhow::Result;
 use foreign_types::ForeignTypeRef;
 use libc::{c_char, c_uint};
 
-use crate::common::{Block, DatabaseRef, Streaming, Vectored};
-use crate::errors::AsResult;
-use crate::ffi;
-use crate::runtime::{split_closure, ScratchRef, StreamRef};
+use crate::{
+    common::{Block, DatabaseRef, Streaming, Vectored},
+    error::AsResult,
+    ffi,
+    runtime::{split_closure, ScratchRef, StreamRef},
+    Result,
+};
 
 #[cfg(feature = "async")]
 use futures::io::{AsyncRead, AsyncReadExt};
@@ -239,6 +241,7 @@ impl DatabaseRef<Streaming> {
 
         stream.close(scratch, (callback, userdata))
     }
+
     /// Pattern matching takes place for stream-mode pattern databases using AsyncRead.
     ///
     /// # Examples

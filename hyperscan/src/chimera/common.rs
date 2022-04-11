@@ -1,10 +1,12 @@
 use std::ffi::CStr;
 use std::mem::MaybeUninit;
 
-use anyhow::Result;
 use foreign_types::{foreign_type, ForeignTypeRef};
 
-use crate::chimera::{errors::AsResult, ffi};
+use crate::{
+    chimera::{error::AsResult, ffi},
+    Result,
+};
 
 /// Utility function for identifying this release version.
 pub fn version() -> &'static CStr {

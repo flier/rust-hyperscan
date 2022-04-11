@@ -1,0 +1,413 @@
+name: Continuous integration
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+
+env:
+  CARGO_TERM_COLOR: always
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    name: Check with Rust ${{ matrix.toolchain }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain: [stable, nightly]
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libhyperscan-dev
+
+      - name: Install ${{ matrix.toolchain }} Rust
+        id: install-rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-${{ steps.install-rust.outputs.rustc }}-${{ steps.install-rust.outputs.rustc_hash }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+  fmt:
+    name: Check format with Rust ${{ matrix.toolchain }}
+    needs: check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain: [stable, nightly]
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libhyperscan-dev
+
+      - name: Install ${{ matrix.toolchain }} Rust with rustfmt
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt
+          override: true
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Rustfmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  clippy:
+    name: Clippy with Rust ${{ matrix.toolchain }}
+    needs: check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain: [stable, nightly]
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libhyperscan-dev
+
+      - name: Install ${{ matrix.toolchain }} Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy
+          override: true
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Clippy
+        if: matrix.toolchain == 'stable'
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
+
+      - name: Clippy
+        if: matrix.toolchain == 'nightly'
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings -A clippy::non_send_fields_in_send_ty
+
+  test:
+    name: Tests build-in Hyperscan package with Rust ${{ matrix.toolchain }} @ ${{ matrix.os }}
+    needs: check
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-18.04, macos-11, macos-latest]
+        toolchain: [stable, nightly]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Linux dependencies
+        if: startsWith(matrix.os, 'ubuntu-')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq libhyperscan-dev libpcap-dev pkg-config
+
+      - name: Install MacOS dependencies for testing libraries
+        if: startsWith(matrix.os, 'macos-')
+        run: |
+          brew install hyperscan pkg-config libpcap
+
+      - name: Install ${{ matrix.toolchain }} Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Test Hyperscan v5
+        if: matrix.os != 'ubuntu-18.04'
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,v5
+
+      - name: Test Hyperscan v4
+        if: matrix.os == 'ubuntu-18.04'
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full
+
+      - name: Test Hyperscan v5 with generated binding files
+        if: matrix.os != 'ubuntu-18.04'
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,v5,gen
+
+      - name: Test Hyperscan v4 with generated binding files
+        if: matrix.os == 'ubuntu-18.04'
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,gen
+
+  build-and-test:
+    needs: check
+    strategy:
+      matrix:
+        include:
+          - os: macos-11
+            hyperscan: 5.4.0
+            pcre: 8.45
+            chimera: true
+            toolchain: nightly
+          - os: macos-latest
+            hyperscan: 5.4.0
+            pcre: 8.45
+            chimera: true
+            toolchain: stable
+          - os: macos-latest
+            hyperscan: 5.2.1
+            pcre: 8.45
+            chimera: true
+            toolchain: stable
+          - os: macos-latest
+            hyperscan: 5.1.1
+            pcre: 8.45
+            chimera: true
+            toolchain: stable
+          - os: ubuntu-20.04
+            hyperscan: 5.4.0
+            pcre: 8.45
+            chimera: true
+            toolchain: nightly
+          - os: ubuntu-20.04
+            hyperscan: 5.4.0
+            pcre: 8.45
+            chimera: true
+            toolchain: stable
+          - os: ubuntu-20.04
+            hyperscan: 5.3.0
+            pcre: 8.45
+            chimera: true
+            toolchain: stable
+          - os: ubuntu-20.04
+            hyperscan: 5.2.1
+            pcre: 8.45
+            chimera: true
+            toolchain: stable
+          - os: ubuntu-20.04
+            hyperscan: 5.1.1
+            pcre: 8.45
+            chimera: true
+            toolchain: stable
+          - os: ubuntu-18.04
+            hyperscan: 4.7.0
+            pcre: 8.41
+            chimera: false
+            toolchain: stable
+    name: Build Hyperscan ${{ matrix.hyperscan }} and Tests with Rust ${{ matrix.toolchain }} @ ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    env:
+      PKG_CONFIG_PATH: ${{ github.workspace }}/dist/lib/pkgconfig
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Hyperscan ${{ matrix.hyperscan }} with PCRE ${{ matrix.pcre }}
+        uses: flier/install-hyperscan@main
+        with:
+          hyperscan_version: ${{ matrix.hyperscan }}
+          pcre_version: ${{ matrix.pcre }}
+          build_static_lib: on
+          src_dir: ${{ runner.temp }}/hyperscan/
+          install_prefix: ${{ github.workspace }}/dist
+          cache_key: ${{ runner.os }}-build-hyperscan-${{ matrix.hyperscan }}-pcre-${{ matrix.pcre }}-${{ secrets.CACHE_VERSION }}
+
+      - run: |
+          pkg-config --libs --cflags libhs
+
+      - if: matrix.chimera
+        run: |
+          pkg-config --libs --cflags --static libch
+
+      - name: Install stable Rust with clippy and rustfmt
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          profile: minimal
+          override: true
+
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run cargo test for hyperscan-sys
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p hyperscan-sys --verbose --release --no-default-features --features=full,tracing,static
+
+      - name: Run cargo test for hyperscan-sys with chimera
+        if: matrix.chimera
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p hyperscan-sys --verbose --release --no-default-features --features=full,tracing,chimera
+
+      - name: Run cargo test for hyperscan-sys with generated binding
+        if: matrix.chimera
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p hyperscan-sys --verbose --release --no-default-features --features=full,tracing,gen
+
+      - name: Run cargo test for hyperscan-sys with chimera and generated binding
+        if: matrix.chimera
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p hyperscan-sys --verbose --release --no-default-features --features=full,tracing,chimera,gen
+
+      - name: Run cargo test with Hyperscan async API
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,static,async
+
+      - name: Run cargo test with Hyperscan unstable API
+        if: matrix.toolchain == 'nightly'
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,static,unstable
+
+      - name: Run cargo test with Hyperscan and Chimera API
+        if: matrix.chimera
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,chimera
+
+      - name: Run cargo test with Hyperscan v5.x and Chimera API
+        if: ${{ matrix.chimera && startsWith(matrix.hyperscan, '5.') }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,v5,chimera
+
+      - name: Run cargo test with Hyperscan v5.2 or later and Chimera API
+        if: ${{ matrix.chimera && startsWith(matrix.hyperscan, '5.2') }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,v5_2,chimera
+
+      - name: Run cargo test with Hyperscan v5.4 or later and Chimera API
+        if: ${{ matrix.chimera && startsWith(matrix.hyperscan, '5.4') }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --release --no-default-features --features=full,v5_4,chimera
+
+  docker:
+    needs: check
+    strategy:
+      matrix:
+        include:
+          - ubuntu: 20.04
+            hyperscan: 5.4.0
+            pcre: 8.45
+            features: [full, v5_4, chimera]
+          - ubuntu: 20.04
+            hyperscan: 5.2.1
+            pcre: 8.45
+            features: [full, v5, chimera]
+          - ubuntu: 18.04
+            hyperscan: 4.7.0
+            pcre: 8.41
+            features: [full, static]
+    name: Build Docker Container for Hyperscan ${{ matrix.hyperscan }} with PCRE ${{ matrix.pcre }} @ Ubuntu ${{ matrix.ubuntu }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/build-push-action@v2
+        with:
+          context: .
+          build-args: |
+            UBUNTU_VERSION=${{ matrix.ubuntu }}
+            HYPERSCAN_VERSION=${{ matrix.hyperscan }}
+            PCRE_VERSION=${{ matrix.pcre }}
+          load: true
+          push: false
+          tags: flier/rust-hyperscan:${{ matrix.hyperscan }}
+      - run: |
+          docker run --rm flier/rust-hyperscan:${{ matrix.hyperscan }} \
+            test --verbose --release --no-default-features --features=${{ join(matrix.features, ',') }}

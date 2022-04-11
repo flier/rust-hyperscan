@@ -1,8 +1,10 @@
 mod database;
+mod error;
 mod mode;
 mod serialized;
 
 pub use self::database::{BlockDatabase, Database, DatabaseRef, StreamingDatabase, VectoredDatabase};
+pub use self::error::Error;
 pub use self::mode::{Block, Mode, Streaming, Vectored};
 pub use self::serialized::Serialized;
 
@@ -16,8 +18,14 @@ use std::ffi::CStr;
 use crate::ffi;
 
 /// The current Hyperscan version information.
+///
+/// # Examples
+///
+/// ```rust
+/// assert!(hyperscan::version_str().to_string_lossy().starts_with(&hyperscan::version().to_string()));
+/// ```
 pub fn version() -> semver::Version {
-    semver::Version::new(ffi::HS_MAJOR as u64, ffi::HS_MINOR as u64, ffi::HS_PATCH as u64)
+    semver::Version::parse(version_str().to_string_lossy().split(' ').next().unwrap()).unwrap()
 }
 
 /// Utility function for identifying this release version.

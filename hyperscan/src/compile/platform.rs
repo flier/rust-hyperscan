@@ -1,11 +1,9 @@
 use std::mem::{self, MaybeUninit};
 
-use anyhow::Result;
 use bitflags::bitflags;
 use foreign_types::{foreign_type, ForeignType};
 
-use crate::errors::AsResult;
-use crate::ffi;
+use crate::{error::AsResult, ffi, Result};
 
 /// Tuning Parameter
 #[repr(u32)]
@@ -39,9 +37,11 @@ pub enum Tune {
     Goldmont = ffi::HS_TUNE_FAMILY_GLM,
 
     /// Intel(R) microarchitecture code name Icelake
+    #[cfg(feature = "v5_4")]
     Icelake = ffi::HS_TUNE_FAMILY_ICL,
 
     /// Intel(R) microarchitecture code name Icelake Server
+    #[cfg(feature = "v5_4")]
     IcelakeServer = ffi::HS_TUNE_FAMILY_ICX,
 }
 
@@ -60,6 +60,7 @@ bitflags! {
         /// Intel(R) Advanced Vector Extensions 512 (Intel(R) AVX512)
         const AVX512 = ffi::HS_CPU_FEATURES_AVX512 as u64;
         /// Intel(R) Advanced Vector Extensions 512 Vector Byte Manipulation Instructions (Intel(R) AVX512VBMI)
+        #[cfg(feature = "v5_4")]
         const AVX512VBMI = ffi::HS_CPU_FEATURES_AVX512VBMI as u64;
     }
 }
@@ -67,7 +68,7 @@ bitflags! {
 foreign_type! {
     /// A type containing information on the target platform
     /// which may optionally be provided to the compile calls
-    pub unsafe type Platform {
+    pub unsafe type Platform: Send + Sync {
         type CType = ffi::hs_platform_info_t;
 
         fn drop = free_platform_info;

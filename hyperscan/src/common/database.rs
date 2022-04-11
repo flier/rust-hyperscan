@@ -2,12 +2,13 @@ use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 
-use anyhow::Result;
 use foreign_types::{foreign_type, ForeignTypeRef};
 
-use crate::common::{Block, Mode, Streaming, Vectored};
-use crate::errors::AsResult;
-use crate::ffi;
+use crate::{
+    common::{Block, Mode, Streaming, Vectored},
+    error::AsResult,
+    ffi, Result,
+};
 
 foreign_type! {
     /// A compiled pattern database that can then be used to scan data.

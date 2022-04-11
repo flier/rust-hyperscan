@@ -4,15 +4,17 @@ use std::ops::Range;
 use std::ptr;
 use std::slice;
 
-use anyhow::Result;
 use derive_more::{Deref, From, Into};
 use foreign_types::{foreign_type, ForeignType, ForeignTypeRef};
 
-use crate::chimera::{errors::AsResult, ffi, DatabaseRef};
+use crate::{
+    chimera::{error::AsResult, ffi, DatabaseRef},
+    Result,
+};
 
 foreign_type! {
     /// A large enough region of scratch space to support a given database.
-    pub unsafe type Scratch {
+    pub unsafe type Scratch: Send {
         type CType = ffi::ch_scratch_t;
 
         fn drop = free_scratch;
@@ -137,7 +139,7 @@ pub trait MatchEventHandler<'a> {
     ///
     /// # Safety
     ///
-    /// The callback function must be valid for the lifetime of the userdata.
+    /// The returned function can only be called with the returned pointer, or a pointer to another C closure.
     unsafe fn split(&mut self) -> (ffi::ch_match_event_handler, *mut libc::c_void);
 }
 
@@ -212,7 +214,7 @@ pub trait ErrorEventHandler {
     ///
     /// # Safety
     ///
-    /// The callback function must be valid for the lifetime of the userdata.
+    /// The returned function can only be called with the returned pointer, or a pointer to another C closure.
     unsafe fn split(&mut self) -> (ffi::ch_error_event_handler, *mut libc::c_void);
 }
 
