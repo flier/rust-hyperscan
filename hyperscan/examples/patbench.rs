@@ -164,10 +164,6 @@ struct Opt {
     #[structopt(short = "N")]
     non_streaming: bool,
 
-    /// sets streaming mode (default)
-    #[structopt(short = "S")]
-    streaming: bool,
-
     /// sets the factor group size (must be >0); this allows the detection of multiple interacting factors
     #[structopt(short = "F", default_value = "1")]
     factor_max: usize,
