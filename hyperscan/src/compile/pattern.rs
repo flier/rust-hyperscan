@@ -320,7 +320,7 @@ impl FromStr for Pattern {
 #[derive(Clone, Debug, Deref, DerefMut, From, Index, IndexMut, Into, IntoIterator)]
 #[deref(forward)]
 #[deref_mut(forward)]
-pub struct Patterns(Vec<Pattern>);
+pub struct Patterns(pub Vec<Pattern>);
 
 impl FromIterator<Pattern> for Patterns {
     fn from_iter<T: IntoIterator<Item = Pattern>>(iter: T) -> Self {
