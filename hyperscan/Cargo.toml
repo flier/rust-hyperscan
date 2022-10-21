@@ -21,6 +21,7 @@ chimera = ["hyperscan-sys/chimera", "bitflags", "derive_more", "static"]
 compile = ["hyperscan-sys/compile", "bitflags", "derive_more"]
 full = ["compile", "runtime"]
 runtime = ["hyperscan-sys/runtime"]
+contained = ["hyperscan-sys/contained"]
 
 async = ["futures"]
 latest = ["v5_4"]

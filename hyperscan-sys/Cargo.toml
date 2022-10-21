@@ -21,6 +21,7 @@ gen = ["bindgen", "tracing"]
 runtime = []
 static = []
 tracing = []
+contained = ["static"]
 
 [dependencies]
 libc = "0.2"
