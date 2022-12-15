@@ -139,7 +139,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings -A clippy::non_send_fields_in_send_ty
+          args: -- -D warnings -A clippy::uninlined-format-args
 
   test:
     name: Tests build-in Hyperscan package with Rust ${{ matrix.toolchain }} @ ${{ matrix.os }}
