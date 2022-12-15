@@ -55,6 +55,9 @@ jobs:
           command: doc
           args: --no-deps --features=chimera
 
+      - run: |
+          mv .github/assets/index.html target/doc/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
