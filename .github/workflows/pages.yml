@@ -22,6 +22,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PKG_CONFIG_PATH: ${{ github.workspace }}/dist/lib/pkgconfig
     steps:
       - uses: flier/install-hyperscan@main
         with:
