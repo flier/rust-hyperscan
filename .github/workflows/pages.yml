@@ -1,0 +1,64 @@
+name: Github Pages
+
+on:
+  push:
+    branches: [$default-branch]
+  workflow_dispatch:
+
+env:
+  hyperscan: 5.4.0
+  pcre: 8.45
+  chimera: true
+  toolchain: stable
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: flier/install-hyperscan@main
+        with:
+          hyperscan_version: ${{ env.hyperscan }}
+          pcre_version: ${{ env.pcre }}
+          build_static_lib: on
+          src_dir: ${{ runner.temp }}/hyperscan/
+          install_prefix: ${{ github.workspace }}/dist
+          cache_key: ${{ runner.os }}-build-hyperscan-${{ env.hyperscan }}-pcre-${{ env.pcre }}-${{ secrets.CACHE_VERSION }}
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ env.toolchain }}
+          override: true
+
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --no-deps --features=chimera
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: target/doc
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1

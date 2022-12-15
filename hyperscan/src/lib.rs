@@ -6,7 +6,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hyperscan = "0.2"
+//! hyperscan = "0.3"
 //! ```
 //!
 //! # Examples
