@@ -176,7 +176,7 @@ impl Benchmark {
     fn read_streams<P: AsRef<Path>>(&mut self, path: P) -> Result<(), pcap::Error> {
         let mut capture = pcap::Capture::from_file(path)?;
 
-        while let Ok(ref packet) = capture.next() {
+        while let Ok(ref packet) = capture.next_packet() {
             if let Some((key, payload)) = Self::decode_packet(&packet) {
                 if payload.len() > 0 {
                     let stream_id = match self.sessions.get(&key) {
@@ -195,6 +195,12 @@ impl Benchmark {
                 }
             }
         }
+
+        println!(
+            "read {} packets in {} sessions",
+            self.packets.len(),
+            self.stream_ids.len(),
+        );
 
         Ok(())
     }
@@ -327,7 +333,7 @@ impl Benchmark {
 #[structopt(name = "simplegrep", about = "An example search a given input file for a pattern.")]
 struct Opt {
     /// repeat times
-    #[structopt(short = "n")]
+    #[structopt(short = "n", default_value = "1")]
     repeats: usize,
 
     /// pattern file

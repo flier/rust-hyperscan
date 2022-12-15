@@ -106,7 +106,7 @@ use structopt::StructOpt;
 
 use hyperscan::{prelude::*, Block, Streaming};
 
-#[derive(Clone, Copy, Debug, Display, PartialEq)]
+#[derive(Clone, Copy, Debug, Display, PartialEq, Eq)]
 enum Criterion {
     #[display(fmt = "throughput")]
     Throughput,
@@ -272,7 +272,7 @@ impl Benchmark {
     fn read_streams<P: AsRef<Path>>(&mut self, path: P) -> Result<(), pcap::Error> {
         let mut capture = pcap::Capture::from_file(path)?;
 
-        while let Ok(ref packet) = capture.next() {
+        while let Ok(ref packet) = capture.next_packet() {
             if let Some((key, payload)) = Session::decode(&packet) {
                 if payload.len() > 0 {
                     let stream_id = match self.sessions.get(&key) {

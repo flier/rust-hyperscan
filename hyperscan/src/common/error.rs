@@ -3,7 +3,7 @@ use thiserror::Error;
 use crate::ffi;
 
 /// Hyperscan Error Codes
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum Error {
     /// A parameter passed to this function was invalid.
     #[error("A parameter passed to this function was invalid.")]

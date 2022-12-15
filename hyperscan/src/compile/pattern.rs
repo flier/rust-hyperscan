@@ -137,7 +137,7 @@ pub enum SomHorizon {
 }
 
 /// The pattern with basic regular expression.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Pattern {
     /// The expression to parse.
     pub expression: String,

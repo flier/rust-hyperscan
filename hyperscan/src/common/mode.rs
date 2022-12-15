@@ -24,15 +24,15 @@ pub trait Mode {
 }
 
 /// Block scan (non-streaming) database.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Block {}
 
 /// Vectored scanning database.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Vectored {}
 
 /// Streaming database.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Streaming {}
 
 impl Mode for Block {

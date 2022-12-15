@@ -30,7 +30,7 @@ anyhow = "1"
 cargo-emit = "0.2"
 pkg-config = "0.3"
 
-bindgen = {version = "0.59", optional = true}
+bindgen = {version = "0.63", optional = true}
 
 [lib]
 doctest = false

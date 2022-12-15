@@ -57,7 +57,7 @@ impl fmt::Display for Flags {
 }
 
 /// The pattern with pure literal expression.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Literal {
     /// The expression to parse.
     pub expression: String,

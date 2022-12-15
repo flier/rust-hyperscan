@@ -48,6 +48,8 @@ impl PartialEq for CompileError {
     }
 }
 
+impl Eq for CompileError {}
+
 impl CompileError {
     unsafe fn as_ref(&self) -> &ffi::ch_compile_error_t {
         self.as_ptr().as_ref().unwrap()
@@ -111,7 +113,7 @@ impl AsCompileResult for ffi::ch_error_t {
 /// will also fill the `captured' array with the start and end offsets of all
 /// the capturing groups specified by the pattern that has matched.
 #[repr(u32)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Mode {
     /// Disable capturing groups.
     NoGroups = ffi::CH_MODE_NOGROUPS,

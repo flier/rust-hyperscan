@@ -18,7 +18,7 @@ use futures::io::{AsyncRead, AsyncReadExt};
 
 /// Indicating whether or not matching should continue on the target data.
 #[repr(i32)]
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Matching {
     /// The matching should continue
     Continue = 0,

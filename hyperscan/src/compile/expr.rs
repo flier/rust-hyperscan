@@ -16,7 +16,7 @@ use crate::{
 };
 
 /// Hyperscan Error Codes
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum Error {
     #[error("missing parameter")]
     MissingParameter,
@@ -42,7 +42,7 @@ bitflags! {
 
 /// A structure containing additional parameters related to an expression.
 #[repr(transparent)]
-#[derive(Clone, Copy, Default, PartialEq, From, Into)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, From, Into)]
 pub struct ExprExt(ffi::hs_expr_ext_t);
 
 impl fmt::Debug for ExprExt {

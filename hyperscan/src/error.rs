@@ -9,7 +9,7 @@ use crate::{common::Error as HsError, ffi};
 pub type Result<T> = StdResult<T, Error>;
 
 /// Hyperscan Error
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum Error {
     /// Hyperscan error
     #[error(transparent)]

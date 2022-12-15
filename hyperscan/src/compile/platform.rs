@@ -7,7 +7,7 @@ use crate::{error::AsResult, ffi, Result};
 
 /// Tuning Parameter
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Tune {
     ///Generic
     Generic = ffi::HS_TUNE_FAMILY_GENERIC,

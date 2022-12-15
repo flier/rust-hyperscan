@@ -70,7 +70,7 @@ impl DatabaseRef {
 
 /// Callback return value used to tell the Chimera matcher what to do after processing this match.
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Matching {
     /// Continue matching.
     Continue = ffi::CH_CALLBACK_CONTINUE,
@@ -88,7 +88,7 @@ impl Default for Matching {
 
 /// The type of error event that occurred.
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, From, PartialEq)]
+#[derive(Clone, Copy, Debug, From, PartialEq, Eq)]
 pub enum Error {
     /// PCRE hits its match limit.
     MatchLimit = ffi::CH_ERROR_MATCHLIMIT,
@@ -98,7 +98,7 @@ pub enum Error {
 
 /// Structure representing a captured subexpression within a match.
 #[repr(transparent)]
-#[derive(Clone, Copy, From, Into, Deref, PartialEq)]
+#[derive(Clone, Copy, From, Into, Deref, PartialEq, Eq)]
 pub struct Capture(ffi::ch_capture);
 
 impl fmt::Debug for Capture {

@@ -6,7 +6,7 @@ use thiserror::Error;
 use crate::{chimera::CompileError, ffi::chimera as ffi};
 
 /// A type for errors returned by Chimera functions.
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum Error {
     /// A parameter passed to this function was invalid.
     #[error("A parameter passed to this function was invalid.")]

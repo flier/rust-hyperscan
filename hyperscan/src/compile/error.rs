@@ -70,6 +70,8 @@ impl PartialEq for Error {
     }
 }
 
+impl Eq for Error {}
+
 impl Error {
     unsafe fn as_ref(&self) -> &ffi::hs_compile_error_t {
         self.as_ptr().as_ref().unwrap()

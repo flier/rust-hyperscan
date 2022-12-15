@@ -13,7 +13,7 @@ use crate::{
 /// Match represents a single match of a regex in a haystack.
 ///
 /// The lifetime parameter `'t` refers to the lifetime of the matched text.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Match<'t> {
     text: &'t str,
     start: usize,

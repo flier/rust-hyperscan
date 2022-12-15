@@ -130,6 +130,7 @@ fn generate_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
         .derive_debug(true)
         .derive_default(true)
         .derive_partialeq(true)
+        .derive_eq(true)
         .generate()
         .map_err(|_| anyhow::Error::msg("generate binding files"))?
         .write_to_file(out_file)
@@ -169,6 +170,7 @@ fn generate_chimera_binding(inc_dir: &Path, out_dir: &Path) -> Result<()> {
         .derive_debug(true)
         .derive_default(true)
         .derive_partialeq(true)
+        .derive_eq(true)
         .generate()
         .map_err(|_| anyhow::Error::msg("generate binding files"))?
         .write_to_file(out_file)
