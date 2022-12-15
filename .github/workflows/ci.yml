@@ -146,7 +146,7 @@ jobs:
     needs: check
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04, macos-11, macos-latest]
+        os: [ubuntu-latest, ubuntu-20.04, ubuntu-18.04, macos-11, macos-latest]
         toolchain: [stable, nightly]
     runs-on: ${{ matrix.os }}
     steps:
@@ -269,6 +269,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       PKG_CONFIG_PATH: ${{ github.workspace }}/dist/lib/pkgconfig
+    continue-on-error: ${{ matrix.toolchain == 'nightly' }}
     steps:
       - uses: actions/checkout@v2
 
