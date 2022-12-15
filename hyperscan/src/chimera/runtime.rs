@@ -55,10 +55,16 @@ impl DatabaseRef {
     }
 
     /// Reallocate a `scratch` space for use by Chimera.
-    pub fn realloc_scratch(&mut self, s: Scratch) -> Result<Scratch> {
-        let mut s = s.into_ptr();
+    pub fn realloc_scratch(&self, s: &mut Scratch) -> Result<&ScratchRef> {
+        let mut p = s.as_ptr();
 
-        unsafe { ffi::ch_alloc_scratch(self.as_ptr(), &mut s).map(|_| Scratch::from_ptr(s)) }
+        unsafe {
+            ffi::ch_alloc_scratch(self.as_ptr(), &mut p).map(|_| {
+                s.0 = ptr::NonNull::new_unchecked(p);
+
+                ScratchRef::from_ptr(p)
+            })
+        }
     }
 }
 
@@ -344,5 +350,38 @@ impl DatabaseRef {
             )
             .ok()
         }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use std::ptr;
+
+    use foreign_types::ForeignType;
+
+    use crate::chimera::prelude::*;
+
+    const SCRATCH_SIZE: usize = 2000;
+
+    #[test]
+    fn test_scratch() {
+        let db: Database = "test".parse().unwrap();
+
+        let s = db.alloc_scratch().unwrap();
+
+        assert!(s.size().unwrap() > SCRATCH_SIZE);
+
+        let mut s2 = s.clone();
+
+        assert!(!ptr::eq(s.as_ptr(), s2.as_ptr()));
+
+        assert!(s2.size().unwrap() > SCRATCH_SIZE);
+
+        let db2: Database = "foobar".parse().unwrap();
+
+        db2.realloc_scratch(&mut s2).unwrap();
+
+        assert!(!ptr::eq(s.as_ptr(), s2.as_ptr()));
+        assert!(s2.size().unwrap() >= s.size().unwrap());
     }
 }
