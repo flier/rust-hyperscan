@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 name = "hyperscan"
 readme = "../README.md"
 repository = "https://github.com/flier/rust-hyperscan"
-version = "0.3.0"
+version = "0.3.1"
 
 [features]
 default = ["full", "latest"]
@@ -19,9 +19,9 @@ static = ["hyperscan-sys/static"]
 
 chimera = ["hyperscan-sys/chimera", "bitflags", "derive_more", "static"]
 compile = ["hyperscan-sys/compile", "bitflags", "derive_more"]
+contained = ["hyperscan-sys/contained"]
 full = ["compile", "runtime"]
 runtime = ["hyperscan-sys/runtime"]
-contained = ["hyperscan-sys/contained"]
 
 async = ["futures"]
 latest = ["v5_4"]

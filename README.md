@@ -7,7 +7,7 @@
 To use, add the following line to Cargo.toml under [dependencies]:
 
 ```toml
-hyperscan = "0.2"
+hyperscan = "0.3"
 ```
 
 ## Examples
@@ -45,7 +45,7 @@ If you want to work with Hyperscan v4.x, you can disable `v5` feature at compile
 
 ```toml
 [dependencies.hyperscan]
-version = "0.2"
+version = "0.3"
 default-features = false
 features = ["full"]
 ```
@@ -78,7 +78,7 @@ The `chimera` feature should be enabled.
 
 ```toml
 [dependencies]
-hyperscan = { version = "0.2", features = ["chimera"] }
+hyperscan = { version = "0.3", features = ["chimera"] }
 ```
 
 Note: The `Chimera` library does not support dynamic library linking mode, `static` feature is automatically enabled when `chimera` is enabled.
@@ -89,7 +89,7 @@ As of version 0.2, `rust-hyperscan` uses dynamic library linking mode by default
 
 ```toml
 [dependencies]
-hyperscan = { version = "0.2", features = ["static"] }
+hyperscan = { version = "0.3", features = ["static"] }
 ```
 
 ### Hyperscan Runtime
@@ -98,7 +98,7 @@ Hyperscan provides [a standalone runtime library](http://intel.github.io/hypersc
 
 ```toml
 [dependencies.hyperscan]
-version = "0.2"
+version = "0.3"
 default-features = false
 features = ["runtime"]
 ```
