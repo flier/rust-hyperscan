@@ -7,6 +7,7 @@ fn find_hyperscan() -> Result<PathBuf> {
     cargo_emit::rerun_if_env_changed!("HYPERSCAN_ROOT");
 
     let link_kind = if cfg!(feature = "static") { "static" } else { "dylib" };
+    let static_libstd = cfg!(feature = "contained");
 
     if let Ok(prefix) = env::var("HYPERSCAN_ROOT") {
         let prefix = Path::new(&prefix);
@@ -30,10 +31,15 @@ fn find_hyperscan() -> Result<PathBuf> {
         cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
 
         if cfg!(feature = "static") {
-            if cfg!(target_os = "macos") {
-                cargo_emit::rustc_link_lib!("c++");
+            let std_link = if cfg!(target_os = "macos") {
+                "c++"
             } else {
-                cargo_emit::rustc_link_lib!("stdc++");
+                "stdc++"
+            };
+            if static_libstd {
+                cargo_emit::rustc_link_lib!(format!("static:-bundle={}", std_link));
+            } else {
+                cargo_emit::rustc_link_lib!(std_link);
             }
         }
 
