@@ -192,12 +192,11 @@ fn generate_chimera_binding(_: &Path, _: &Path) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    if std::env::var("DOCS_RS").is_ok() {
-        return Ok(());
-    }
-
-    let inc_dir =
-        find_hyperscan().with_context(|| "please download and install hyperscan from https://www.hyperscan.io/")?;
+    let inc_dir = if std::env::var("DOCS_RS").is_ok() {
+        PathBuf::new()
+    } else {
+        find_hyperscan().with_context(|| "please download and install hyperscan from https://www.hyperscan.io/")?
+    };
     let out_dir = env::var("OUT_DIR")?;
     let out_dir = Path::new(&out_dir);
 
