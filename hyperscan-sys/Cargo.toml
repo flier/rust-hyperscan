@@ -37,5 +37,5 @@ bindgen = {version = "0.63", optional = true}
 doctest = false
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["full", "chimera"]
 rustc-args = ["--cfg", "docsrs"]

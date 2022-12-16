@@ -64,10 +64,6 @@ tokio-test = "0.4"
 [build-dependencies]
 rustc_version = "0.4"
 
-[package.metadata.docs.rs]
-all-features = true
-rustc-args = ["--cfg", "docsrs"]
-
 [[bench]]
 harness = false
 name = "bench"
@@ -86,3 +82,7 @@ test = false
 name = "simplegrep"
 required-features = ["full"]
 test = false
+
+[package.metadata.docs.rs]
+features = ["full", "latest", "async", "chimera"]
+rustc-args = ["--cfg", "docsrs"]
