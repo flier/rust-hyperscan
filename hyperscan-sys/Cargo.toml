@@ -17,6 +17,7 @@ chimera = ["static"]
 compile = []
 contained = ["static"]
 default = ["runtime"]
+docsrs = ["full", "chimera"]
 full = ["compile", "runtime"]
 gen = ["bindgen", "tracing"]
 runtime = []
@@ -37,5 +38,5 @@ bindgen = {version = "0.63", optional = true}
 doctest = false
 
 [package.metadata.docs.rs]
-features = ["full", "chimera"]
+features = ["docsrs"]
 rustc-args = ["--cfg", "docsrs"]

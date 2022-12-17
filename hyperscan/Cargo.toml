@@ -14,6 +14,7 @@ version = "0.3.1"
 [features]
 default = ["full", "latest"]
 
+docsrs = ["hyperscan-sys/docsrs", "full", "latest", "async", "chimera"]
 gen = ["hyperscan-sys/gen"]
 static = ["hyperscan-sys/static"]
 
@@ -84,5 +85,5 @@ required-features = ["full"]
 test = false
 
 [package.metadata.docs.rs]
-features = ["full", "latest", "async", "chimera"]
+features = ["docsrs"]
 rustc-args = ["--cfg", "docsrs"]
