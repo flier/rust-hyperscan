@@ -31,7 +31,8 @@ fn find_hyperscan() -> Result<PathBuf> {
         cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
 
         if cfg!(feature = "static") {
-            let std_link = if cfg!(target_os = "macos") { "c++" } else { "stdc++" };
+            let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+            let std_link = if target_os == "macos" { "c++" } else { "stdc++" };
             if static_libstd {
                 cargo_emit::rustc_link_lib!(std_link => "static:-bundle");
             } else {
