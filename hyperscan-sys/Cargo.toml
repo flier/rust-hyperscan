@@ -10,7 +10,7 @@ links = "hs"
 name = "hyperscan-sys"
 readme = "../README.md"
 repository = "https://github.com/flier/rust-hyperscan"
-version = "0.3.1"
+version = "0.3.2"
 
 [features]
 chimera = ["static"]
