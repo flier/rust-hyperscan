@@ -9,6 +9,7 @@ fn find_hyperscan() -> Result<PathBuf> {
     let link_kind = if cfg!(feature = "static") { "static" } else { "dylib" };
     let static_libstd = cfg!(feature = "contained");
 
+    // Build against Hyperscan explicitly specified via the `HYPERSCAN_ROOT` env var
     if let Ok(prefix) = env::var("HYPERSCAN_ROOT") {
         let prefix = Path::new(&prefix);
         let inc_path = prefix.join("include/hs");
@@ -63,47 +64,105 @@ fn find_hyperscan() -> Result<PathBuf> {
 
         Ok(inc_path)
     } else {
-        let libhs = pkg_config::Config::new()
-            .statik(cfg!(feature = "static"))
-            .cargo_metadata(true)
-            .env_metadata(true)
-            .probe("libhs")?;
+        #[cfg(feature = "bundled-vectorscan")]
+        // Build against bundled version of vectorscan
+        {
+            use cmake::Config;
 
-        if cfg!(feature = "tracing") {
-            cargo_emit::warning!(
-                "building with Hyperscan {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
-                libhs.version,
-                link_kind,
-                libhs.libs,
-                libhs.link_paths,
-                libhs.include_paths
-            );
-        }
+            let prefix = Path::new("bundled-vectorscan");
 
-        if cfg!(feature = "chimera") {
-            let libch = pkg_config::Config::new()
-                .statik(cfg!(feature = "static"))
-                .cargo_metadata(true)
-                .env_metadata(true)
-                .probe("libch")?;
+            if cfg!(feature = "tracing") {
+                cargo_emit::warning!("building bundled vectorscan at {}", prefix.display());
+            }
+
+            let dst = Config::new(prefix)
+                .define("FAT_RUNTIME", "0")
+                .build();
+
+            let inc_path = dst.join("include/hs");
+            let link_path = dst.join("lib");
+
+            cargo_emit::rustc_link_search!(link_path.to_string_lossy() => "native");
+            cargo_emit::rustc_link_lib!("hs" => link_kind);
+
+            if cfg!(feature = "static") {
+                let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+                let std_link = if target_os == "macos" { "c++" } else { "stdc++" };
+                if static_libstd {
+                    cargo_emit::rustc_link_lib!(std_link => "static:-bundle");
+                } else {
+                    cargo_emit::rustc_link_lib!(std_link);
+                }
+            }
+
+            if !cfg!(feature = "compile") && cfg!(feature = "runtime") {
+                cargo_emit::rustc_link_lib!("hs_runtime" => link_kind);
+            } else {
+                cargo_emit::rustc_link_lib!("hs" => link_kind);
+            }
+
+            if cfg!(feature = "chimera") {
+                cargo_emit::rustc_link_lib!("chimera" => "static");
+                cargo_emit::rustc_link_lib!("pcre" => "static");
+            }
 
             if cfg!(feature = "tracing") {
                 cargo_emit::warning!(
-                    "building with Chimera {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
-                    libch.version,
+                    "building with Hyperscan with {} library @ {:?}, link_paths=[{:?}], include_paths=[{:?}]",
                     link_kind,
-                    libch.libs,
-                    libch.link_paths,
-                    libch.include_paths
+                    prefix,
+                    link_path,
+                    inc_path
                 );
             }
+
+            Ok(inc_path)
         }
 
-        libhs
-            .include_paths
-            .first()
-            .cloned()
-            .ok_or_else(|| anyhow!("missing include path"))
+        #[cfg(not(feature = "bundled-vectorscan"))]
+        {
+            let libhs = pkg_config::Config::new()
+                .statik(cfg!(feature = "static"))
+                .cargo_metadata(true)
+                .env_metadata(true)
+                .probe("libhs")?;
+
+            if cfg!(feature = "tracing") {
+                cargo_emit::warning!(
+                    "building with Hyperscan {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
+                    libhs.version,
+                    link_kind,
+                    libhs.libs,
+                    libhs.link_paths,
+                    libhs.include_paths
+                );
+            }
+
+            if cfg!(feature = "chimera") {
+                let libch = pkg_config::Config::new()
+                    .statik(cfg!(feature = "static"))
+                    .cargo_metadata(true)
+                    .env_metadata(true)
+                    .probe("libch")?;
+
+                if cfg!(feature = "tracing") {
+                    cargo_emit::warning!(
+                        "building with Chimera {} with {} library, libs={:?}, link_paths={:?}, include_paths={:?}",
+                        libch.version,
+                        link_kind,
+                        libch.libs,
+                        libch.link_paths,
+                        libch.include_paths
+                    );
+                }
+            }
+
+            libhs
+                .include_paths
+                .first()
+                .cloned()
+                .ok_or_else(|| anyhow!("missing include path"))
+        }
     }
 }
 

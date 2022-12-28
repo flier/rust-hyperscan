@@ -13,6 +13,7 @@ repository = "https://github.com/flier/rust-hyperscan"
 version = "0.3.2"
 
 [features]
+bundled-vectorscan = ["static", "cmake"]
 chimera = ["static"]
 compile = []
 contained = ["static"]
@@ -29,6 +30,7 @@ libc = "0.2"
 
 [build-dependencies]
 anyhow = "1"
+cmake = {version = "0.1", optional = true}
 cargo-emit = "0.2"
 pkg-config = "0.3"
 

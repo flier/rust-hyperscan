@@ -18,6 +18,8 @@ docsrs = ["hyperscan-sys/docsrs", "full", "latest", "async", "chimera"]
 gen = ["hyperscan-sys/gen"]
 static = ["hyperscan-sys/static"]
 
+bundled-vectorscan = ["hyperscan-sys/bundled-vectorscan", "static"]
+
 chimera = ["hyperscan-sys/chimera", "bitflags", "derive_more", "static"]
 compile = ["hyperscan-sys/compile", "bitflags", "derive_more"]
 contained = ["hyperscan-sys/contained"]

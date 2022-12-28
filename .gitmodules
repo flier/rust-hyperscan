@@ -1,0 +1,3 @@
+[submodule "hyperscan-sys/bundled-vectorscan"]
+	path = hyperscan-sys/bundled-vectorscan
+	url = https://github.com/Vectorcamp/vectorscan
