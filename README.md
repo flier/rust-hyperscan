@@ -5,7 +5,7 @@
 
 ## Usage
 
-To use, add the following line to Cargo.toml under [dependencies]:
+To use, add the following line to Cargo.toml under `[dependencies]`:
 
 ```toml
 hyperscan = "0.3"
@@ -91,6 +91,13 @@ As of version 0.2, `rust-hyperscan` uses dynamic library linking mode by default
 ```toml
 [dependencies]
 hyperscan = { version = "0.3", features = ["static"] }
+```
+
+Additionally, on macOS, a `contained` feature is supported, which additionally ensures that `libc++` is statically linked:
+
+```toml
+[dependencies]
+hyperscan = { version = "0.3", features = ["contained"] }
 ```
 
 ### Hyperscan Runtime
