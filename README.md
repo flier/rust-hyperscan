@@ -109,8 +109,8 @@ features = ["runtime"]
 The `rust-hyperscan` library provides a `bundled-vectorscan` feature to build against a bundled version of the Vectorscan fork of Hyperscan. This fork supports architectures other than x86, including Apple Silicon. This feature requires several dependencies to be present in the build environment, including Python, CMake, Boost, and Ragel. If you have these dependencies, you can use the `bundled-vectorscan` feature:
 
 ```toml
-[dependencies.hyperscan[
-versino = "0.3"
+[dependencies.hyperscan]
+version = "0.3"
 features = ["bundled-vectorscan"]
 ```
 
