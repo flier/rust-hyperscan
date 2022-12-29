@@ -42,7 +42,7 @@ Starting with Hyperscan v5.0, several new APIs and flags have been introduced.
 
 `rust-hyperscan` uses the latest version of the API by default, providing new features such as `Literal`.
 
-If you want to work with Hyperscan v4.x, you can disable `v5` feature at compile time.
+If you want to work with Hyperscan v4.x, you can disable the `v5` feature at compile time:
 
 ```toml
 [dependencies.hyperscan]
@@ -55,7 +55,7 @@ features = ["full"]
 
 In order to improve regular expression compatibility, Hyperscan v5.0 starts to provide a PCRE-compatible [Chimera](http://intel.github.io/hyperscan/dev-reference/chimera.html) library.
 
-To enable `Chimera` support, you need to manually download PCRE 8.41 or above, unzip to the source directory of Hyperscan 5.x, compile and install it.
+To enable `Chimera` support, you need to manually download PCRE 8.41 or above, unzip to the source directory of Hyperscan 5.x, compile and install it:
 
 ```bash
 $ cd hyperscan-5.4.0
@@ -69,24 +69,24 @@ $ ninja
 $ ninja install
 ```
 
-Then point to the hyperscan installation directory with the `PKG_CONFIG_PATH` environment variable and enable `chimera` feature.
+Then point to the hyperscan installation directory with the `PKG_CONFIG_PATH` environment variable and enable `chimera` feature:
 
 ```bash
 $ PKG_CONFIG_PATH=<CMAKE_INSTALL_PREFIX>/lib/pkgconfig cargo build
 ```
 
-The `chimera` feature should be enabled.
+Finally, enable the `chimera` feature:
 
 ```toml
 [dependencies]
 hyperscan = { version = "0.3", features = ["chimera"] }
 ```
 
-Note: The `Chimera` library does not support dynamic library linking mode, `static` feature is automatically enabled when `chimera` is enabled.
+Note: The `Chimera` library does not support dynamic library linking mode; the `static` feature is automatically enabled when `chimera` is enabled.
 
 ### Static Linking Mode
 
-As of version 0.2, `rust-hyperscan` uses dynamic library linking mode by default. If you need link a static library, you can use the `static` feature.
+As of version 0.2, `rust-hyperscan` uses dynamic library linking mode by default. If you need link a static library, you can use the `static` feature:
 
 ```toml
 [dependencies]
@@ -95,7 +95,7 @@ hyperscan = { version = "0.3", features = ["static"] }
 
 ### Hyperscan Runtime
 
-Hyperscan provides [a standalone runtime library](http://intel.github.io/hyperscan/dev-reference/serialization.html#the-runtime-library), which can be used separately. If you don't need to compile regular expressions at runtime, you can reduce the size of the executable using `runtime` mode and get rid of C++ dependencies.
+Hyperscan provides [a standalone runtime library](http://intel.github.io/hyperscan/dev-reference/serialization.html#the-runtime-library), which can be used separately. If you don't need to compile regular expressions at runtime, you can reduce the size of the executable using `runtime` feature and getting rid of C++ dependencies:
 
 ```toml
 [dependencies.hyperscan]
@@ -103,6 +103,17 @@ version = "0.3"
 default-features = false
 features = ["runtime"]
 ```
+
+### Use a bundled version of the [`vectorscan`](https://github.com/Vectorcamp/vectorscan) fork of Hyperscan
+
+The `rust-hyperscan` library provides a `bundled-vectorscan` feature to build against a bundled version of the Vectorscan fork of Hyperscan. This fork supports architectures other than x86, including Apple Silicon. This feature requires several dependencies to be present in the build environment, including Python, CMake, Boost, and Ragel. If you have these dependencies, you can use the `bundled-vectorscan` feature:
+
+```toml
+[dependencies.hyperscan[
+versino = "0.3"
+features = ["bundled-vectorscan"]
+```
+
 
 ## Benchmark
 
