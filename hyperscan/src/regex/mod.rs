@@ -3,4 +3,4 @@ mod builder;
 mod re;
 
 pub use builder::{RegexBuilder, RegexSetBuilder};
-pub use re::Regex;
+pub use re::{Regex, Match, Matches, Split, SplitN};
